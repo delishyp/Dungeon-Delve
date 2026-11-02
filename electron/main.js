@@ -136,6 +136,10 @@ function getUpdater() {
     updater.updateConfigPath = cfg; updater.forceDevUpdateConfig = true;
   } else updater = autoUpdater;
   updater.autoDownload = false;            // the player decides in the in-game prompt
+  // Our installer is solid-LZMA and we don't keep the old installer in the updater cache, so a differential download can never
+  // reuse anything: it only costs two blockmap round-trips (seconds on GitHub) before falling back to the full download.
+  updater.disableDifferentialDownload = !(testUrl && process.env.DD_UPDATE_DIFF === '1');
+  updater.disableWebInstaller = true;
   updater.autoInstallOnAppQuit = false;
   updater.allowPrerelease = false;
   updater.logger = null;
@@ -143,10 +147,11 @@ function getUpdater() {
   updater.on('update-not-available', (i) => sendUpdate({ state: 'none', version: i && i.version }));
   updater.on('update-available', (i) => sendUpdate({ state: 'available', version: i.version, notes: typeof i.releaseNotes === 'string' ? i.releaseNotes.replace(/<[^>]+>/g, '').slice(0, 600) : '' }));
   updater.on('download-progress', (p) => sendUpdate({ state: 'downloading', version: updateState.version, percent: Math.round(p.percent || 0), bps: p.bytesPerSecond, transferred: p.transferred, total: p.total }));
-  updater.on('update-downloaded', (i) => sendUpdate({ state: 'downloaded', version: i.version, file: i.downloadedFile }));
+  updater.on('update-downloaded', (i) => { if (!testUrl) updater.autoInstallOnAppQuit = true; sendUpdate({ state: 'downloaded', version: i.version, file: i.downloadedFile }); });
   updater.on('error', (err) => sendUpdate({ state: 'error', version: updateState.version, message: String((err && err.message) || err).split('\n')[0].slice(0, 200) }));
   return updater;
 }
+ipcMain.on('dd:update-status', (e) => { e.returnValue = updateState; });   // the page asks for the cached result as soon as it loads
 ipcMain.on('dd:can-update', (e) => { try { e.returnValue = !!getUpdater(); } catch (_) { e.returnValue = false; } });
 ipcMain.handle('dd:update-check', async () => {
   const u = getUpdater(); if (!u) return { state: 'disabled' };
@@ -161,7 +166,9 @@ ipcMain.handle('dd:update-download', async () => {
 ipcMain.on('dd:update-install', () => {
   const u = getUpdater(); if (!u || updateState.state !== 'downloaded') return;
   if (process.env.DD_UPDATE_TEST) { sendUpdate({ state: 'install-requested', version: updateState.version }); return; }   // tests stop here
-  setImmediate(() => u.quitAndInstall(true, true));        // silent install, then relaunch the game
+  // silent install, then relaunch the game: hide the window at once so closing feels instant, then hand over to the installer
+  if (win && !win.isDestroyed()) win.hide();
+  setImmediate(() => u.quitAndInstall(true, true));
 });
 // F11 / the old fullscreen toggle: flips between windowed and the last full-screen style, and is remembered
 let lastFull = 'fullscreen';
@@ -200,6 +207,8 @@ app.whenReady().then(() => {
   session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] }, (_d, cb) => cb({ cancel: true }));
   session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'fullscreen'));
   createWindow();
+  // check for updates right away, in parallel with the window loading; the result is cached in updateState for the page
+  try { const u = getUpdater(); if (u) u.checkForUpdates().catch((e) => sendUpdate({ state: 'error', message: String(e.message || e).split('\n')[0].slice(0, 200) })); } catch (_) {}
   // a monitor was unplugged / added: keep the window on a screen that exists
   const fix = () => { if (!screen.getAllDisplays().some(x => x.id === disp.displayId)) { if (win && !win.isDestroyed() && disp.mode !== 'windowed') applyInPlace(); } sendDisplay(); };
   screen.on('display-removed', fix); screen.on('display-added', () => sendDisplay());

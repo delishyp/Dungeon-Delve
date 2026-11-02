@@ -377,3 +377,14 @@ The Gelatinous Cube, the Drow patrol and the Troll are now the main run-enders. 
   The edges fade when there's more map that way.
 - Settings → Display (Windows app): window mode (Windowed / Borderless / Fullscreen), window size, monitor, VSync (applies after restart).
   Mode and size changes ask "Keep these display settings?" and undo themselves after 10 s. F11 switches the mode too. Everything is remembered.
+
+## v2.4.2: snappier updates
+- The update check starts the moment the game launches (it used to wait 2.5 s after the menu loaded). The menu corner shows "Checking for updates…", then "Up to date", or the update prompt appears right away.
+- "Download & restart" reacts instantly ("Preparing download…"), then shows % / MB / MB/s, then "Installing… the game will restart in a moment".
+- New: "Download now, restart later". It downloads in the background while you play, then the menu shows "Restart to update" (or it installs when you quit).
+- Fixed: updating (or "Restart now" for VSync) from the main menu could delete your saved run.
+
+## v2.4.3: the merchant's rug
+- The shop is now a merchant's rug on the dungeon floor, with the merchant sitting beside it. Cards lie in the middle, and relics, the card-removal service and potions are along the bottom, each with a price tag.
+- Hover a card for a big preview. Hover a relic or potion for its effect. Click to buy: it flies to your deck, belt or relics and is marked SOLD.
+- Too expensive: dimmed with a red price; clicking gives a little shake and the merchant comments.

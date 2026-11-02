@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('ddApp', {
     onChange: (cb) => ipcRenderer.on('dd:display', (_e, s) => cb(s)),
   },
   update: !ipcRenderer.sendSync('dd:can-update') ? null : {
+    status: () => ipcRenderer.sendSync('dd:update-status'),
     check: () => ipcRenderer.invoke('dd:update-check'),
     download: () => ipcRenderer.invoke('dd:update-download'),
     install: () => ipcRenderer.send('dd:update-install'),

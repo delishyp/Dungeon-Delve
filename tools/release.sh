@@ -21,6 +21,10 @@ if [ -z "$ONLY" ]; then
   node -e "const f='electron/package.json',j=require('./'+f);j.version='$V';require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\n')"
   sh tools/package.sh
   sh tools/split-parts.sh "$V"
+else
+  # publish an already-built installer: record its version in the source and rebuild latest.yml/.blockmap/.sha256 from that exe
+  node -e "const f='electron/package.json',j=require('./'+f);j.version='$V';require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\n')"
+  node tools/make-latest.js "release/DungeonDelve-Setup-$V.exe" >/dev/null
 fi
 EXE="release/DungeonDelve-Setup-$V.exe"
 for f in "$EXE" "$EXE.blockmap" "$EXE.sha256" release/latest.yml; do test -s "$f" || { echo "missing $f"; exit 1; }; done

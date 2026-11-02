@@ -331,22 +331,58 @@
          <button class="btn" data-act="evcontinue">${ev.next && ev.next.fight ? I('swords') + ' Fight!' : ev.next && ev.next.shop ? 'Browse the wares' : 'Continue'}</button>`;
     return `<div class="overlay"><div class="panel event"><img class="scene-art" src="${img(def.art)}" alt=""><div class="evtext"><h1>${esc(def.name)}</h1>${body}</div></div></div>`;
   }
+  // ----- the merchant's rug: wares laid out on a blanket, merchant sitting beside it -----
+  const MERCHANT_LINES = {
+    hello: ['"Customers! Come in, come in! Mind the rug."', '"Everything you see is for sale. Everything has a price, friend."', '"Fresh from the surface! Well… fresh-ish."', '"Browse, browse! Touching is free. Mostly."'],
+    buy: ['"A fine choice! You have the eye of a collector."', '"Sold! Pleasure doing business."', '"Ha! That one has been waiting for you."', '"Use it well, and come back alive. Repeat customers are my favourite."'],
+    poor: ['"Ah… a little short, friend. Come back with more gold."', '"Credit? Down here? Ha!"', '"Your purse is lighter than your ambition."'],
+    removed: ['"Snip! Gone, as if it was never there."'],
+  };
+  const merchantSay = (k) => { const L = MERCHANT_LINES[k]; ui.shopLine = L[Math.floor(Math.random() * L.length)]; const el = $app.querySelector('.mbubble'); if (el) { el.textContent = ui.shopLine; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } };
   function shopHTML() {
     const p = P(), sh = G.shop;
     if (ui.shopRemoving) return pickGridHTML(`Remove a card (${sh.removeCost} gold)`, 'The merchant\'s "special service". Curses are good choices.', removeCards(p, 'shopremove'), 'shopback');
-    const price = (it) => `<span class="price ${p.gold < it.price ? 'poor' : ''}">${I('coin')} ${it.price}</span>`;
-    const item = (kind, it, i, inner) => `<div class="shopitem si-${kind} ${it.sold ? 'sold' : ''} ${!it.sold && p.gold < it.price ? 'poor' : ''}" ${it.sold ? '' : `data-act="buy" data-kind="${kind}" data-index="${i}"`}>${inner}${it.sold ? '<span class="price">SOLD</span>' : price(it)}</div>`;
-    return `<div class="overlay"><div class="panel shop"><div class="shophead"><img src="${img('ev_merchant')}" alt=""><div><h1>The Merchant</h1><p class="dm">${esc(flavor('shop'))}</p><div class="goldline">You have ${I('coin')} ${p.gold}</div>
-        ${sh.discount > 0 ? '<span class="chip good">Haggled: prices lowered</span>' : sh.discount < 0 ? '<span class="chip bad">Offended merchant: prices raised</span>' : ''}</div></div>
-      <div class="shopcards">${sh.cards.map((it, i) => item('card', it, i, cardHTML({ id: it.id }))).join('')}</div>
-      <div class="shoprow">
-        ${sh.relics.map((it, i) => item('relic', it, i, `<span data-tip="${esc(relicTip(it.id))}">${relicMedal(it.id, 'big')}</span><b>${esc(D.RELICS[it.id].name)}</b><small>${esc(D.RELICS[it.id].desc)}</small>`)).join('')}
-        ${sh.potions.map((it, i) => item('potion', it, i, `<span data-tip="${esc(potionTip(it.id))}">${flask(D.POTIONS[it.id].color)}</span><b>${esc(D.POTIONS[it.id].name)}</b><small>${esc(D.POTIONS[it.id].desc)}</small>`)).join('')}
-        <div class="shopitem si-service ${sh.removed ? 'sold' : ''} ${!sh.removed && p.gold < sh.removeCost ? 'poor' : ''}" ${sh.removed || p.gold < sh.removeCost ? '' : 'data-act="removesvc"'}>
-          ${medal(I('scissors', 'relic'), 'big')}<b>Card Removal</b><small>Remove a card from your deck.</small>${sh.removed ? '<span class="price">USED</span>' : `<span class="price ${p.gold < sh.removeCost ? 'poor' : ''}">${I('coin')} ${sh.removeCost}</span>`}</div>
+    if (!ui.shopLine || ui.shopFor !== sh) { ui.shopFor = sh; ui.shopLine = MERCHANT_LINES.hello[Math.floor(Math.random() * MERCHANT_LINES.hello.length)]; }
+    const tag = (price, sold, label) => sold ? `<span class="ptag sold">${label || 'Sold'}</span>` : `<span class="ptag ${p.gold < price ? 'poor' : ''}">${I('coin')} ${price}</span>`;
+    const ware = (kind, it, i, inner, tip, cls = '') => {
+      const poor = !it.sold && p.gold < it.price;
+      const act = it.sold ? '' : poor ? `data-act="buypoor"` : `data-act="buy" data-kind="${kind}" data-index="${i}"`;
+      return `<div class="ware w-${kind} ${cls} ${it.sold ? 'sold' : ''} ${poor ? 'poor' : ''}" ${act} ${tip ? `data-tip="${esc(tip)}"` : ''}>${inner}${tag(it.price, it.sold)}</div>`;
+    };
+    const cards = sh.cards.map((it, i) => ware('card', it, i, `<div class="wcard">${cardHTML({ id: it.id })}</div>`, ''));
+    const trink = (inner, name) => `<span class="wicon">${inner}</span><b class="wname">${esc(name)}</b>`;
+    const relics = sh.relics.map((it, i) => ware('relic', it, i, trink(relicMedal(it.id, 'big'), D.RELICS[it.id].name), relicTip(it.id)));
+    const potions = sh.potions.map((it, i) => ware('potion', it, i, trink(flask(D.POTIONS[it.id].color), D.POTIONS[it.id].name), potionTip(it.id), p.potions.length >= D.POTION_SLOTS ? 'beltfull' : ''));
+    const svc = { price: sh.removeCost, sold: sh.removed };
+    const svcPoor = !svc.sold && p.gold < svc.price;
+    const service = `<div class="ware w-service ${svc.sold ? 'sold' : ''} ${svcPoor ? 'poor' : ''}" ${svc.sold ? '' : svcPoor ? 'data-act="buypoor"' : 'data-act="removesvc"'} data-tip="${esc('<b>Card Removal</b><br>The merchant cuts one card out of your deck for good. Great for Curses and weak starting cards.')}">
+        ${trink(medal(I('scissors', 'relic'), 'big'), 'Card Removal')}${tag(svc.price, svc.sold, 'Used')}</div>`;
+    return `<div class="overlay shopscene" style="--floor:url(${img(D.FLOORS[G.floor].bg)})">
+      <div class="merchant"><div class="mbubble">${esc(ui.shopLine)}</div><img class="msprite" src="${img('merchant')}" alt="The merchant"></div>
+      <div class="rug" style="--rugimg:url(${img('shop_rug')})">
+        <div class="rugwares"><div class="rugrow cards">${cards.join('')}</div><div class="rugrow trinkets">${relics.join('')}${service}${potions.join('')}</div></div>
       </div>
-      ${p.potions.length >= D.POTION_SLOTS ? '<p class="muted">Your potion belt is full (3 slots).</p>' : ''}
-      <button class="btn" data-act="leave">Leave the shop</button></div></div>`;
+      <div class="shopside">
+        <h1>The Merchant</h1>
+        <div class="purse" data-tip="Your gold">${I('coin')} <b>${p.gold}</b></div>
+        ${sh.discount > 0 ? '<span class="chip good">Haggled: prices lowered</span>' : sh.discount < 0 ? '<span class="chip bad">Offended: prices raised</span>' : ''}
+        <p class="muted shophelp">Hover a ware to see what it does. Click to buy.</p>
+        ${p.potions.length >= D.POTION_SLOTS ? '<p class="muted shophelp">Your potion belt is full (3 slots).</p>' : ''}
+        <button class="btn leavebtn" data-act="leave">Leave the shop</button>
+      </div></div>`;
+  }
+  // a bought ware flies to where it ends up (deck counter, potion belt, relic row)
+  function flyWare(el, toSel) {
+    if (!el || ui.fast || reduced()) return;
+    const r = el.getBoundingClientRect(), t = $app.querySelector(toSel), tr = t ? t.getBoundingClientRect() : { left: r.left, top: 0, width: 0, height: 0 };
+    const c = el.cloneNode(true); c.removeAttribute('data-act'); c.removeAttribute('data-tip'); c.classList.add('wareflight');
+    const z = Z();
+    c.style.cssText = `position:fixed;left:${r.left / z}px;top:${r.top / z}px;width:${r.width / z}px;height:${r.height / z}px;margin:0;z-index:90;pointer-events:none`;
+    $fx.appendChild(c);
+    const dx = (tr.left + tr.width / 2 - (r.left + r.width / 2)) / z, dy = (tr.top + tr.height / 2 - (r.top + r.height / 2)) / z;
+    const a = c.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${dx * .3}px,${dy * .3 - 60}px) scale(1.08)`, opacity: 1, offset: .3 },
+      { transform: `translate(${dx}px,${dy}px) scale(.15)`, opacity: .3 }], { duration: 650, easing: 'ease-in' });
+    a.onfinish = () => c.remove(); setTimeout(() => c.remove(), 1600);
   }
   // ---------- main menu, compendium, settings, pause, dialogs ----------
   const ST = window.Settings;
@@ -388,7 +424,7 @@
         </nav>
         <div class="mm-help"><b>How to play:</b> pick a path on the map. In fights you get 3 Energy and draw 5 cards each turn: <b>drag a card up</b> to play it (drag attacks onto a monster) or click it. Icons above monsters show their next move. Press <b>Esc</b> in a run for the menu. Your run saves automatically.</div>
       </div>
-      <div class="mm-ver">v${esc(APP_VER)}${CAN_UPDATE && ui.update && ui.update.state === 'checking' ? ' · checking for updates…' : ''}</div></div>`;
+      <div class="mm-ver">v${esc(APP_VER)}<span class="mm-upd">${updCornerHTML()}</span></div></div>`;
   }
   function creditsHTML() {
     return `<div class="overlay modal-over" data-act="closemodal"><div class="panel credits" data-stop="1">${D20}<h1>Credits</h1>
@@ -479,7 +515,7 @@
       body = row('Reset settings', 'Back to the defaults (audio included)', '<button class="btn small" data-act="dreset">Reset</button>')
         + row('Delete saved run', sv ? 'Current run: ' + saveSummary(sv) : 'No run in progress', `<button class="btn small danger" data-act="dwipe" ${sv ? '' : 'disabled'}>Delete</button>`)
         + row('Reset compendium', `Forget the ${ST.seen.count('monsters')} monsters and ${ST.seen.count('relics')} relics you have seen`, '<button class="btn small danger" data-act="dseen">Reset</button>')
-        + (CAN_UPDATE ? row('Updates', `You have version ${esc(APP_VER)}${ui.update && ui.update.state === 'none' ? ' · up to date' : ''}`, `<button class="btn small" data-act="updcheck" ${ui.update && /checking|downloading/.test(ui.update.state) ? 'disabled' : ''}>${ui.update && ui.update.state === 'checking' ? 'Checking…' : 'Check for updates'}</button>`) : '')
+        + (CAN_UPDATE ? row('Updates', `You have version ${esc(APP_VER)}${ui.update && ui.update.state === 'none' ? ' · up to date' : ''}`, `<button class="btn small" data-act="updcheck" ${ui.update && /checking|preparing|downloading|downloaded/.test(ui.update.state) ? 'disabled' : ''}>${ui.update && ui.update.state === 'checking' ? 'Checking…' : 'Check for updates'}</button>`) : '')
         + `<p class="muted">Everything is stored only on this computer${IS_APP ? ' (in the game\'s app data folder)' : ' (in this browser)'}.</p>`;
     }
     return `<div class="overlay settings-over"><div class="panel settings"><div class="sthead"><h1>${I('gear')} Settings</h1><button class="btn small ghost" data-act="sclose">Close (Esc)</button></div>
@@ -533,30 +569,52 @@
     DISP_API.set(next, confirm).then(onDisplayState);
   }
   // ----- auto-update prompt (desktop app only) -----
+  const mb = (b) => (b / 1048576).toFixed(1);
+  const updPct = (u) => `${u.percent || 0}%${u.total ? ` · ${mb(u.transferred || 0)} / ${mb(u.total)} MB` : ''}${u.bps ? ` · ${mb(u.bps)} MB/s` : ''}`;
+  function updCornerHTML() {   // small status next to the version in the main-menu corner
+    const u = CAN_UPDATE && ui.update; if (!u) return '';
+    if (u.state === 'checking') return ' · <i class="mini-spin"></i> Checking for updates…';
+    if (u.state === 'none' && Date.now() - (ui.updNoneAt || 0) < 4000) return ' · Up to date';
+    if (ui.updateBg && (u.state === 'preparing' || u.state === 'downloading')) return ` · Downloading v${esc(u.version || '')} <b class="mm-updpct">${u.percent || 0}%</b>`;
+    if (ui.updateBg && u.state === 'downloaded') return ` · <button class="btn small" data-act="updrestart">Restart to update to v${esc(u.version || '')}</button>`;
+    return '';
+  }
   function updateHTML() {
-    const u = ui.update, mb = (b) => (b / 1048576).toFixed(1);
+    const u = ui.update;
     let body;
     if (u.state === 'available') body = `<h2>A new version is available</h2><p>Version <b>${esc(u.version)}</b> is ready (you have ${esc(APP_VER)}).<br>Download it and restart the game? Your saved run and settings are kept.</p>
         ${u.notes ? `<p class="muted updnotes">${esc(u.notes)}</p>` : ''}
-        <div class="row"><button class="btn" data-act="upddownload">Download &amp; restart</button><button class="btn ghost" data-act="updlater">Later</button></div>`;
+        <div class="row"><button class="btn" data-act="upddownload">Download &amp; restart</button><button class="btn ghost" data-act="updbg">Download now, restart later</button><button class="btn ghost" data-act="updlater">Later</button></div>`;
+    else if (u.state === 'preparing') body = `<h2>Updating to v${esc(u.version || '')}</h2><div class="updbar indet"><i></i></div><p class="muted updpct">Preparing download…</p>`;
     else if (u.state === 'downloading') body = `<h2>Downloading v${esc(u.version || '')}…</h2>
-        <div class="updbar"><i style="width:${u.percent || 0}%"></i></div><p class="muted updpct">${u.percent || 0}%${u.total ? ` · ${mb(u.transferred || 0)} / ${mb(u.total)} MB` : ''}</p>`;
-    else if (u.state === 'downloaded' || u.state === 'install-requested') body = `<h2>Installing v${esc(u.version || '')}</h2><div class="updbar"><i style="width:100%"></i></div><p>The game will close and restart in a moment…</p>`;
+        <div class="updbar"><i style="width:${u.percent || 0}%"></i></div><p class="muted updpct">${updPct(u)}</p>`;
+    else if (u.state === 'downloaded' || u.state === 'install-requested') body = `<h2>Installing v${esc(u.version || '')}…</h2><div class="spinner"></div><p>The game will restart in a moment.</p>`;
     else body = `<h2>Update failed</h2><p>The update could not be downloaded. You can keep playing; it will try again next time.</p><p class="muted">${/sha512|checksum/i.test(u.message || '') ? 'The download was damaged and was thrown away.' : /net::|ENOTFOUND|ECONN|timeout|offline/i.test(u.message || '') ? 'Lost the internet connection.' : esc((u.message || '').slice(0, 90))}</p><div class="row"><button class="btn" data-act="updlater">OK</button></div>`;
     return `<div class="overlay modal-over confirm-over upd-over"><div class="panel confirm updpanel">${D20}${body}</div></div>`;
   }
   const showUpdatePrompt = () => CAN_UPDATE && ui.update && !ui.updateDismissed && (ui.updateConsent || (ui.update.state === 'available' && (ui.screen === 'title' || ui.updateManual)));
+  function refreshCorner() { const c = $app.querySelector('.mm-upd'); if (c) c.innerHTML = updCornerHTML(); }
+  function startInstall() { if (G && ui.screen === 'game') saveGame();   // never call saveGame() without a run: it would delete the saved one
+    ui.update = Object.assign({}, ui.update, { state: 'downloaded' }); ui.updateConsent = true; ui.updateDismissed = false; render(); setTimeout(() => window.ddApp.update.install(), ui.fast ? 0 : 150); }
   function onUpdateStatus(st) {
+    if (!st || st.state === 'idle' || st.state === 'disabled') return;
     const prev = ui.update; ui.update = st;
-    if (st.state === 'none') { if (ui.updateManual) flashHint('You have the latest version (' + APP_VER + ').'); ui.updateManual = false; }
-    if (st.state === 'error' && !ui.updateConsent) { if (ui.updateManual) flashHint('Could not check for updates (offline?).'); ui.updateManual = false; ui.update = null; }
+    if (ui.updT0 && !ui.updFirstEventAt) ui.updFirstEventAt = performance.now();
+    if (st.state === 'none') { ui.updNoneAt = Date.now(); setTimeout(refreshCorner, 4100); if (ui.updateManual) flashHint('You have the latest version (' + APP_VER + ').'); ui.updateManual = false; }
+    if (st.state === 'error' && !ui.updateConsent) { if (ui.updateManual) flashHint('Could not check for updates (offline?).'); else if (ui.updateBg) flashHint('The update could not be downloaded. It will try again next time.'); ui.updateManual = false; ui.updateBg = false; ui.update = null; }
     if (st.state === 'available' && ui.screen !== 'title' && !ui.updateManual && !(prev && prev.state === 'available')) flashHint('Update ' + st.version + ' is available: see the main menu.');
-    if (st.state === 'downloaded') { saveGame(); setTimeout(() => window.ddApp.update.install(), ui.fast ? 0 : 900); }
-    if (st.state === 'downloading' && $app.querySelector('.upd-over .updbar')) {   // cheap progress update, no full re-render
-      $app.querySelector('.upd-over .updbar i').style.width = (st.percent || 0) + '%';
-      const t = $app.querySelector('.upd-over .updpct'); if (t) t.textContent = (st.percent || 0) + '%' + (st.total ? ` · ${(st.transferred / 1048576).toFixed(1)} / ${(st.total / 1048576).toFixed(1)} MB` : '');
-      return;
+    if (st.state === 'downloaded') {
+      if (ui.updateBg && !ui.updateConsent) { flashHint('Update ' + (st.version || '') + ' is ready. Restart from the main menu (or it installs when you quit).'); refreshCorner(); if (ui.screen === 'title') render(); return; }
+      if (!ui.updateBg || ui.updateConsent) { startInstall(); return; }
     }
+    if (st.state === 'install-requested') { if (!ui.drag) render(); return; }
+    if (st.state === 'downloading' && prev && prev.state === 'downloading') {   // cheap progress update, no full re-render
+      const bar = $app.querySelector('.upd-over .updbar i');
+      if (bar) { bar.style.width = (st.percent || 0) + '%'; const t = $app.querySelector('.upd-over .updpct'); if (t) t.textContent = updPct(st); return; }
+      if (ui.updateBg) { const c = $app.querySelector('.mm-updpct'); if (c) c.textContent = (st.percent || 0) + '%'; return; }
+    }
+    if (ui.updateBg && !ui.updateConsent && ui.screen !== 'title') return;   // background download during a run: stay out of the way
+    if (ui.screen === 'title' && !showUpdatePrompt() && !$app.querySelector('.upd-over') && !ui.settingsTab) { refreshCorner(); return; }   // corner-only change: don't rebuild the animated menu
     if (!ui.drag) render();
   }
   function pauseHTML() {
@@ -660,7 +718,8 @@
     if (ui.modal === 'credits') html += creditsHTML();
     if (ui.modal === 'farewell') html += farewellHTML();
     if (ui.confirm) html += confirmHTML();
-    if (showUpdatePrompt()) html += updateHTML();
+    if (showUpdatePrompt()) { html += updateHTML(); if (!ui.updShownAt) ui.updShownAt = performance.now(); }
+    if (ui.screen === 'title' && !ui.firstMenuAt) ui.firstMenuAt = performance.now();   // timings for the update tests
     if (ui.disp && ui.disp.pending > 0) html += dispPendingHTML();
     $app.innerHTML = html;
     markSeen();
@@ -1047,12 +1106,19 @@
     else if (a === 'quit') { if (IS_APP) window.ddApp.quit(); else { ui.modal = 'farewell'; render(); try { window.close(); } catch (err) {} } }
     else if (a === 'settings') { ui.settingsTab = 'audio'; render(); }
     else if (a === 'updcheck') { ui.updateManual = true; ui.updateDismissed = false; window.ddApp.update.check(); }
-    else if (a === 'upddownload') { ui.updateConsent = true; ui.settingsTab = null; window.ddApp.update.download(); render(); }
+    else if (a === 'upddownload' || a === 'updbg') {   // instant feedback: show "Preparing download…" before electron-updater says anything
+      ui.updT0 = performance.now(); ui.updFirstEventAt = 0;
+      ui.updateBg = a === 'updbg'; ui.updateConsent = a === 'upddownload'; ui.settingsTab = null;
+      ui.update = Object.assign({}, ui.update, { state: 'preparing', percent: 0 });
+      render(); ui.updFeedbackAt = performance.now();
+      window.ddApp.update.download();
+    }
+    else if (a === 'updrestart') startInstall();
     else if (a === 'updlater') { ui.updateDismissed = true; ui.updateConsent = false; ui.updateManual = false; if (ui.update && ui.update.state === 'error') ui.update = null; render(); }
     else if (a === 'stab') { ui.settingsTab = d.tab; if (DISP_API && d.tab === 'display') ui.disp = DISP_API.get(); render(); }
     else if (a === 'dmode') { if (ui.disp && ui.disp.cfg.mode !== d.val) { markResume(); setDisplay({ mode: d.val }, true); } }
     else if (a === 'dvsync') setDisplay({ vsync: !ui.disp.cfg.vsync });
-    else if (a === 'drelaunch') { saveGame(); DISP_API.relaunch(); }
+    else if (a === 'drelaunch') { if (G && ui.screen === 'game') saveGame(); DISP_API.relaunch(); }
     else if (a === 'dcenter') DISP_API.center();
     else if (a === 'dkeep') { DISP_API.keep(); ui.disp.pending = 0; render(); }
     else if (a === 'drevert') { DISP_API.revert(); ui.disp.pending = 0; render(); }
@@ -1082,10 +1148,19 @@
     else if (a === 'evcontinue') go({ type: 'EVENT_CONTINUE' });
     else if (a === 'evpick') go({ type: 'EVENT_PICK', card: d.card });
     else if (a === 'evskip') go({ type: 'EVENT_PICK', card: null });
-    else if (a === 'buy') go({ type: 'BUY', kind: d.kind, index: +d.index }).then(r => { if (!r.ok) flashHint(r.error); });
+    else if (a === 'buy') {
+      const el = t, kind = d.kind;
+      el.classList.add('buying');
+      go({ type: 'BUY', kind, index: +d.index }).then(r => {
+        if (!r.ok) { el.classList.remove('buying'); flashHint(r.error); return; }
+        sfx('gold'); merchantSay('buy');
+      });
+      flyWare(el.querySelector('.wcard') || el.querySelector('.wicon') || el, kind === 'card' ? '.topbar .deckbtn' : kind === 'potion' ? '.topbar .potions' : '.topbar .relics');
+    }
+    else if (a === 'buypoor') { sfx('error'); t.classList.remove('nope'); void t.offsetWidth; t.classList.add('nope'); merchantSay('poor'); }
     else if (a === 'removesvc') { ui.shopRemoving = true; render(); }
     else if (a === 'shopback') { ui.shopRemoving = false; render(); }
-    else if (a === 'shopremove') { ui.shopRemoving = false; go({ type: 'SHOP_REMOVE', card: d.card }).then(() => render()); }
+    else if (a === 'shopremove') { ui.shopRemoving = false; ui.shopLine = MERCHANT_LINES.removed[0]; go({ type: 'SHOP_REMOVE', card: d.card }).then(() => render()); }
     else if (a === 'potion') { ui.potionMenu = ui.potionMenu === +d.slot ? null : +d.slot; render(); }
     else if (a === 'drink') { ui.potionMenu = null; go({ type: 'USE_POTION', slot: +d.slot }).then(r => { if (!r.ok) { flashHint(r.error); render(); } }); }
     else if (a === 'tosspotion') { ui.potionMenu = null; go({ type: 'DISCARD_POTION', slot: +d.slot }); }
@@ -1186,7 +1261,8 @@
     if (el.dataset.dsel === 'size') setDisplay({ size: el.value === 'max' ? null : el.value.split('x').map(Number) }, true);
     else setDisplay({ displayId: Number(el.value) });
   });
-  if (CAN_UPDATE && !ui.fast) { window.ddApp.update.onStatus(onUpdateStatus); setTimeout(() => window.ddApp.update.check(), 2500); }
+  // the app's main process starts the update check the moment it launches: pick up its cached result now, then follow its events
+  if (CAN_UPDATE && !ui.fast) { window.ddApp.update.onStatus(onUpdateStatus); onUpdateStatus(window.ddApp.update.status()); }
   document.addEventListener('mousemove', (e) => {
     if (ui.screen !== 'title' || reduced()) return;
     const m = $app.querySelector('.mainmenu'); if (!m) return;
