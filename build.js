@@ -11,9 +11,14 @@ const assetFiles = fs.readdirSync(here('assets')).filter(f => /\.(webp|svg)$/.te
 const mime = (f) => f.endsWith('.svg') ? 'image/svg+xml' : 'image/webp';
 const assetsMap = (embed) => 'window.ASSETS = ' + JSON.stringify(Object.fromEntries(assetFiles.map(f => [f.replace(/\.(webp|svg)$/, ''),
   embed ? 'data:' + mime(f) + ';base64,' + fs.readFileSync(here('assets', f)).toString('base64') : 'assets/' + f]))) + ';';
+// Approved sound files live in assets/audio/ui/ (trial audio in assets/audio/sfx and music stays git-ignored, so never built in).
+const audioDir = here('assets', 'audio', 'ui');
+const audioFiles = fs.existsSync(audioDir) ? fs.readdirSync(audioDir).filter(f => /\.ogg$/.test(f) && !ignored.has(f)).sort() : [];
+const audioMap = (embed) => 'window.AUDIO_FILES = ' + JSON.stringify(Object.fromEntries(audioFiles.map(f => [f.replace(/\.ogg$/, ''),
+  embed ? 'data:audio/ogg;base64,' + fs.readFileSync(path.join(audioDir, f)).toString('base64') : 'assets/audio/ui/' + f]))) + ';';
 const game = (embed) => src('shell.html')
   .replace('/*@@CSS@@*/', () => src('style.css'))
-  .replace('/*@@ASSETS@@*/', () => assetsMap(embed))
+  .replace('/*@@ASSETS@@*/', () => assetsMap(embed) + '\n' + audioMap(embed))
   .replace('/*@@DATA@@*/', () => src('data.js') + '\n' + src('content.js'))
   .replace('/*@@ENGINE@@*/', () => src('engine.js'))
   .replace('/*@@UI@@*/', () => 'window.GAME_VERSION = ' + JSON.stringify(require('./electron/package.json').version) + ';\n' + src('settings.js') + '\n' + src('icons.js') + '\n' + src('audio.js') + '\n' + src('ui.js'));
@@ -32,11 +37,13 @@ fs.writeFileSync(path.join(dist, 'index.html'), distHtml);
 fs.copyFileSync(here('src', 'manifest.webmanifest'), path.join(dist, 'manifest.webmanifest'));
 const h = crypto.createHash('sha1').update(distHtml);
 for (const f of assetFiles) { const b = fs.readFileSync(here('assets', f)); h.update(b); fs.writeFileSync(path.join(dist, 'assets', f), b); }
+fs.mkdirSync(path.join(dist, 'assets', 'audio', 'ui'), { recursive: true });
+for (const f of audioFiles) { const b = fs.readFileSync(path.join(audioDir, f)); h.update(b); fs.writeFileSync(path.join(dist, 'assets', 'audio', 'ui', f), b); }
 const hash = h.digest('hex').slice(0, 10);
-const files = assetFiles.map(f => `'./assets/${f}'`).join(', ');
+const files = assetFiles.map(f => `'./assets/${f}'`).concat(audioFiles.map(f => `'./assets/audio/ui/${f}'`)).join(', ');
 fs.writeFileSync(path.join(dist, 'sw.js'), src('sw.js').replace('@@HASH@@', hash).replace("'@@ASSET_FILES@@'", files));
 for (const f of fs.readdirSync(here('icons'))) fs.copyFileSync(here('icons', f), path.join(dist, 'icons', f));
 fs.writeFileSync(path.join(dist, '.nojekyll'), '');
 const size = (p) => fs.statSync(p).size;
 const distSize = fs.readdirSync(dist, { recursive: true }).map(f => path.join(dist, f)).filter(p => fs.statSync(p).isFile()).reduce((a, p) => a + size(p), 0);
-console.log(`built index.html (${(single.length / 1e6).toFixed(2)} MB, art embedded) and dist/ (${(distSize / 1e6).toFixed(2)} MB total, ${assetFiles.length} art files, cache ${hash})`);
+console.log(`built index.html (${(single.length / 1e6).toFixed(2)} MB, art embedded) and dist/ (${(distSize / 1e6).toFixed(2)} MB total, ${assetFiles.length} art files, ${audioFiles.length} sound files, cache ${hash})`);

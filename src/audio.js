@@ -1,6 +1,7 @@
 /* ============================================================
- * AUDIO: every sound is synthesized live with WebAudio (no files, no
- * licences). Sfx.play(name) for effects, Sfx.music(floor|'boss'|null)
+ * AUDIO: sounds are synthesized live with WebAudio, except approved recorded
+ * ones in window.AUDIO_FILES (assets/audio/ui/ui_<name>.ogg), which replace the synth
+ * version once decoded and play at their own file volume (no extra gain). Sfx.play(name) for effects, Sfx.music(floor|'boss'|null)
  * for the looping background track. Mute + volume are kept in localStorage.
  * ============================================================ */
 (function () {
@@ -21,7 +22,20 @@
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     applyVol();
+    loadFiles();
     return true;
+  }
+  const buffers = {};
+  function loadFiles() {
+    const files = window.AUDIO_FILES || {};
+    for (const [key, url] of Object.entries(files)) {
+      const name = key.replace(/^ui_/, '');
+      fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(buf => { buffers[name] = buf; })
+        .catch(() => { /* keep the synthesized fallback */ });
+    }
+  }
+  function playFile(buf, t0) {
+    const s = ctx.createBufferSource(); s.buffer = buf; s.connect(sfxBus); s.start(t0);
   }
   function applyVol() {
     if (!master) return;
@@ -71,10 +85,11 @@
   };
   let last = {};
   function play(name) {
-    if (!ctx || cfg.muted || !SFX[name]) return;
+    if (!ctx || cfg.muted || !(SFX[name] || buffers[name])) return;
     const now = ctx.currentTime;
     if (last[name] && now - last[name] < 0.03) return;      // avoid stacking the same sound
-    last[name] = now; SFX[name](now + 0.005);
+    last[name] = now;
+    if (buffers[name]) playFile(buffers[name], now + 0.005); else SFX[name](now + 0.005);
   }
 
   // ---- music: small procedural loops per floor ----

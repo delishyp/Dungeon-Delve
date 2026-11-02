@@ -430,7 +430,7 @@
     return `<div class="overlay modal-over" data-act="closemodal"><div class="panel credits" data-stop="1">${D20}<h1>Credits</h1>
       <p><b>Made by Anna</b> and <b>Gamedev</b>, her game-making assistant.</p>
       <p>Game design inspired by Slay the Spire and Dungeons &amp; Dragons 5e.</p>
-      <p>All art was generated for this game. All music and sound effects are synthesized live in code: no samples, no licences.</p>
+      <p>All art was generated for this game. Music and most sound effects are synthesized live in code. The button click is a recording from Kenney's Interface Sounds (kenney.nl, CC0), softened for this game.</p>
       <p class="muted">Version ${esc(APP_VER)}${IS_APP ? ' · desktop app' : ''}</p>
       <p class="muted">Shared with friends, not for sale. Dungeons &amp; Dragons is a trademark of Wizards of the Coast; this is an unofficial fan project.</p>
       <button class="btn" data-act="closemodal">Back</button></div></div>`;
