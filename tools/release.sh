@@ -35,7 +35,7 @@ api() {  # api METHOD URL [datafile] [content-type]   (auth header goes to curl 
 # -- source to main (the release tag points at it). git gets the token from env via a credential helper.
 [ -d .git ] || { git init -q -b main; git remote add origin "https://github.com/$OWNER/$REPO.git"; }
 git add -A && (git diff --cached --quiet || git -c user.name="Dungeon Delve" -c user.email="dungeon-delve@users.noreply.github.com" commit -qm "Release v$V")
-git grep -n "github_pat_\|ghp_" -- . >/dev/null 2>&1 && { echo "token-like string in repo, aborting"; exit 1; } || true
+git grep -n "github_pat_\|ghp_" -- . ":(exclude)tools/release.sh" >/dev/null 2>&1 && { echo "token-like string in repo, aborting"; exit 1; } || true
 git -c credential.helper= -c credential.helper='!f() { echo username=x-access-token; echo "password=$GH_TOKEN"; }; f' push -q origin main
 # -- release
 TMP=$(mktemp); trap 'rm -f "$TMP" "$TMP.r"' EXIT
