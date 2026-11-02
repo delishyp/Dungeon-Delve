@@ -738,7 +738,7 @@
     const uids = cards.map(c => c.dataset.card);
     if (!n) { ui.lastHand = uids; return; }
     const W = hand.clientWidth, cw = cards[0].offsetWidth;
-    const step = n > 1 ? Math.min(cw * 0.8, (W - cw - 10) / (n - 1)) : 0;
+    const step = n > 1 ? Math.min(cw * 0.94, (W - cw - 10) / (n - 1)) : 0;   // 0.94: neighbours no longer cover the rules text when there is room
     const x0 = (W - (step * (n - 1) + cw)) / 2, mid = (n - 1) / 2, deg = Math.min(5, 30 / n);
     cards.forEach((el, i) => {
       const k = i - mid;

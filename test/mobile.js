@@ -1,6 +1,6 @@
-// Mobile / PWA test with headless Chrome. Needs: python3 -m http.server 8123 in dist/, puppeteer-core in /workspace/tools.
+// Mobile / PWA test with headless Chrome. Needs: python3 -m http.server 8123 in dist/, puppeteer-core (npm install at the repo root).
 // Usage: node test/mobile.js
-const puppeteer = require('/workspace/tools/node_modules/puppeteer-core');
+const puppeteer = require('puppeteer-core');
 const BASE = 'http://localhost:8123/index.html';
 const SHOTS = __dirname + '/../shots/';
 const iPhone = { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true };
@@ -38,7 +38,7 @@ async function layoutChecks(page, label) {
 }
 
 (async () => {
-  const browser = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
+  const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
 
   // 1. In-page selftest (3 runs per class + save/continue) on iPhone with touch
   console.log('iPhone #selftest (touch mode):');

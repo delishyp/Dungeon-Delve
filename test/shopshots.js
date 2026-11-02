@@ -1,9 +1,9 @@
 // node test/shopshots.js [WxH ...] -> shots/shop-<W>x<H>.png (+ -hover, -relictip) and buy / not-enough-gold checks
-const puppeteer = require('/workspace/tools/node_modules/puppeteer-core'); const path = require('path');
+const puppeteer = require('puppeteer-core'); const path = require('path');
 const sizes = (process.argv.slice(2).length ? process.argv.slice(2) : ['3840x1600', '1920x1080', '1440x900']).map(s => s.split('x').map(Number));
 const file = 'file://' + path.resolve(__dirname, '../index.html'); const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
-  const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
+  const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
   for (const [W, H] of sizes) {
     const pg = await b.newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message));
     await pg.setViewport({ width: W, height: H }); await pg.goto(file + '#demo-shop-wizard'); await sleep(1800);

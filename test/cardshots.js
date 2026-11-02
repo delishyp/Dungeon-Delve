@@ -1,10 +1,10 @@
 // node test/cardshots.js  -> desktop screenshots of the new cards (hand fan, hover, drag, rewards, deck, shop) + contact sheet
-const puppeteer = require('/workspace/tools/node_modules/puppeteer-core');
+const puppeteer = require('puppeteer-core');
 const path = require('path'), fs = require('fs');
 const W = 1440, H = 860, url = (h) => 'file://' + path.resolve(__dirname, '../index.html') + '#' + h;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
-  const browser = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
+  const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
   const out = []; const errs = [];
   const open = async (h) => { const pg = await browser.newPage(); pg.on('pageerror', e => errs.push(h + ': ' + e.message)); await pg.setViewport({ width: W, height: H }); await pg.goto(url(h)); await sleep(1600); return pg; };
   const shot = async (pg, name) => { const f = `shots/cards-${name}.png`; await pg.screenshot({ path: f }); out.push(f); };

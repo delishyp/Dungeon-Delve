@@ -1,9 +1,9 @@
 // node test/mapscroll.js [WxH]  -> checks map scrolling without scrollbars; shots/map-<W>x<H>*.png
-const puppeteer = require('/workspace/tools/node_modules/puppeteer-core'); const path = require('path');
+const puppeteer = require('puppeteer-core'); const path = require('path');
 const [W, H] = (process.argv[2] || '3840x1600').split('x').map(Number);
 const file = 'file://' + path.resolve(__dirname, '../index.html'); const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
-  const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
+  const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
   const pg = await b.newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message));
   await pg.setViewport({ width: W, height: H }); await pg.goto(file + '#demo-map-barbarian'); await sleep(1800);
   const st = () => pg.evaluate(() => { const s = document.querySelector('.mapscroll'); return { top: Math.round(s.scrollTop), max: s.scrollHeight - s.clientHeight, sbw: s.offsetWidth - s.clientWidth, cls: s.className, phase: window.__game.state.phase, pos: window.__game.state.pos }; });

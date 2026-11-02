@@ -1,11 +1,11 @@
 // node test/resshots.js [WxH ...]  -> shots/res-<W>x<H>-<view>.png for combat/map/menu/shop/rewards + drag check
-const puppeteer = require('/workspace/tools/node_modules/puppeteer-core');
+const puppeteer = require('puppeteer-core');
 const path = require('path');
 const sizes = (process.argv.slice(2).length ? process.argv.slice(2) : ['3840x1600', '2560x1080', '1920x1080', '1440x900']).map(s => s.split('x').map(Number));
 const file = 'file://' + path.resolve(__dirname, '../index.html');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
-  const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
+  const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
   const errs = [];
   for (const [W, H] of sizes) {
     const shot = async (pg, v) => { await pg.screenshot({ path: `shots/res-${W}x${H}-${v}.png` }); };

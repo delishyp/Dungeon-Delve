@@ -1,8 +1,8 @@
 // node test/shots.js <width> <height> <prefix> hash1 hash2 ...  (desktop single-file screenshots)
-const puppeteer = require('/workspace/tools/node_modules/puppeteer-core');
+const puppeteer = require('puppeteer-core');
 const [w, h, prefix, ...hashes] = process.argv.slice(2);
 (async () => {
-  const browser = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
+  const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
   for (const hash of hashes) {
     const page = await browser.newPage();
     const errs = []; page.on('pageerror', e => errs.push(e.message));

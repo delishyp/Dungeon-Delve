@@ -1,7 +1,7 @@
 // Desktop selftest of the single-file build: node test/selftest.js [url-hash]
-const puppeteer = require('/workspace/tools/node_modules/puppeteer-core');
+const puppeteer = require('puppeteer-core');
 (async () => {
-  const browser = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const page = await browser.newPage();
   const errs = [];
   page.on('pageerror', e => errs.push(e.message));

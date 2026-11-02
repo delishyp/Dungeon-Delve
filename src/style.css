@@ -408,6 +408,7 @@ body.touch .card.selected{transform:translateY(-48px) scale(1.45)!important;z-in
 
 /* ---- hand fan (positions set by layoutHand() in ui.js) ---- */
 .hand .card{position:absolute;bottom:10px;left:0;transform-origin:50% 115%;rotate:var(--rot,0deg);translate:var(--px,0px) var(--fy,0px)}
+.hand .card .cdesc{left:11.5%;right:11.5%}   /* narrower rules text in the fan: neighbouring cards overlap the outer edges */
 .hand .card:hover:not(.dragging):not(.unplayable),.hand .card.hovered:not(.dragging),.hand .card.selected{rotate:0deg;translate:0 calc(var(--cw) * -.32);scale:1.42;z-index:60;transform-origin:50% 100%;
   filter:drop-shadow(0 0 12px #ffd27acc) drop-shadow(0 10px 16px #000)}
 .hand .card.unplayable:hover{rotate:0deg;translate:0 calc(var(--cw) * -.2);scale:1.25;z-index:60;transform-origin:50% 100%}
@@ -611,14 +612,15 @@ body.is-modal #fx .speech,body.is-modal #fx .dmcaption{display:none}
 #app:has(.shopscene) .topbar{z-index:60}
 .overlay.shopscene{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;justify-items:center;gap:12px;padding:64px 18px 14px;overflow:hidden;text-align:left;
   background:radial-gradient(ellipse at 50% 55%,#0000 35%,#000d 95%),linear-gradient(#0b080dd0,#0b080def),var(--floor) center/cover}
-.rug{position:relative;width:min(calc(100 * var(--VW, 1vw) - max(520px, 30 * var(--VW, 1vw))),calc((100 * var(--VH, 1vh) - 150px) * 2.108));aspect-ratio:2.108;container-type:inline-size;background:none!important}
+.rug{position:relative;width:min(calc(100 * var(--VW, 1vw) - max(440px, 27 * var(--VW, 1vw))),calc((100 * var(--VH, 1vh) - 150px) * 2.108));aspect-ratio:2.108;container-type:inline-size;background:none!important}
 .rug::before{content:"";position:absolute;inset:0;background-image:var(--rugimg);background-size:100% 100%;border-radius:6px;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 2.2%,#000 97.8%,transparent);mask-image:linear-gradient(90deg,transparent,#000 2.2%,#000 97.8%,transparent);box-shadow:0 30px 60px #000}
 .rug::after{content:"";position:absolute;inset:4% 3%;box-shadow:0 26px 50px 10px #000c;z-index:-1;border-radius:8px}
 .rugwares{position:absolute;inset:0}
-.rugrow{position:absolute;left:10%;right:10%;display:flex;justify-content:space-evenly;align-items:flex-start}
-.rugrow.cards{top:19%;--cw:10.4cqw}
-.rugrow.trinkets{top:66%}
+.rugrow{position:absolute;left:6%;right:6%;display:flex;justify-content:space-evenly;align-items:flex-start}
+.rugrow.cards{top:13%;--cw:12.6cqw}
+.rugrow.cards .card .cdesc{font-size:calc(var(--cw) * .088);left:7.5%;right:7.5%}   /* bigger rules text on the rug (readable at 1440x900) */
+.rugrow.trinkets{top:67%}
 .ware{position:relative;display:flex;flex-direction:column;align-items:center;gap:.5cqw;cursor:pointer;transition:transform .15s,filter .15s}
 .ware .ptag{position:relative;z-index:3;display:inline-flex;align-items:center;gap:.3em;margin-top:.5cqw;padding:.18em .6em .18em .45em;border-radius:3px 9px 9px 3px;
   background:linear-gradient(#f6e7bd,#cfb27a);color:#3a2410;border:1px solid #6a4a20;font:bold clamp(12px,1.05cqw,24px) Arial,sans-serif;box-shadow:0 3px 6px #000a;white-space:nowrap}
@@ -632,7 +634,7 @@ body.is-modal #fx .speech,body.is-modal #fx .dmcaption{display:none}
 .w-card:not(.sold):hover .wcard{transform:translateY(-10%) scale(1.55)}
 .w-card:not(.sold):hover .ptag{visibility:hidden}
 /* relics, potions, service: icon on a little cloth, name, price tag; hover shows the tooltip */
-.w-relic,.w-potion,.w-service{width:8.6cqw}
+.w-relic,.w-potion,.w-service{width:10.4cqw}
 .ware .wicon{display:flex;align-items:center;justify-content:center;width:6.2cqw;height:6.2cqw;border-radius:50%;background:radial-gradient(#0009,#0000 70%)}
 .ware .wicon .medal.big{width:clamp(48px,4.6cqw,120px);height:clamp(48px,4.6cqw,120px)}.ware .wicon .medal.big>span{font-size:clamp(26px,2.5cqw,64px)}
 .ware .wicon .flask{width:clamp(30px,2.9cqw,74px);height:clamp(42px,4cqw,100px);filter:drop-shadow(0 6px 6px #000c)}

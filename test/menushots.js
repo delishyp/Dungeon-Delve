@@ -1,10 +1,10 @@
 // node test/menushots.js -> desktop screenshots of main menu, settings tabs, pause, compendium, dialogs + contact sheet
-const puppeteer = require('/workspace/tools/node_modules/puppeteer-core');
+const puppeteer = require('puppeteer-core');
 const path = require('path'), fs = require('fs');
 const W = 1440, H = 860, file = 'file://' + path.resolve(__dirname, '../index.html');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
-  const browser = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
+  const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
   const pg = await browser.newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message));
   await pg.setViewport({ width: W, height: H });
   const out = [];
