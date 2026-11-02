@@ -317,7 +317,7 @@
         chomp:    { name: 'Chomp', intent: 'attack', effects: [{ t: 'attack', n: 19 }] },
         disguise: { name: 'Play Dead', intent: 'defend', effects: [{ t: 'block', n: 20 }] },
       }, ai: { opener: 'disguise', pattern: ['adhesive', 'chomp', 'disguise'] } },
-    beholder: { name: 'Vessa the Unsleeping', hp: [140, 140], boss: true,
+    beholder: { name: 'The Watcher', hp: [140, 140], boss: true,
       moves: {
         fear:     { name: 'Fear Ray', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'frightened', n: 3, to: 'target' }] },
         rays:     { name: 'Eye Rays', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 4 }] },
@@ -344,7 +344,7 @@
     cube:         { name: 'Gelatinous Cube', enemies: ['gelatinous_cube'], scene: 'Suspiciously Clean Hall' },
     mind_flayer:  { name: 'The Pale Listener', enemies: ['mind_flayer'], scene: 'The Listening Hall', elite: true },
     mimic:        { name: 'Treasure Mimic', enemies: ['mimic'], scene: 'Treasure Vault?', elite: true },
-    beholder:     { name: 'Vessa the Unsleeping', enemies: ['beholder'], scene: 'The Watching Cavern', boss: true },
+    beholder:     { name: 'The Watcher', enemies: ['beholder'], scene: 'The Watching Cavern', boss: true },
   };
 
   const FLOORS = [

@@ -679,7 +679,7 @@
     const p = P();
     return `<div class="overlay"><div class="panel scene">${win ? `<img class="scene-art" src="${img('ev_treasure')}" alt="">` : `<img class="hero-dead" src="${img(p.heroId)}" alt="">`}
       <h1>${esc(fill(win ? 'You Climbed Out' : 'You Have Fallen'))}</h1>
-      <p>${win ? `Your ${esc(p.name)} conquered the dungeon with ${p.hp}/${p.maxHp} HP, ${p.gold} gold, ${p.relics.length} relics and a ${p.deck.length}-card deck.`
+      <p>${win ? `${esc(fill('{' + p.heroId + '_name}'))} conquered the dungeon with ${p.hp}/${p.maxHp} HP, ${p.gold} gold, ${p.relics.length} relics and a ${p.deck.length}-card deck.`
                : `Slain on ${esc(D.FLOORS[G.floor].name)} by ${esc(D.ENCOUNTERS[G.encounter].name)}, after ${G.stats.fights} victories and ${G.stats.events} strange encounters.`}</p>
       <div class="row"><button class="btn" data-act="classes">${win ? 'Play Again' : 'Try Again'}</button><button class="btn ghost" data-act="title">Main Menu</button></div></div></div>`;
   }

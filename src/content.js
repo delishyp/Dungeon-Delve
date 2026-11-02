@@ -260,11 +260,11 @@
     },
     bossIntro: {
       owlbear: ["The nest is woven from bones, and most of them are small.", "A huge grey shape rises over it: an owlbear, half-bald, with milky eyes.", "The Beast of Saint Brennick spreads her wings. Small skeletons slip out from under them."],
-      beholder: ["A cavern lit by nothing. Feral drow kneel around its edges, all facing the middle.", "A tall figure in a torn veil turns toward you. Eyes open along her arms and throat, all at once.", "VESSA THE UNSLEEPING: \"I see who you were. Oh, I see it. Shall I tell you?\""],
+      beholder: ["A cavern lit by nothing. Feral drow kneel around its edges, all facing the middle.", "A tall figure in a torn veil turns toward you. Eyes open along her arms and throat, all at once.", "THE WATCHER: \"I see who you were. Oh, I see it. Shall I tell you?\""],
     },
     bossDefeat: {
       owlbear: ["The Beast sinks down over her nest and goes still, her wings spread over the bones.", "Behind the nest, a crack in the floor leads down. Deeper. Darker."],
-      beholder: ["VESSA THE UNSLEEPING: \"Dark. Finally, dark.\"", "Every eye closes. At the edges of the cavern, the drow begin to wander off, like animals after a light goes out."],
+      beholder: ["THE WATCHER: \"Dark. Finally, dark.\"", "Every eye closes. At the edges of the cavern, the drow begin to wander off, like animals after a light goes out."],
     },
     victory: {
       fighter: ["You climb out into grey daylight above Saint Brennick.", "{fighter_name} looks at the ring on his finger for a long time. He still doesn't know whose it was."],
