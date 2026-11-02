@@ -1,7 +1,7 @@
 {
   "name": "dungeon-delve",
   "productName": "Dungeon Delve",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "Dungeon Delve: a Dungeons & Dragons deck-builder",
   "author": "Anna",
   "main": "main.js",

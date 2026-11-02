@@ -5,7 +5,9 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const here = (...p) => path.join(__dirname, ...p);
 const src = (f) => fs.readFileSync(here('src', f), 'utf8');
-const assetFiles = fs.readdirSync(here('assets')).filter(f => /\.(webp|svg)$/.test(f)).sort();
+// Art that git ignores (e.g. assets/hero_* work-in-progress listed in .git/info/exclude) is never built in.
+const ignored = (() => { try { return new Set(require('child_process').execFileSync('git', ['ls-files', '--others', '--ignored', '--exclude-standard', '--', 'assets'], { cwd: __dirname }).toString().split('\n').filter(Boolean).map(f => path.basename(f))); } catch (e) { return new Set(); } })();
+const assetFiles = fs.readdirSync(here('assets')).filter(f => /\.(webp|svg)$/.test(f) && !ignored.has(f)).sort();
 const mime = (f) => f.endsWith('.svg') ? 'image/svg+xml' : 'image/webp';
 const assetsMap = (embed) => 'window.ASSETS = ' + JSON.stringify(Object.fromEntries(assetFiles.map(f => [f.replace(/\.(webp|svg)$/, ''),
   embed ? 'data:' + mime(f) + ';base64,' + fs.readFileSync(here('assets', f)).toString('base64') : 'assets/' + f]))) + ';';
