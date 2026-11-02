@@ -11,7 +11,7 @@ for (const hero of Object.keys(D.HEROES)) {
   const seen = [];
   for (let t = 1; t <= 7; t++) {
     const i = E.describeIntent(s, s.enemies[0]); seen.push(s.enemies[0].intent.move);
-    if (seen[t - 1] === 'slam') ok((t !== 3 || i.damage === 24) && i.cards === 2 && i.cardName === 'Broken Bone', 'slam intent shows 24 dmg and 2 cards ' + JSON.stringify(i) + JSON.stringify(p.statuses));
+    if (seen[t - 1] === 'slam') ok(i.damage === 24 && i.cards === 2 && i.cardName === 'Broken Bone', 'slam intent shows 24 dmg and 2 cards ' + JSON.stringify(i) + JSON.stringify(p.statuses));
     p.hp = p.maxHp; // keep the hero alive while we only end turns
     const r = E.dispatch(s, { type: 'END_TURN', player: p.uid }); ok(r.ok, 'end turn ' + r.error); E.takeEvents(s);
     if (t === 3) {

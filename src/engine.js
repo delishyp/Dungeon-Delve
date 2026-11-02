@@ -550,7 +550,13 @@
   function describeIntent(s, e) {
     if (!e.intent) return null;
     const mv = D.MONSTERS[e.monsterId].moves[e.intent.move];
-    const tgt = find(s, e.intent.target);
+    let tgt = find(s, e.intent.target);
+    // The hero's statuses tick down at the end of their turn, before enemies act: show the hit as it will land.
+    if (tgt && tgt.side !== 'enemy' && !tgt.endedTurn) {
+      const st = { ...tgt.statuses };
+      for (const k of Object.keys(st)) if (D.STATUSES[k].decays && !(tgt.fresh || {})[k]) { st[k]--; if (st[k] <= 0) delete st[k]; }
+      tgt = { ...tgt, statuses: st };
+    }
     const out = { kind: mv.intent, name: mv.name, damage: null, times: 1, block: 0, debuff: false, buff: false };
     for (const fx of mv.effects) {
       if (fx.t === 'attack') { out.damage = attackDamage(e, tgt, fx.n); out.times = fx.times || 1; }
