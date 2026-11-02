@@ -1,0 +1,81 @@
+{
+  "name": "dungeon-delve",
+  "productName": "Dungeon Delve",
+  "version": "2.4.0",
+  "description": "Dungeon Delve: a Dungeons & Dragons deck-builder",
+  "author": "Anna",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis portable zip --x64",
+    "dist:linux": "electron-builder --linux dir --x64"
+  },
+  "build": {
+    "appId": "com.anna.dungeondelve",
+    "productName": "Dungeon Delve",
+    "copyright": "Made by Anna",
+    "directories": {
+      "output": "../release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "app/**",
+      "build/icon.png"
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "electronLanguages": [
+      "en-US"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis",
+        "portable",
+        "zip"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Dungeon Delve",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "DungeonDelve-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "DungeonDelve-Portable-${version}.exe"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "dir"
+      ],
+      "category": "Game"
+    },
+    "afterPack": "./afterPack.js",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "delishyp",
+        "repo": "Dungeon-Delve",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "resedit": "^1.7.2"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  }
+}

@@ -1,0 +1,15 @@
+node_modules/
+electron/node_modules/
+electron/app/
+release/
+dist/
+index.html
+art/
+shots/
+tools/esr/
+*.pth
+*.exe
+*.zip
+*.7z
+.env
+__pycache__/
