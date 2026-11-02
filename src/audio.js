@@ -1,6 +1,6 @@
 /* ============================================================
  * AUDIO: sounds are synthesized live with WebAudio, except approved recorded
- * ones in window.AUDIO_FILES (assets/audio/ui/ui_<name>.ogg), which replace the synth
+ * ones in window.AUDIO_FILES (assets/audio/game/<name>.ogg, ui_ prefix optional), which replace the synth
  * version once decoded and play at their own file volume (no extra gain). Sfx.play(name) for effects, Sfx.music(floor|'boss'|null)
  * for the looping background track. Mute + volume are kept in localStorage.
  * ============================================================ */
@@ -122,7 +122,7 @@
     if (song) timer = setInterval(sched, 90);
   }
   window.Sfx = {
-    play, music,
+    play, music, has: (name) => !!buffers[name],
     get muted() { return cfg.muted; }, get volume() { return cfg.vol; },
     setMuted(m) { cfg.muted = !!m; save(); applyVol(); },
     setVolume(v) { cfg.vol = Math.max(0, Math.min(1, v)); if (cfg.vol > 0) cfg.muted = false; save(); applyVol(); },

@@ -430,7 +430,7 @@
     return `<div class="overlay modal-over" data-act="closemodal"><div class="panel credits" data-stop="1">${D20}<h1>Credits</h1>
       <p><b>Made by Anna</b> and <b>Gamedev</b>, her game-making assistant.</p>
       <p>Game design inspired by Slay the Spire and Dungeons &amp; Dragons 5e.</p>
-      <p>All art was generated for this game. Music and most sound effects are synthesized live in code. The button click is a recording from Kenney's Interface Sounds (kenney.nl, CC0), softened for this game.</p>
+      <p>All art was generated for this game. Music and most sound effects are synthesized live in code. The button click and hover come from Kenney's Interface Sounds (kenney.nl, CC0), softened for this game, and Fireball adds a CC0 firework recording (opengameart.org).</p>
       <p class="muted">Version ${esc(APP_VER)}${IS_APP ? ' · desktop app' : ''}</p>
       <p class="muted">Shared with friends, not for sale. Dungeons &amp; Dragons is a trademark of Wizards of the Coast; this is an unofficial fan project.</p>
       <button class="btn" data-act="closemodal">Back</button></div></div>`;
@@ -839,13 +839,13 @@
     $app.appendChild(b); setTimeout(() => b.remove(), 1000);
   }
   function lunge(uid) { const u = E.find(G, uid); if (u) anim(wrapOf(uid), u.side === 'enemy' ? 'lunge-left' : 'lunge-right'); }
-  function showEvent(ev, live) {
+  function showEvent(ev, live, quiet) {
     if (ev.kind === 'hit') {
       const big = ev.amount >= 12;
-      if (ev.amount > 0) { floatAt(ev.target, '-' + ev.amount, big ? 'dmg big' : 'dmg'); anim(wrapOf(ev.target), 'hit'); anim(spriteOf(ev.target), 'flash'); sfx(big ? 'bigHit' : 'hit'); if (big && !reduced() && ST.get('shake')) anim($app, 'shake-screen'); }
+      if (ev.amount > 0) { floatAt(ev.target, '-' + ev.amount, big ? 'dmg big' : 'dmg'); anim(wrapOf(ev.target), 'hit'); anim(spriteOf(ev.target), 'flash'); if (!quiet) sfx(big ? 'bigHit' : 'hit'); if (big && !reduced() && ST.get('shake')) anim($app, 'shake-screen'); }
       else if (ev.blocked > 0) { floatAt(ev.target, 'Blocked', 'zero'); anim(spriteOf(ev.target), 'glow-block'); sfx('blocked'); }
       if (live) updateBar(ev.target, ev.hp, ev.block);
-    } else if (ev.kind === 'cardPlayed') { sfx('card'); if (D.CARDS[ev.card].type === 'attack') lunge(ev.source); }
+    } else if (ev.kind === 'cardPlayed') { const cs = CARD_SOUNDS[ev.card]; sfx(cs && S.has && S.has(cs.sound) ? cs.sound : 'card'); if (D.CARDS[ev.card].type === 'attack') lunge(ev.source); }
     else if (ev.kind === 'block') { sfx('block'); floatAt(ev.target, '+' + ev.amount + ' Block', 'blk'); anim(spriteOf(ev.target), 'glow-block'); if (live) updateBar(ev.target, ev.hp, ev.block); }
     else if (ev.kind === 'heal' && ev.amount > 0) { sfx('heal'); floatAt(ev.target, '+' + ev.amount, 'heal'); anim(spriteOf(ev.target), 'glow-heal'); if (live) updateBar(ev.target, ev.hp, ev.block); }
     else if (ev.kind === 'status') {
@@ -865,7 +865,17 @@
       const m = document.createElement('div'); m.className = 'movename'; m.textContent = ev.name; el.appendChild(m);
     }
   }
-  const playEvents = (events) => events.forEach((ev, i) => setTimeout(() => showEvent(ev, false), ui.fast ? 0 : 60 + i * 90));
+  // A card with its own recorded sound (e.g. Fireball) replaces the generic card + hit sounds, and its hits land on the sound's impact.
+  const CARD_SOUNDS = { fireball: { sound: 'spell_fireball', impact: 380 } };
+  const playEvents = (events) => {
+    let t = 60, own = null;
+    for (const ev of events) {
+      const at = t, quiet = !!own;
+      setTimeout(() => showEvent(ev, false, quiet), ui.fast ? 0 : at);
+      if (ev.kind === 'cardPlayed') { const cs = CARD_SOUNDS[ev.card]; own = cs && S.has && S.has(cs.sound) ? cs : null; t += own ? own.impact : 90; }
+      else if (!(own && ev.kind === 'hit')) t += 90;   // an explosion's hits land together
+    }
+  };
 
   // ---------- actions ----------
   async function act(action) {

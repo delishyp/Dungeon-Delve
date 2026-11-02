@@ -11,11 +11,11 @@ const assetFiles = fs.readdirSync(here('assets')).filter(f => /\.(webp|svg)$/.te
 const mime = (f) => f.endsWith('.svg') ? 'image/svg+xml' : 'image/webp';
 const assetsMap = (embed) => 'window.ASSETS = ' + JSON.stringify(Object.fromEntries(assetFiles.map(f => [f.replace(/\.(webp|svg)$/, ''),
   embed ? 'data:' + mime(f) + ';base64,' + fs.readFileSync(here('assets', f)).toString('base64') : 'assets/' + f]))) + ';';
-// Approved sound files live in assets/audio/ui/ (trial audio in assets/audio/sfx and music stays git-ignored, so never built in).
-const audioDir = here('assets', 'audio', 'ui');
+// Approved sound files live in assets/audio/game/ (trial audio in assets/audio/sfx and music stays git-ignored, so never built in).
+const audioDir = here('assets', 'audio', 'game');
 const audioFiles = fs.existsSync(audioDir) ? fs.readdirSync(audioDir).filter(f => /\.ogg$/.test(f) && !ignored.has(f)).sort() : [];
 const audioMap = (embed) => 'window.AUDIO_FILES = ' + JSON.stringify(Object.fromEntries(audioFiles.map(f => [f.replace(/\.ogg$/, ''),
-  embed ? 'data:audio/ogg;base64,' + fs.readFileSync(path.join(audioDir, f)).toString('base64') : 'assets/audio/ui/' + f]))) + ';';
+  embed ? 'data:audio/ogg;base64,' + fs.readFileSync(path.join(audioDir, f)).toString('base64') : 'assets/audio/game/' + f]))) + ';';
 const game = (embed) => src('shell.html')
   .replace('/*@@CSS@@*/', () => src('style.css'))
   .replace('/*@@ASSETS@@*/', () => assetsMap(embed) + '\n' + audioMap(embed))
@@ -37,10 +37,10 @@ fs.writeFileSync(path.join(dist, 'index.html'), distHtml);
 fs.copyFileSync(here('src', 'manifest.webmanifest'), path.join(dist, 'manifest.webmanifest'));
 const h = crypto.createHash('sha1').update(distHtml);
 for (const f of assetFiles) { const b = fs.readFileSync(here('assets', f)); h.update(b); fs.writeFileSync(path.join(dist, 'assets', f), b); }
-fs.mkdirSync(path.join(dist, 'assets', 'audio', 'ui'), { recursive: true });
-for (const f of audioFiles) { const b = fs.readFileSync(path.join(audioDir, f)); h.update(b); fs.writeFileSync(path.join(dist, 'assets', 'audio', 'ui', f), b); }
+fs.mkdirSync(path.join(dist, 'assets', 'audio', 'game'), { recursive: true });
+for (const f of audioFiles) { const b = fs.readFileSync(path.join(audioDir, f)); h.update(b); fs.writeFileSync(path.join(dist, 'assets', 'audio', 'game', f), b); }
 const hash = h.digest('hex').slice(0, 10);
-const files = assetFiles.map(f => `'./assets/${f}'`).concat(audioFiles.map(f => `'./assets/audio/ui/${f}'`)).join(', ');
+const files = assetFiles.map(f => `'./assets/${f}'`).concat(audioFiles.map(f => `'./assets/audio/game/${f}'`)).join(', ');
 fs.writeFileSync(path.join(dist, 'sw.js'), src('sw.js').replace('@@HASH@@', hash).replace("'@@ASSET_FILES@@'", files));
 for (const f of fs.readdirSync(here('icons'))) fs.copyFileSync(here('icons', f), path.join(dist, 'icons', f));
 fs.writeFileSync(path.join(dist, '.nojekyll'), '');
