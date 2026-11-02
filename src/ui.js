@@ -324,7 +324,8 @@
     const body = ev.stage === 'choose'
       ? `<p class="dm">${esc(def.text)}</p><div class="evchoices">${def.choices.map((c, i) => {
           const ok = E.choiceAllowed(p, c);
-          return `<button class="evchoice ${ok ? '' : 'disabled'}" ${ok ? `data-act="evchoice" data-choice="${i}"` : 'disabled'}><b>[${esc(c.label)}]</b> <span>${esc(c.hint || '')}${ok ? '' : ' (you can\'t afford this)'}</span></button>`;
+          // endsRun: a choice that ends the run gets the standard run-ending style (art/STYLE_GUIDE.md "Run-ending choice text")
+          return `<button class="evchoice ${ok ? '' : 'disabled'} ${c.endsRun ? 'ends-run' : ''}" ${ok ? `data-act="evchoice" data-choice="${i}"` : 'disabled'}><b>[${esc(c.label)}]</b> <span>${esc(c.hint || '')}${ok ? '' : ' (you can\'t afford this)'}</span>${c.endsRun ? ' <em class="ends-run-tag">(Ends your run)</em>' : ''}</button>`;
         }).join('')}</div>`
       : `<p class="dm chosen">» ${esc(def.choices[ev.choice].label)}</p><p class="dm">${esc(ev.result || '')}</p>
          <div class="evlog">${ev.log.map(l => `<span class="chip ${/^-|Curse/.test(l) ? 'bad' : 'good'}">${esc(l)}</span>`).join('')}</div>
