@@ -3,7 +3,7 @@ const puppeteer = require('puppeteer-core');
 // ---- 2.4.4 text checks: placeholders filled, no old (borrowed) names in player-visible text ----
 function textChecks() {
   const fs = require('fs'), path = require('path');
-  const OLD = ['Xanathar', 'Aldric', 'Waterdeep', 'Grukka', 'Elaria', 'Underdark', 'Tymora', 'Yawning Portal', 'Myconid', 'Illithid', 'Beholder', 'Mind Flayer', 'Eye Tyrant', 'Yeenoghu', 'Lolth', 'Elder Brain', 'Candlekeep', 'Deck of Many Things'];
+  const OLD = ['Xanathar', 'Aldric', 'Waterdeep', 'Grukka', 'Elaria', 'Underdark', 'Tymora', 'Yawning Portal', 'Myconid', 'Illithid', 'Beholder', 'Mind Flayer', 'Eye Tyrant', 'Yeenoghu', 'Lolth', 'Elder Brain', 'Candlekeep', 'Deck of Many Things', 'Vessa'];
   const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf8');
   global.window = global; const D = require('../src/data.js'); require('../src/content.js');
   const fails = [];
