@@ -24,6 +24,7 @@
   document.body.classList.toggle('touch', TOUCH);
   const pickOne = (arr) => arr[Math.floor(Math.random() * arr.length)];
   const img = (k) => A[k] || '';
+  const fill = (t) => D.fillNames ? D.fillNames(t) : t;   // {fighter_name} etc. in any shown story/event text
 
   // ---------- autosave (phones kill background tabs) ----------
   const SAVE_KEY = 'dungeon-delve-save-v3';
@@ -323,11 +324,11 @@
         : pickGridHTML('Choose a card to remove', 'It is gone from your deck forever. Curses are good choices.', removeCards(p, 'evpick'), 'evskip');
     }
     const body = ev.stage === 'choose'
-      ? `<p class="dm">${esc(def.text)}</p><div class="evchoices">${def.choices.map((c, i) => {
+      ? `<p class="dm">${esc(fill(def.text))}</p><div class="evchoices">${def.choices.map((c, i) => {
           const ok = E.choiceAllowed(p, c);
-          return `<button class="evchoice ${ok ? '' : 'disabled'}" ${ok ? `data-act="evchoice" data-choice="${i}"` : 'disabled'}><b>[${esc(c.label)}]</b> <span>${esc(c.hint || '')}${ok ? '' : ' (you can\'t afford this)'}</span></button>`;
+          return `<button class="evchoice ${ok ? '' : 'disabled'}" ${ok ? `data-act="evchoice" data-choice="${i}"` : 'disabled'}><b>[${esc(fill(c.label))}]</b> <span>${esc(fill(c.hint || ''))}${ok ? '' : ' (you can\'t afford this)'}</span></button>`;
         }).join('')}</div>`
-      : `<p class="dm chosen">» ${esc(def.choices[ev.choice].label)}</p><p class="dm">${esc(ev.result || '')}</p>
+      : `<p class="dm chosen">» ${esc(fill(def.choices[ev.choice].label))}</p><p class="dm">${esc(fill(ev.result || ''))}</p>
          <div class="evlog">${ev.log.map(l => `<span class="chip ${/^-|Curse/.test(l) ? 'bad' : 'good'}">${esc(l)}</span>`).join('')}</div>
          <button class="btn" data-act="evcontinue">${ev.next && ev.next.fight ? I('swords') + ' Fight!' : ev.next && ev.next.shop ? 'Browse the wares' : 'Continue'}</button>`;
     return `<div class="overlay"><div class="panel event"><img class="scene-art" src="${img(def.art)}" alt=""><div class="evtext"><h1>${esc(def.name)}</h1>${body}</div></div></div>`;
@@ -677,7 +678,7 @@
   function endHTML(win) {
     const p = P();
     return `<div class="overlay"><div class="panel scene">${win ? `<img class="scene-art" src="${img('ev_treasure')}" alt="">` : `<img class="hero-dead" src="${img(p.heroId)}" alt="">`}
-      <h1>${win ? 'The Eye Tyrant Falls!' : 'You Have Fallen'}</h1>
+      <h1>${esc(fill(win ? 'You Climbed Out' : 'You Have Fallen'))}</h1>
       <p>${win ? `Your ${esc(p.name)} conquered the dungeon with ${p.hp}/${p.maxHp} HP, ${p.gold} gold, ${p.relics.length} relics and a ${p.deck.length}-card deck.`
                : `Slain on ${esc(D.FLOORS[G.floor].name)} by ${esc(D.ENCOUNTERS[G.encounter].name)}, after ${G.stats.fights} victories and ${G.stats.events} strange encounters.`}</p>
       <div class="row"><button class="btn" data-act="classes">${win ? 'Play Again' : 'Try Again'}</button><button class="btn ghost" data-act="title">Main Menu</button></div></div></div>`;
@@ -786,22 +787,22 @@
   // lines: [{text, who?}] ; resolves when the player taps through
   function tell(lines) {
     if (!lines || !lines.length || (ST.get('skipNarration') && !ui.fast)) return Promise.resolve();
-    return new Promise(res => { ui.story = { lines: lines.map(l => typeof l === 'string' ? { text: l } : l), i: 0, done: res }; render(); });
+    return new Promise(res => { ui.story = { lines: lines.map(l => typeof l === 'string' ? { text: fill(l) } : { ...l, text: fill(l.text) }), i: 0, done: res }; render(); });
   }
   function advanceStory(all) {
     const st = ui.story; if (!st) return;
     if (!all && st.i < st.lines.length - 1) { st.i++; render(); return; }
     ui.story = null; render(); st.done();
   }
-  const bossLines = (id, which) => D.STORY[which][id].map(t => ({ text: t, who: /^[A-Z]+:/.test(t) ? id : null }));
+  const bossLines = (id, which) => D.STORY[which][id].map(t => ({ text: t, who: /^[A-Z][A-Z ]*:/.test(t) ? id : null }));
   function dmCaption(text) {
-    const c = document.createElement('div'); c.className = 'dmcaption'; c.textContent = text;
+    const c = document.createElement('div'); c.className = 'dmcaption'; c.textContent = fill(text);
     $fx.appendChild(c); setTimeout(() => c.remove(), ui.fast ? 50 : 3800);
   }
   function speech(uid, text) {
     const el = unitEl(uid); if (!el) return;
     const r = el.querySelector('.sprite').getBoundingClientRect();
-    const b = document.createElement('div'); b.className = 'speech'; b.textContent = text;
+    const b = document.createElement('div'); b.className = 'speech'; b.textContent = fill(text);
     b.style.left = (r.left + r.width / 2) / Z() + 'px'; b.style.top = Math.max(70, (r.top - 6) / Z()) + 'px';
     $fx.appendChild(b); setTimeout(() => b.remove(), ui.fast ? 50 : 3200);
   }

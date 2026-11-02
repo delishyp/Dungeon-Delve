@@ -250,7 +250,7 @@
       moves: {
         rampage: { name: 'Rampage', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 2 }] },
         bite:    { name: 'Savage Bite', intent: 'attack', effects: [{ t: 'attack', n: 9 }] },
-        howl:    { name: 'Howl of Yeenoghu', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }, { t: 'block', n: 5 }] },
+        howl:    { name: 'Blood Howl', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }, { t: 'block', n: 5 }] },
       }, ai: { opener: 'howl', weights: { rampage: 50, bite: 50 }, noRepeat: true } },
     bugbear: { name: 'Bugbear', hp: [52, 56], elite: true,
       moves: {
@@ -304,7 +304,7 @@
         pseudo: { name: 'Pseudopod', intent: 'attack', effects: [{ t: 'attack', n: 12 }] },
         quiver: { name: 'Quiver', intent: 'defend', effects: [{ t: 'block', n: 15 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
       }, ai: { pattern: ['pseudo', 'engulf', 'quiver'] } },
-    mind_flayer: { name: 'Mind Flayer', hp: [92, 96], elite: true,
+    mind_flayer: { name: 'The Pale Listener', hp: [92, 96], elite: true,
       moves: {
         blast:   { name: 'Mind Blast', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'frightened', n: 2, to: 'target' }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
         tentacle:{ name: 'Tentacles', intent: 'attack', effects: [{ t: 'attack', n: 6, times: 2 }] },
@@ -317,7 +317,7 @@
         chomp:    { name: 'Chomp', intent: 'attack', effects: [{ t: 'attack', n: 19 }] },
         disguise: { name: 'Play Dead', intent: 'defend', effects: [{ t: 'block', n: 20 }] },
       }, ai: { opener: 'disguise', pattern: ['adhesive', 'chomp', 'disguise'] } },
-    beholder: { name: 'Beholder', hp: [140, 140], boss: true,
+    beholder: { name: 'Vessa the Unsleeping', hp: [140, 140], boss: true,
       moves: {
         fear:     { name: 'Fear Ray', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'frightened', n: 3, to: 'target' }] },
         rays:     { name: 'Eye Rays', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 4 }] },
@@ -339,18 +339,18 @@
     ogre:         { name: 'Ogre Brute', enemies: ['ogre'], scene: 'Ogre Larder', elite: true },
     owlbear:      { name: 'The Owlbear Den', enemies: ['owlbear'], scene: 'Owlbear Den', boss: true },
     ghouls:       { name: 'Ghoul Pack', enemies: ['ghoul', 'ghoul'], scene: 'Charnel Pit' },
-    drow_patrol:  { name: 'Drow Patrol', enemies: ['drow', 'drow_mage'], scene: 'Underdark Tunnels' },
+    drow_patrol:  { name: 'Drow Patrol', enemies: ['drow', 'drow_mage'], scene: 'Deep Tunnels' },
     troll:        { name: 'Cave Troll', enemies: ['troll'], scene: 'Troll Bridge' },
     cube:         { name: 'Gelatinous Cube', enemies: ['gelatinous_cube'], scene: 'Suspiciously Clean Hall' },
-    mind_flayer:  { name: 'Mind Flayer', enemies: ['mind_flayer'], scene: 'Elder Brain Antechamber', elite: true },
+    mind_flayer:  { name: 'The Pale Listener', enemies: ['mind_flayer'], scene: 'The Listening Hall', elite: true },
     mimic:        { name: 'Treasure Mimic', enemies: ['mimic'], scene: 'Treasure Vault?', elite: true },
-    beholder:     { name: 'Xanathar the Beholder', enemies: ['beholder'], scene: 'Eye Tyrant\'s Lair', boss: true },
+    beholder:     { name: 'Vessa the Unsleeping', enemies: ['beholder'], scene: 'The Watching Cavern', boss: true },
   };
 
   const FLOORS = [
-    { name: 'Floor 1: The Goblin Warrens', easy: ['lone_goblin', 'rat_swarm', 'kobolds'], hard: ['goblin_pack', 'skeletons', 'gnolls'],
+    { name: 'Floor 1', easy: ['lone_goblin', 'rat_swarm', 'kobolds'], hard: ['goblin_pack', 'skeletons', 'gnolls'],
       elites: ['bugbear', 'ogre'], boss: 'owlbear', gold: { fight: [10, 18], elite: [28, 36], boss: [60, 75] } },
-    { name: 'Floor 2: The Underdark', easy: ['ghouls', 'drow_patrol'], hard: ['troll', 'cube', 'drow_patrol'],
+    { name: 'Floor 2', easy: ['ghouls', 'drow_patrol'], hard: ['troll', 'cube', 'drow_patrol'],
       elites: ['mind_flayer', 'mimic'], boss: 'beholder', gold: { fight: [16, 24], elite: [36, 46], boss: [100, 120] } },
   ];
 

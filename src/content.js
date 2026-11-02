@@ -21,7 +21,7 @@
       desc: 'Unplayable. If this is in your hand at the end of your turn, lose 2 HP.', effects: [] },
     curse_hex:      { cls: 'curse', name: 'Hex of Misfortune', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. Clogs your hand.', effects: [] },
-    curse_whispers: { cls: 'curse', name: 'Illithid Whispers', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true, endTurnHpLoss: 1,
+    curse_whispers: { cls: 'curse', name: 'Whispers Behind the Eye', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true, endTurnHpLoss: 1,
       desc: 'Unplayable. If this is in your hand at the end of your turn, lose 1 HP.', effects: [] },
     curse_guilt:    { cls: 'curse', name: 'Guilty Conscience', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. You know what you did.', effects: [] },
@@ -43,8 +43,8 @@
   // ---------- new relics (special ones never appear randomly) ----------
   Object.assign(D.RELICS, {
     smiling_mask:     { name: 'Mask of the Smiling Merchant', hook: 'passive', effects: [], desc: 'Shop prices are 20% lower.' },
-    illithid_tadpole: { name: 'Illithid Tadpole', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane (+2 damage per hit). It whispers to you…' },
-    tymora_coin:      { name: "Tymora's Lucky Coin", hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
+    illithid_tadpole: { name: 'The Worm Behind the Eye', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane (+2 damage per hit). It whispers to you…' },
+    tymora_coin:      { name: 'Lucky Coin', hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
     wyrm_scale:       { name: 'Red Wyrmling Scale', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'armor', n: 2, to: 'self' }, { t: 'status', status: 'thorns', n: 1, to: 'self' }], desc: 'Start each fight with 2 Armor and 1 Retaliate.' },
   });
 
@@ -101,15 +101,15 @@
 
   // ---------- events ----------
   D.EVENTS = {
-    shrine_tymora: { name: 'Shrine of Tymora', art: 'ev_tymora',
-      text: 'A small shrine to Tymora, Lady Luck, glitters with offered coins. A carved face smiles at you, as if daring you to try your luck.',
+    shrine_tymora: { name: 'The Wayside Shrine', art: 'ev_tymora',
+      text: 'A small shrine glitters with offered coins. Nobody remembers which saint it was for. A carved face smiles at you, as if daring you to try your luck.',
       choices: [
-        { label: 'Flip a coin', hint: 'Pay 15 gold. 50%: Tymora\'s Lucky Coin (relic). 50%: nothing.', req: { gold: 15 },
+        { label: 'Flip a coin', hint: 'Pay 15 gold. 50%: Lucky Coin (relic). 50%: nothing.', req: { gold: 15 },
           ops: { gold: -15 }, chance: [
             { w: 50, relic: 'tymora_coin', text: 'The coin lands on its edge. A warm laugh echoes, and a lucky coin is pressed into your palm.' },
-            { w: 50, text: 'The coin lands face down and vanishes. Lady Luck is busy today.' }] },
+            { w: 50, text: 'The coin lands face down and vanishes. Nothing answers.' }] },
         { label: 'Pray', hint: 'Upgrade a random card.', ops: { upgradeRandom: 1, text: 'You kneel. When you rise, one of your techniques feels sharper, blessed.' } },
-        { label: 'Leave', hint: 'Never tempt fate.', ops: { text: 'You leave the shrine be. Somewhere, a goddess shrugs.' } }] },
+        { label: 'Leave', hint: 'Never tempt fate.', ops: { text: 'You leave the shrine be. The carved face keeps smiling.' } }] },
     talking_skull: { name: 'The Talking Skull', art: 'ev_skull',
       text: '"Psst! You! Yes, you with the face!" A grinning skull on a pedestal clacks its jaw. "I know secrets. Secrets cost blood. Just a little."',
       choices: [
@@ -156,8 +156,8 @@
           { w: 40, fight: 'wyrmling', fightType: 'elite', text: 'A coin slips. Clink. One golden eye opens. "THIEF!"' }] },
         { label: 'Attack it in its sleep', hint: 'Elite fight. Win: its scale (relic) + elite rewards.', ops: { fight: 'wyrmling', fightType: 'elite', relicAfter: 'wyrm_scale', text: 'You strike first. The wyrmling wakes up VERY angry.' } },
         { label: 'Tiptoe away', hint: 'Let sleeping dragons lie.', ops: { text: 'Wise. Very wise.' } }] },
-    deck_many_things: { name: 'The Deck of Many Things', art: 'ev_deck',
-      text: 'Four glowing cards hover over a velvet table. The legendary Deck of Many Things. Draw one, and fate decides. People have become kings… or vanished.',
+    deck_many_things: { name: 'The Fortune Deck', art: 'ev_deck',
+      text: 'Four glowing cards hover over a velvet table. Draw one, and fate decides. People have become kings... or vanished.',
       choices: [
         { label: 'Draw a card', hint: 'Anything can happen.', chance: [
           { w: 20, relic: 'random', gold: 30, text: 'THE SUN. Golden light! Treasure appears at your feet.' },
@@ -190,7 +190,7 @@
         { label: 'Offer your blood', hint: 'Lose 10 HP. Upgrade 2 random cards.', req: { hp: 11 }, ops: { hp: -10, upgradeRandom: 2, text: 'The altar drinks deeply. Dark power seeps into your skills.' } },
         { label: 'Desecrate it', hint: 'Fight its undead guardians.', ops: { fight: 'altar_dead', fightType: 'fight', text: 'You kick the altar over. Bones rise from the floor to defend it!' } },
         { label: 'Leave', hint: '', ops: { text: 'Some things are best left alone.' } }] },
-    yawning_portal: { name: 'The Yawning Portal', art: 'ev_tavern',
+    yawning_portal: { name: 'The Sunken Tavern', art: 'ev_tavern',
       text: 'Impossibly, there\'s a tavern down here, loud with song and spilled ale. A half-orc slams a fist on the table. "Who wants to arm-wrestle?"',
       choices: [
         { label: 'Buy a round', hint: 'Pay 15 gold. Heal 20 HP.', req: { gold: 15 }, ops: { gold: -15, hp: 20, text: 'The bard plays your favorite song. Everyone sings badly. You feel wonderful.' } },
@@ -207,37 +207,37 @@
         { label: 'Burn a forbidden page', hint: 'Remove a card from your deck.', ops: { then: 'remove', text: 'You burn a page… and forget something you never needed.' } },
         { label: 'Leave', hint: '', ops: { text: 'Shhh. You tiptoe out.' } }] },
     purifying_fountain: { name: 'The Purifying Fountain', art: 'ev_fountain', floors: [1],
-      text: 'Deep in the Underdark, a fountain of pure silver water shines. Here, nothing evil can last.',
+      text: 'Deep below, a fountain of pure silver water shines. Here, nothing evil can last.',
       choices: [
         { label: 'Bathe', hint: 'Remove ALL curses from your deck (or remove any 1 card if you have none).', ops: { removeCurses: true, text: 'The water washes away every taint on your soul.' } },
         { label: 'Drink deeply', hint: 'Heal 35% HP. Gain 4 max HP.', ops: { healPct: 0.35, maxHp: 4, text: 'It tastes like moonlight. You feel stronger.' } },
         { label: 'Fill a flask', hint: 'Gain a Potion of Healing.', ops: { potion: 'healing', text: 'You bottle a little of the light for later.' } }] },
     illithid_tadpole: { name: 'The Tadpole in the Jar', art: 'ev_tadpole', floors: [1],
-      text: 'In an abandoned mind flayer lab, a tadpole wriggles in a glowing jar. You hear it in your head: "Let me in. I can make you powerful."',
+      text: 'On a workbench in an abandoned lab, a pale worm wriggles in a glowing jar. You hear it in your head: "Let me in. I can make you powerful."',
       choices: [
-        { label: 'Swallow it', hint: 'Gain Illithid Tadpole (relic: +2 Arcane each fight) and a curse (Illithid Whispers).', ops: { relic: 'illithid_tadpole', curse: 'curse_whispers', text: 'It slides behind your eye. Power floods in… and so do the whispers.' } },
-        { label: 'Smash the jar', hint: 'Gain 30 gold from the lab.', ops: { gold: 30, text: 'The tadpole shrieks and dissolves. You loot the lab for coin.' } },
+        { label: 'Swallow it', hint: 'Gain The Worm Behind the Eye (relic: +2 Arcane each fight) and a curse (Whispers Behind the Eye).', ops: { relic: 'illithid_tadpole', curse: 'curse_whispers', text: 'It slides behind your eye. Power floods in… and so do the whispers.' } },
+        { label: 'Smash the jar', hint: 'Gain 30 gold from the lab.', ops: { gold: 30, text: 'The worm shrieks and dissolves. You loot the lab for coin.' } },
         { label: 'Leave', hint: '', ops: { text: 'NOPE.' } }] },
-    myconid_circle: { name: 'The Myconid Circle', art: 'ev_myconids', floors: [1],
-      text: 'Gentle mushroom-folk sway in a circle, glowing spores drifting between them. They invite you to join the Meld, a shared, peaceful dream.',
+    myconid_circle: { name: 'The Mushroom Circle', art: 'ev_myconids', floors: [1],
+      text: 'Gentle mushroom-folk sway in a circle, glowing spores drifting between them. They invite you to join their dream, slow and shared and peaceful.',
       choices: [
-        { label: 'Join the Meld', hint: 'Heal 20 HP and upgrade a random card.', ops: { hp: 20, upgradeRandom: 1, text: 'You dream their slow, kind dreams. You wake up healed and wiser.' } },
+        { label: 'Join the dream', hint: 'Heal 20 HP and upgrade a random card.', ops: { hp: 20, upgradeRandom: 1, text: 'You dream their slow, kind dreams. You wake up healed and wiser.' } },
         { label: 'Eat a mushroom', hint: '50%: +8 max HP. 50%: lose 7 HP.', chance: [
           { w: 50, maxHp: 8, text: 'Delicious! You feel… bigger, somehow.' },
-          { w: 50, hp: -7, text: 'That was NOT an edible one. The myconids look embarrassed for you.' }] },
+          { w: 50, hp: -7, text: 'That was NOT an edible one. The mushroom-folk look embarrassed for you.' }] },
         { label: 'Trade a memory', hint: 'Remove a card from your deck.', ops: { then: 'remove', text: 'They take a memory from you, gently, like picking a mushroom.' } }] },
   };
 
   // ---------- roleplay text ----------
   D.STORY = {
     intro: {
-      fighter: ['You are Ser Aldric, once a captain of the Waterdeep City Guard.', 'Children have gone missing near the old Goblin Warrens. The guard says it\'s not their problem. You disagree.', 'You tighten your shield strap and step into the dark.'],
-      barbarian: ['You are Grukka of the Uthgardt, and you are VERY angry.', 'Goblins stole your tribe\'s sacred totem and dragged it into the Warrens. Then they laughed.', 'Nobody laughs at Grukka. You crack your knuckles and go in.'],
-      wizard: ['You are Elaria Moonwhisper, a wizard of Candlekeep.', 'A rare spellbook was stolen and sold to something deep below: an Eye Tyrant, say the rumors.', 'You light a glowing orb above your hand and descend.'],
+      fighter: ["You wake on cold stone in the dark. Your name is {fighter_name}. You know that much, and almost nothing else.", "There's a sword at your hip and a ring on your finger. You don't remember either of them.", "Somewhere above you is Saint Brennick. The only way left is down."],
+      barbarian: ["You wake in the dark with blood in your mouth. Your name is {barbarian_name}.", "Tally marks are cut into your forearm. You don't know what you were counting.", "Something in the tunnels is breathing. You get up."],
+      wizard: ["You wake beside a guttering candle. Your name is {wizard_name}, and the rest is gone.", "Your spellbook is in your lap. Pages have been torn out, and you don't remember tearing them.", "You cup a small flame in your hand and stand."],
     },
     floor: [
-      ['The Goblin Warrens. The air smells of smoke, wet fur and bad decisions.', 'Somewhere ahead, something big hoots. Owls don\'t usually growl.'],
-      ['You descend into the Underdark. The light of the surface feels a thousand years away.', 'Mushrooms glow. Drow whisper. And far below, one great eye is watching you.'],
+      ["Tunnels, just under Saint Brennick. On quiet nights the town hears knocking from down here.", "Somewhere ahead, something big is dragging bones toward its nest."],
+      ["Deeper, the light gives out. These caverns have never seen the sun.", "Drow whisper in the dark, half-blind and half-wild. Something down here never closes its eyes."],
     ],
     rooms: {
       fight: ['You hear scuffling claws ahead. Steel out.', 'Something moves in the shadows. It\'s not friendly.', 'Torchlight flickers on bared teeth.', 'Ambush! Weapons up!', 'The smell hits you first. Then the monsters do.', 'Bones crunch underfoot. You are not alone.'],
@@ -251,28 +251,41 @@
       goblin: ['"Shiny things! Give them!"', '"Ha! Tall-folk is lost!"'],
       goblin_cutter: ['"Stab stab stab!"'], goblin_archer: ['"Hold still, target!"'], goblin_shaman: ['"The spirits say you DIE!"'],
       kobold: ['"Big one! Trap it! Trap it!"', '"For the dragon!"'], giant_rat: ['*squeak squeak SQUEAK*', '*hungry chittering*'],
-      skeleton: ['*rattle rattle*', '*clack… clack… clack*'], gnoll: ['"Yeenoghu hungers!"', '*mad hyena laughter*'],
+      skeleton: ['*rattle rattle*', '*clack… clack… clack*'], gnoll: ['"Hungry. Hungry. Hungry."', '*mad hyena laughter*'],
       bugbear: ['"Didn\'t see me, did ya?"'], ogre: ['"Ogre SMASH little snack!"', '"You look crunchy."'],
-      ghoul: ['"Fresh meat…"', '*wet, hungry hissing*'], drow: ['"Surface scum. Lolth sends her regards."'],
+      ghoul: ['"Fresh meat…"', '*wet, hungry hissing*'], drow: ['"Light... it hurts... put it OUT."'],
       drow_mage: ['"You will make a fine sacrifice."'], troll: ['"Troll hungry. Troll eat you. Troll heal."'],
-      gelatinous_cube: ['*blorp*', '*the cube quivers expectantly*'], mind_flayer: ['"Your mind… looks delicious."', '"Kneel before the Elder Brain."'],
+      gelatinous_cube: ['*blorp*', '*the cube quivers expectantly*'], mind_flayer: ['"Your mind… looks delicious."', '"Hold still. I only want to look inside."'],
       mimic: ['"Surprise!"', '*chomp chomp*'], lesser_mimic: ['"Surprise!"'], wyrmling: ['"MY gold! MINE!"', '"I\'m not small, I\'m FEROCIOUS!"'],
     },
     bossIntro: {
-      owlbear: ['The den reeks of blood. Bones of goblins and worse litter the floor.', 'A towering shape unfolds: half owl, half bear, ALL rage.', 'OWLBEAR: "HOOOOO-RRRAAARGH!"'],
-      beholder: ['A vast chamber of melted stone. Gold heaped everywhere. And floating above it all…', 'XANATHAR: "Well, well. A little adventurer, all the way down here. In MY lair."', 'XANATHAR: "Do you know how many eyes I have? You\'re about to find out."'],
+      owlbear: ["The nest is woven from bones, and most of them are small.", "A huge grey shape rises over it: an owlbear, half-bald, with milky eyes.", "The Beast of Saint Brennick spreads her wings. Small skeletons slip out from under them."],
+      beholder: ["A cavern lit by nothing. Feral drow kneel around its edges, all facing the middle.", "A tall figure in a torn veil turns toward you. Eyes open along her arms and throat, all at once.", "VESSA THE UNSLEEPING: \"I see who you were. Oh, I see it. Shall I tell you?\""],
     },
     bossDefeat: {
-      owlbear: ['The owlbear lets out one last, sad "hoo…" and collapses.', 'Behind its nest, a crack in the floor leads down. Deeper. Darker.'],
-      beholder: ['XANATHAR: "No… NO! Not my beautiful eyes! Not my… goldfish…"', 'The great eye flickers, and the Eye Tyrant crashes to the floor.'],
+      owlbear: ["The Beast sinks down over her nest and goes still, her wings spread over the bones.", "Behind the nest, a crack in the floor leads down. Deeper. Darker."],
+      beholder: ["VESSA THE UNSLEEPING: \"Dark. Finally, dark.\"", "Every eye closes. At the edges of the cavern, the drow begin to wander off, like animals after a light goes out."],
     },
     victory: {
-      fighter: ['You climb back to the surface carrying the rescued children and a beholder\'s eye as proof.', 'Waterdeep throws a parade. The Guard Captain apologizes. Ser Aldric, Hero of the Warrens.'],
-      barbarian: ['Grukka returns home with the sacred totem and a beholder eyestalk as a hat.', 'The tribe feasts for nine days. Nobody laughs at Grukka. Ever again.'],
-      wizard: ['Elaria opens the recovered spellbook. Xanathar had been using it as a coaster.', 'Candlekeep names a reading room after you. It has a very strict "no beholders" rule.'],
+      fighter: ["You climb out into grey daylight above Saint Brennick.", "{fighter_name} looks at the ring on his finger for a long time. He still doesn't know whose it was."],
+      barbarian: ["You drag yourself out into the rain above Saint Brennick.", "Out of habit, {barbarian_name} cuts one more line into his arm. He still doesn't know what he's counting."],
+      wizard: ["You climb out under an open sky above Saint Brennick.", "{wizard_name} finds one star she almost knows, and starts walking toward it."],
     },
-    defeat: ['Your vision fades. The dungeon claims another hero.', 'Somewhere, a bard will sing of your bravery. Probably with a few changes.', 'But legends always get a second chance…'],
+    defeat: ["Your vision fades. The dark has another one.", "By the time the next delver comes, your body is gone. Maybe you'll turn up again, still wearing your pack.", "Somewhere in the dark, something starts saying your name."],
   };
+
+
+  // ---------- hero name placeholders ({fighter_name} etc.) ----------
+  // Defaults; a chosen name or title can override later via fillNames(text, { names, titles }).
+  D.HERO_NAMES = { fighter: 'Bastian Crowe', barbarian: 'Torvald', wizard: 'Isolde Marrin' };
+  D.HERO_TITLES = {};   // e.g. { barbarian: 'Unbroken' } -> "Torvald the Unbroken" (no title system yet)
+  D.heroName = (id, o = {}) => {
+    const n = (o.names && o.names[id]) || D.HERO_NAMES[id] || id;
+    const t = (o.titles && o.titles[id]) || D.HERO_TITLES[id];
+    return t ? `${n} the ${t}` : n;
+  };
+  D.fillNames = (text, o = {}) => typeof text !== 'string' ? text
+    : text.replace(/\{(\w+)_name\}/g, (m, id) => (D.HERO_NAMES[id] || (o.names && o.names[id])) ? D.heroName(id, o) : m);
 
   if (typeof module !== 'undefined' && module.exports) module.exports = D;
 })(typeof window !== 'undefined' ? window : globalThis);
