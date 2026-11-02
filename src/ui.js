@@ -244,7 +244,39 @@
     if (!targets.length) return;
     const y = Math.min(...targets.map(t => t.offsetTop));
     sc.scrollTop = Math.max(0, y - sc.clientHeight * 0.62);
+    mapFade(sc);
   }
+  function mapFade(sc) {   // fade only the edges that have more map beyond them
+    sc.classList.toggle('more-up', sc.scrollTop > 2);
+    sc.classList.toggle('more-down', sc.scrollTop + sc.clientHeight < sc.scrollHeight - 2);
+  }
+  function mapScrollBy(dy, smooth) {
+    const sc = $app.querySelector('.mapscroll'); if (!sc) return false;
+    sc.scrollBy({ top: dy, behavior: smooth && !ui.fast ? 'smooth' : 'auto' }); return true;
+  }
+  // mouse click-and-drag panning on the map (touch already scrolls natively); a real drag never counts as a click
+  let mapPan = null;
+  document.addEventListener('scroll', (e) => { if (e.target && e.target.classList && e.target.classList.contains('mapscroll')) mapFade(e.target); }, true);
+  document.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    const sc = e.target.closest && e.target.closest('.mapscroll'); if (!sc) return;
+    mapPan = { sc, y: e.clientY, top: sc.scrollTop, moved: false, id: e.pointerId };
+  }, true);
+  window.addEventListener('pointermove', (e) => {
+    if (!mapPan || e.pointerId !== mapPan.id) return;
+    const dy = e.clientY - mapPan.y;
+    if (!mapPan.moved && Math.abs(dy) < 6) return;
+    if (!mapPan.moved) { mapPan.moved = true; mapPan.sc.classList.add('panning'); hideTip(); }
+    mapPan.sc.scrollTop = mapPan.top - dy / Z();
+    e.preventDefault();
+  }, { passive: false });
+  const endPan = () => {
+    if (!mapPan) return;
+    if (mapPan.moved) { mapPan.sc.classList.remove('panning'); ui.suppressClick = true; setTimeout(() => { ui.suppressClick = false; }, 60); }
+    mapPan = null;
+  };
+  window.addEventListener('pointerup', endPan, true);
+  window.addEventListener('pointercancel', endPan, true);
 
   // ---------- overlays ----------
   function rewardHTML() {
@@ -418,12 +450,12 @@
     ['Right-click', 'Cancel the selected card'], ['Enter', 'Confirm a dialog']];
   function isFullscreen() { return IS_APP ? !!ui.appFull : !!document.fullscreenElement; }
   function toggleFullscreen() {
-    if (IS_APP) { window.ddApp.setFullscreen(!ui.appFull); return; }
+    if (IS_APP) { markResume(); window.ddApp.setFullscreen(!ui.appFull); return; }
     try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) { flashHint('Fullscreen is not available here.'); }
   }
   function settingsHTML() {
     const tab = ui.settingsTab;
-    const tabs = [['audio', 'Audio'], ['gameplay', 'Gameplay'], ['visuals', 'Visuals'], ['controls', 'Controls'], ['data', 'Data']];
+    const tabs = [['audio', 'Audio'], ['gameplay', 'Gameplay'], ['display', 'Display'], ['visuals', 'Visuals'], ['controls', 'Controls'], ['data', 'Data']];
     const row = (label, hint, ctl) => `<div class="srow"><span class="slabel">${label}${hint ? `<small>${hint}</small>` : ''}</span><span class="sctl">${ctl}</span></div>`;
     const sw = (on, act, key) => `<button class="toggle ${on ? 'on' : ''}" data-act="${act}" ${key ? `data-key="${key}"` : ''} aria-pressed="${on}"><i></i><span>${on ? 'On' : 'Off'}</span></button>`;
     const tg = (key, label, hint) => row(label, hint, sw(!!ST.get(key), 'stoggle', key));
@@ -439,8 +471,8 @@
       + tg('damageNumbers', 'Show damage numbers', 'Floating damage, Block and healing numbers');
     else if (tab === 'visuals') body = tg('shake', 'Screen shake', 'A small shake on big hits')
       + tg('reducedMotion', 'Reduced motion', 'Turns off card flights, shakes and menu ambience' + (REDUCED ? ' (your system already asks for this)' : ''))
-      + row('Fullscreen', 'Also F11', sw(isFullscreen(), 'sfull'))
       + seg('uiScale', 'UI scale', [[90, '90%'], [100, '100%'], [110, '110%'], [125, '125%'], [150, '150%'], [175, '175%']], 'On top of the automatic scaling to your screen size');
+    else if (tab === 'display') body = displayTabHTML(row, sw);
     else if (tab === 'controls') body = `<table class="keys">${KEYS.map(([k, d]) => `<tr><td><kbd>${k}</kbd></td><td>${d}</td></tr>`).join('')}</table>`;
     else {
       const sv = loadSave();
@@ -453,6 +485,52 @@
     return `<div class="overlay settings-over"><div class="panel settings"><div class="sthead"><h1>${I('gear')} Settings</h1><button class="btn small ghost" data-act="sclose">Close (Esc)</button></div>
       <div class="stabs">${tabs.map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`).join('')}</div>
       <div class="stbody">${body}</div></div></div>`;
+  }
+  // ----- display settings (window mode / size / monitor / vsync live in the desktop app's main process) -----
+  const DISP_API = IS_APP && window.ddApp.display ? window.ddApp.display : null;
+  const SIZE_PRESETS = [[1280, 720], [1600, 900], [1920, 1080], [2560, 1080], [2560, 1440], [3440, 1440], [3840, 1600], [3840, 2160]];
+  function displayTabHTML(row, sw) {
+    const st = ui.disp;
+    if (!DISP_API || !st) return row('Fullscreen', 'Also F11', sw(isFullscreen(), 'sfull'))
+      + `<p class="muted">Window mode, window size, monitor and VSync can be set in the Windows app. In a browser, the browser decides those.</p>`;
+    const c = st.cfg, opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${esc(l)}</option>`;
+    const mon = st.displays.find(d => d.id === c.displayId) || st.displays.find(d => d.id === st.onDisplay) || st.displays.find(d => d.primary) || st.displays[0];
+    const fits = SIZE_PRESETS.filter(([w, h]) => w <= mon.w && h <= mon.h && !(w === mon.w && h === mon.h));
+    const cur = c.size ? c.size.join('x') : 'max';
+    const sizes = [['max', 'Maximized']].concat(fits.map(([w, h]) => [w + 'x' + h, w + ' x ' + h]), [[mon.w + 'x' + mon.h, `${mon.w} x ${mon.h} (native)`]]);
+    if (c.size && !sizes.some(([v]) => v === cur)) sizes.push([cur, c.size.join(' x ')]);
+    const modeSeg = `<span class="seg">${[['windowed', 'Windowed'], ['borderless', 'Borderless'], ['fullscreen', 'Fullscreen']].map(([v, l]) => `<button class="${c.mode === v ? 'on' : ''}" data-act="dmode" data-val="${v}">${l}</button>`).join('')}</span>`;
+    const win = c.mode === 'windowed';
+    return row('Window mode', 'Borderless covers the whole monitor without a frame (quick Alt-Tab). Also F11', modeSeg)
+      + row('Window size', win ? 'For windowed mode, centered on the monitor' : 'Used in windowed mode', `<select class="dsel" data-dsel="size" ${win ? '' : 'disabled'}>${sizes.map(([v, l]) => opt(v, l, v === cur)).join('')}</select> <button class="btn small ghost" data-act="dcenter" ${win && c.size ? '' : 'disabled'}>Center</button>`)
+      + row('Monitor', st.displays.length > 1 ? 'Where the game opens (remembered)' : 'Only one monitor found', `<select class="dsel" data-dsel="monitor" ${st.displays.length > 1 ? '' : 'disabled'}>${st.displays.map(d => opt(d.id, d.label, d.id === mon.id)).join('')}</select>`)
+      + row('VSync', c.vsync !== st.bootVsync ? '<b>Applies after a restart</b>' : 'Off lets the game draw as many frames as it can (may tear). Applies after a restart',
+        sw(!!c.vsync, 'dvsync') + (c.vsync !== st.bootVsync ? ' <button class="btn small" data-act="drelaunch">Restart now</button>' : ''))
+      + `<p class="muted">The game's animations are drawn by the browser engine in step with your monitor's refresh rate, so there is no separate frame-rate cap. VSync off removes the limit.</p>`;
+  }
+  function dispPendingHTML() {
+    const left = Math.max(0, Math.ceil((ui.dispUntil - Date.now()) / 1000));
+    return `<div class="overlay modal-over confirm-over dpend-over"><div class="panel confirm">${D20}<h2>Keep these display settings?</h2>
+      <p>Reverting in <b class="dpend-n">${left}</b> s</p><div class="row"><button class="btn" data-act="dkeep">Keep</button><button class="btn ghost" data-act="drevert">Revert</button></div></div></div>`;
+  }
+  function onDisplayState(st) {
+    const wasPending = ui.disp && ui.disp.pending > 0;
+    ui.disp = st;
+    if (st.pending > 0 && !wasPending) ui.dispUntil = Date.now() + st.pending;
+    if (!ui.drag && (ui.settingsTab === 'display' || wasPending !== st.pending > 0)) render();
+  }
+  if (DISP_API) {
+    ui.disp = DISP_API.get(); if (ui.disp.pending > 0) ui.dispUntil = Date.now() + ui.disp.pending;
+    DISP_API.onChange(onDisplayState);
+    setInterval(() => { const n = $app.querySelector('.dpend-n'); if (n) n.textContent = Math.max(0, Math.ceil((ui.dispUntil - Date.now()) / 1000)); }, 250);
+  }
+  function markResume() {   // the app may swap in a new window (borderless <-> framed): save so the new one can continue the run
+    if (G && ui.screen === 'game') saveGame();
+    try { localStorage.setItem('dd-resume', G && ui.screen === 'game' ? '1' : '0'); } catch (err) {}
+  }
+  function setDisplay(next, confirm) {
+    if (!DISP_API) return;
+    DISP_API.set(next, confirm).then(onDisplayState);
   }
   // ----- auto-update prompt (desktop app only) -----
   function updateHTML() {
@@ -583,6 +661,7 @@
     if (ui.modal === 'farewell') html += farewellHTML();
     if (ui.confirm) html += confirmHTML();
     if (showUpdatePrompt()) html += updateHTML();
+    if (ui.disp && ui.disp.pending > 0) html += dispPendingHTML();
     $app.innerHTML = html;
     markSeen();
     document.body.classList.toggle('is-modal', !!(ui.paused || ui.settingsTab || ui.confirm || ui.modal));
@@ -970,7 +1049,13 @@
     else if (a === 'updcheck') { ui.updateManual = true; ui.updateDismissed = false; window.ddApp.update.check(); }
     else if (a === 'upddownload') { ui.updateConsent = true; ui.settingsTab = null; window.ddApp.update.download(); render(); }
     else if (a === 'updlater') { ui.updateDismissed = true; ui.updateConsent = false; ui.updateManual = false; if (ui.update && ui.update.state === 'error') ui.update = null; render(); }
-    else if (a === 'stab') { ui.settingsTab = d.tab; render(); }
+    else if (a === 'stab') { ui.settingsTab = d.tab; if (DISP_API && d.tab === 'display') ui.disp = DISP_API.get(); render(); }
+    else if (a === 'dmode') { if (ui.disp && ui.disp.cfg.mode !== d.val) { markResume(); setDisplay({ mode: d.val }, true); } }
+    else if (a === 'dvsync') setDisplay({ vsync: !ui.disp.cfg.vsync });
+    else if (a === 'drelaunch') { saveGame(); DISP_API.relaunch(); }
+    else if (a === 'dcenter') DISP_API.center();
+    else if (a === 'dkeep') { DISP_API.keep(); ui.disp.pending = 0; render(); }
+    else if (a === 'drevert') { DISP_API.revert(); ui.disp.pending = 0; render(); }
     else if (a === 'sclose') { ui.settingsTab = null; render(); }
     else if (a === 'stoggle') { ST.set(d.key, !ST.get(d.key)); render(); }
     else if (a === 'sopt') { ST.set(d.key, /^\d+$/.test(d.val) ? +d.val : d.val); render(); }
@@ -1014,6 +1099,7 @@
   });
   document.addEventListener('contextmenu', (e) => { if (ui.selected) { e.preventDefault(); ui.selected = null; render(); } });
   document.addEventListener('keydown', (e) => {
+    if (ui.disp && ui.disp.pending > 0) { if (e.key === 'Enter') { e.preventDefault(); DISP_API.keep(); ui.disp.pending = 0; render(); } else if (e.key === 'Escape') { DISP_API.revert(); ui.disp.pending = 0; render(); } return; }
     if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); return; }
     if (ui.confirm) { if (e.key === 'Escape') { ui.confirm = null; render(); } else if (e.key === 'Enter') { e.preventDefault(); const c = ui.confirm; ui.confirm = null; render(); c.onYes && c.onYes(); } return; }
     if (ui.settingsTab) { if (e.key === 'Escape') { ui.settingsTab = null; render(); } return; }
@@ -1029,6 +1115,11 @@
       return;
     }
     if (ui.paused) return;
+    if (G.phase === 'map' && !ui.pile && !ui.modal) {
+      const sc = $app.querySelector('.mapscroll'), pg = sc ? sc.clientHeight * 0.8 : 400;
+      const dy = { ArrowUp: -90, ArrowDown: 90, PageUp: -pg, PageDown: pg, Home: -1e6, End: 1e6 }[e.key];
+      if (dy != null && mapScrollBy(dy, true)) { e.preventDefault(); return; }
+    }
     if (e.key === 'Tab' || e.key === 'd' || e.key === 'D') { e.preventDefault(); ui.pile = ui.pile === 'deck' ? null : 'deck'; render(); }
     else if ((e.key === 'e' || e.key === 'E') && G.phase === 'combat' && !ui.pile) endTurnPressed();
     else if (/^[0-9]$/.test(e.key) && G.phase === 'combat' && !ui.pile) { const c = P().hand[e.key === '0' ? 9 : +e.key - 1]; if (c) clickCard(c.uid); }
@@ -1090,14 +1181,19 @@
   if (REDUCED) document.body.classList.add('reduced');
   applySettings();
   ST.onChange(() => applySettings());
+  $app.addEventListener('change', (e) => {   // display dropdowns
+    const el = e.target.closest && e.target.closest('select[data-dsel]'); if (!el || !DISP_API) return;
+    if (el.dataset.dsel === 'size') setDisplay({ size: el.value === 'max' ? null : el.value.split('x').map(Number) }, true);
+    else setDisplay({ displayId: Number(el.value) });
+  });
   if (CAN_UPDATE && !ui.fast) { window.ddApp.update.onStatus(onUpdateStatus); setTimeout(() => window.ddApp.update.check(), 2500); }
   document.addEventListener('mousemove', (e) => {
     if (ui.screen !== 'title' || reduced()) return;
     const m = $app.querySelector('.mainmenu'); if (!m) return;
     m.style.setProperty('--mx', (e.clientX / innerWidth - .5).toFixed(3)); m.style.setProperty('--my', (e.clientY / innerHeight - .5).toFixed(3));
   }, { passive: true });
-  if (IS_APP && window.ddApp.onFullscreen) window.ddApp.onFullscreen((f) => { ui.appFull = f; if (ui.settingsTab === 'visuals') render(); });
-  document.addEventListener('fullscreenchange', () => { if (ui.settingsTab === 'visuals') render(); });
+  if (IS_APP && window.ddApp.onFullscreen) window.ddApp.onFullscreen((f) => { ui.appFull = f; if (ui.settingsTab === 'display') render(); });
+  document.addEventListener('fullscreenchange', () => { if (ui.settingsTab === 'display') render(); });
   // live volume sliders (no re-render while dragging)
   document.addEventListener('input', (e) => {
     const t = e.target; if (!t.matches || !t.matches('[data-vol]')) return;
@@ -1109,6 +1205,12 @@
   applyScale();
   window.__game = { get scale() { return zCache; }, get state() { return G; }, act, clickCard, startGame, ui, render, tell, playLine };
   render();
+  // the desktop app swapped in a new window (switching to / from borderless): pick up right where the player was
+  if (IS_APP && /(^|[?&])resume=1/.test(location.search)) {
+    let wasInGame = false; try { wasInGame = localStorage.getItem('dd-resume') === '1'; localStorage.removeItem('dd-resume'); } catch (err) {}
+    if (wasInGame && loadSave()) continueGame();
+    ui.settingsTab = 'display'; render();
+  }
 
   // ---------- dev hooks: #demo-<view>[-hero[-eventId]] for screenshots ----------
   // views: classes | map | combat | event | shop | boss

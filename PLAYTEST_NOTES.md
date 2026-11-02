@@ -368,3 +368,12 @@ The Gelatinous Cube, the Drow patrol and the Troll are now the main run-enders. 
 - No internet? Nothing happens (a manual check shows a small "couldn't check" note).
 - Your saved run and settings survive updates.
 - To try: install 2.4.0 once by hand. Later releases come in by themselves.
+
+## v2.4.1
+- Installer: no more "Not responding" at the end. "Play now" (checked by default) now hands the launch to Windows Explorer
+  instead of starting the game from the installer window, which used to freeze while Windows Defender scanned the new game exe.
+  It also shows what it's doing ("Closing the game…", "Copying game files…").
+- Map: no scrollbar any more (nor anywhere else). Scroll with the mouse wheel, by dragging the map, or with arrow keys / PageUp / PageDown / Home / End.
+  The edges fade when there's more map that way.
+- Settings → Display (Windows app): window mode (Windowed / Borderless / Fullscreen), window size, monitor, VSync (applies after restart).
+  Mode and size changes ask "Keep these display settings?" and undo themselves after 10 s. F11 switches the mode too. Everything is remembered.

@@ -30,7 +30,12 @@ VIAddVersionKey "LegalCopyright" "Made by Anna"
 !define MUI_ABORTWARNING
 !define MUI_WELCOMEPAGE_TITLE "Welcome to ${APP}"
 !define MUI_WELCOMEPAGE_TEXT "This will install ${APP}, a Dungeons & Dragons deck-builder, on your computer.$\r$\n$\r$\nNo internet connection or administrator rights are needed.$\r$\n$\r$\nClick Next to continue."
-!define MUI_FINISHPAGE_RUN "$INSTDIR\${APP}.exe"
+; "Play now" (checked by default) must NOT start the game from the installer's UI thread: CreateProcess on the freshly
+; written, unsigned 170 MB exe blocks while Windows Defender scans it, and the installer window showed "Not responding".
+; LaunchGame hands the launch to explorer.exe, which returns at once and starts the game itself.
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_FUNCTION LaunchGame
+!define MUI_FINISHPAGE_NOREBOOTSUPPORT
 !define MUI_FINISHPAGE_RUN_TEXT "Play ${APP} now"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
@@ -39,6 +44,8 @@ VIAddVersionKey "LegalCopyright" "Made by Anna"
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
+ShowInstDetails show
+CRCCheck on   ; quick (well under a second for 87 MB) and shows its own progress box; keeps corrupted downloads from installing
 
 Var Updated
 Var ForceRun
@@ -57,8 +64,13 @@ Function .onInit
     StrCpy $ForceRun 1
 FunctionEnd
 
+Function LaunchGame
+  ; non-blocking: explorer.exe starts the game and returns immediately, so the Finish button closes the installer right away
+  Exec '"$WINDIR\explorer.exe" "$INSTDIR\${APP}.exe"'
+FunctionEnd
+
 Function .onInstSuccess
-  ; after a silent update, start the game again
+  ; after a silent update (electron-updater: --updated /S [--force-run]) start the game again; no window, nothing to freeze
   IfSilent 0 done
     StrCmp $ForceRun 1 run
     StrCmp $Updated 1 run done
@@ -68,12 +80,21 @@ Function .onInstSuccess
 FunctionEnd
 
 Section "Install"
-  ; let the old game finish quitting (the updater quits it), then make sure no copy is still running
-  Sleep 1200
-  nsExec::Exec 'taskkill /IM "${APP}.exe" /F'
-  Sleep 400
+  ; Everything in a Section runs on NSIS's worker thread, so the window keeps repainting; the progress bar ticks per file.
+  SetDetailsPrint both
+  DetailPrint "Closing the game if it is running..."
+  StrCmp $Updated 1 0 +2
+    Sleep 1200                     ; the updater just asked the game to quit: give it a moment to save and exit
+  nsExec::Exec 'taskkill /IM "${APP}.exe" /T /F'   ; hidden console, returns in well under a second (exit 128 = nothing to close)
+  Pop $0
+  StrCmp $0 0 0 +2
+    Sleep 500                      ; a copy was closed: let Windows release its files
+  DetailPrint "Copying game files (Windows may scan them, this can take a minute)..."
+  SetDetailsPrint listonly
   SetOutPath "$INSTDIR"
   File /r "${SRC}\*.*"
+  SetDetailsPrint both
+  DetailPrint "Creating the uninstaller and shortcuts..."
   WriteUninstaller "$INSTDIR\Uninstall ${APP}.exe"
   StrCmp $Updated 1 shortcuts_done
     CreateShortCut "$DESKTOP\${APP}.lnk" "$INSTDIR\${APP}.exe"
@@ -90,6 +111,7 @@ Section "Install"
   WriteRegStr HKCU "${UNKEY}" "UninstallString" '"$INSTDIR\Uninstall ${APP}.exe"'
   WriteRegDWORD HKCU "${UNKEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNKEY}" "NoRepair" 1
+  DetailPrint "Done."
 SectionEnd
 
 Section "Uninstall"
