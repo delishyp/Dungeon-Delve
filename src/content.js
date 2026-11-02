@@ -27,6 +27,7 @@
       desc: 'Unplayable. You know what you did.', effects: [] },
     // Combat-only junk from the Beast's Grand Slam: never enters the deck, gone when the fight ends.
     junk_broken_bone: { cls: 'curse', name: 'Broken Bone', cost: 0, type: 'junk', rarity: 'junk', target: 'none', unplayable: true, combatOnly: true,
+      kwTips: { Unplayable: 'Unplayable: this card cannot be played. It is gone when the fight ends.' },
       desc: 'Unplayable. Deal 6 or more damage to her with one card to remove this.', effects: [] },
   });
   D.KEYWORDS.Unplayable = 'Unplayable: this card cannot be played. Remove curses at a shop, the purifying fountain, or some events.';

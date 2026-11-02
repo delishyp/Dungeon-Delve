@@ -46,8 +46,8 @@
   // ---------- text helpers ----------
   const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const kwRe = new RegExp('\\b(' + Object.keys(D.KEYWORDS).join('|') + ')\\b', 'g');
-  const withKeywords = (t) => esc(t)
-    .replace(kwRe, (m) => `<span class="kw" data-tip="${esc(D.KEYWORDS[m])}">${m}</span>`)
+  const withKeywords = (t, over) => esc(t)
+    .replace(kwRe, (m) => `<span class="kw" data-tip="${esc((over && over[m]) || D.KEYWORDS[m])}">${m}</span>`)
     .replace(/«([+-])(\d+)»/g, (_, s, n) => `<span class="${s === '+' ? 'v-up' : 'v-down'}">${n}</span>`);
 
   // ---------- small SVG icon set (map rooms, potions, UI) ----------
@@ -85,14 +85,14 @@
       ${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname${def.name.length > 15 ? ' long' : ''}"><span>${esc(def.name)}</span></div>
       <div class="cclass" title="${esc(base.cls)}">${I(emblem)}</div>
       <div class="ctype">${def.type}${rar}</div>
-      <div class="cdesc"><span>${withKeywords(text)}</span></div></div>
+      <div class="cdesc"><span>${withKeywords(text, base.kwTips)}</span></div></div>
       ${def.unplayable ? '' : `<div class="cost ${def.cost < base.cost ? 'cheaper' : ''}"><span>${def.cost}</span></div>`}</div>`;
   }
   function refreshHandText() {
     if (!G || G.phase !== 'combat') return;
     $app.querySelectorAll('.hand .card').forEach(el => {
       const c = P().hand.find(x => x.uid === el.dataset.card); if (!c) return;
-      el.querySelector('.cdesc span').innerHTML = withKeywords(E.cardText(G, P(), c, liveTarget()));
+      el.querySelector('.cdesc span').innerHTML = withKeywords(E.cardText(G, P(), c, liveTarget()), D.CARDS[c.id].kwTips);
     });
   }
 
