@@ -177,13 +177,6 @@ body.is-dragging .playzone{border-color:#f3d27a44}
 .evchoice b{color:var(--gold2)}.evchoice span{color:#d8c7a8;font-size:14px}
 .evchoice:hover:not(.disabled){border-color:var(--gold2);transform:translateX(4px);box-shadow:0 0 12px #d9a44166}
 .evchoice.disabled{opacity:.45;cursor:not-allowed}
-/* Run-ending choices: grave-teal, reserved for this use only */
-.evchoice.ends-run b,.evchoice.ends-run span,.ends-run-tag{color:#5FD3C4;font-variant:small-caps;font-style:normal;text-shadow:0 0 2px #5FD3C4;animation:ends-run-pulse 2.5s ease-in-out infinite}
-.evchoice.ends-run{border-color:#5FD3C4aa}
-.evchoice.ends-run:hover:not(.disabled){border-color:#5FD3C4;box-shadow:0 0 12px #5FD3C466}
-.evchoice.ends-run:hover b,.evchoice.ends-run:hover span,.evchoice.ends-run:hover .ends-run-tag{animation:none;opacity:1}
-@keyframes ends-run-pulse{0%,100%{opacity:1}50%{opacity:.8}}
-@media (prefers-reduced-motion:reduce){.evchoice.ends-run b,.evchoice.ends-run span,.ends-run-tag{animation:none}}
 .chosen{color:var(--gold2)!important;font-style:normal!important}
 .evlog{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .chip{display:inline-block;padding:3px 10px;border-radius:12px;font-size:14px;font-family:Arial;font-weight:bold}
