@@ -15,49 +15,49 @@
 
   // ---------- curses (unplayable junk cards) ----------
   Object.assign(D.CARDS, {
-    curse_regret:   { cls: 'curse', name: 'Regret', cost: 0, type: 'curse', rarity: 'curse', target: 'none', art: '🥀', unplayable: true,
+    curse_regret:   { cls: 'curse', name: 'Regret', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. A memory you cannot shake.', effects: [] },
-    curse_rot:      { cls: 'curse', name: 'Mummy Rot', cost: 0, type: 'curse', rarity: 'curse', target: 'none', art: '🦠', unplayable: true, endTurnHpLoss: 2,
+    curse_rot:      { cls: 'curse', name: 'Mummy Rot', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true, endTurnHpLoss: 2,
       desc: 'Unplayable. If this is in your hand at the end of your turn, lose 2 HP.', effects: [] },
-    curse_hex:      { cls: 'curse', name: 'Hex of Misfortune', cost: 0, type: 'curse', rarity: 'curse', target: 'none', art: '🕯️', unplayable: true,
+    curse_hex:      { cls: 'curse', name: 'Hex of Misfortune', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. Clogs your hand.', effects: [] },
-    curse_whispers: { cls: 'curse', name: 'Illithid Whispers', cost: 0, type: 'curse', rarity: 'curse', target: 'none', art: '🐙', unplayable: true, endTurnHpLoss: 1,
+    curse_whispers: { cls: 'curse', name: 'Illithid Whispers', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true, endTurnHpLoss: 1,
       desc: 'Unplayable. If this is in your hand at the end of your turn, lose 1 HP.', effects: [] },
-    curse_guilt:    { cls: 'curse', name: 'Guilty Conscience', cost: 0, type: 'curse', rarity: 'curse', target: 'none', art: '⚖️', unplayable: true,
+    curse_guilt:    { cls: 'curse', name: 'Guilty Conscience', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. You know what you did.', effects: [] },
   });
   D.KEYWORDS.Unplayable = 'Unplayable: this card cannot be played. Remove curses at a shop, the purifying fountain, or some events.';
 
   // ---------- potions (3 belt slots, used in combat; Healing also on the map) ----------
   D.POTIONS = {
-    healing:   { name: 'Potion of Healing', icon: '❤️', color: '#d8323a', anywhere: true, effects: [{ t: 'heal', n: 15 }], desc: 'Heal 15 HP. Can be drunk anywhere.' },
-    fire:      { name: "Alchemist's Fire", icon: '🔥', color: '#ff8a1e', effects: [{ t: 'damageAllRaw', n: 12 }], desc: 'Deal 12 damage to ALL enemies.' },
-    giant:     { name: 'Potion of Giant Strength', icon: '💪', color: '#b06a2a', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }], desc: 'Gain 2 Might for this fight.' },
-    speed:     { name: 'Potion of Speed', icon: '⚡', color: '#e8d23a', effects: [{ t: 'energy', n: 2 }, { t: 'draw', n: 1 }], desc: 'Gain 2 Energy and draw 1 card.' },
-    stoneskin: { name: 'Potion of Stone Skin', icon: '🪨', color: '#8f8f9a', effects: [{ t: 'block', n: 15 }], desc: 'Gain 15 Block.' },
-    antitoxin: { name: 'Antitoxin', icon: '🧪', color: '#4bc06a', effects: [{ t: 'cleanse' }, { t: 'block', n: 6 }], desc: 'Remove all your debuffs and gain 6 Block.' },
+    healing:   { name: 'Potion of Healing', color: '#d8323a', anywhere: true, effects: [{ t: 'heal', n: 15 }], desc: 'Heal 15 HP. Can be drunk anywhere.' },
+    fire:      { name: "Alchemist's Fire", color: '#ff8a1e', effects: [{ t: 'damageAllRaw', n: 12 }], desc: 'Deal 12 damage to ALL enemies.' },
+    giant:     { name: 'Potion of Giant Strength', color: '#b06a2a', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }], desc: 'Gain 2 Might for this fight.' },
+    speed:     { name: 'Potion of Speed', color: '#e8d23a', effects: [{ t: 'energy', n: 2 }, { t: 'draw', n: 1 }], desc: 'Gain 2 Energy and draw 1 card.' },
+    stoneskin: { name: 'Potion of Stone Skin', color: '#8f8f9a', effects: [{ t: 'block', n: 15 }], desc: 'Gain 15 Block.' },
+    antitoxin: { name: 'Antitoxin', color: '#4bc06a', effects: [{ t: 'cleanse' }, { t: 'block', n: 6 }], desc: 'Remove all your debuffs and gain 6 Block.' },
   };
   D.POTION_SLOTS = 3;
   D.POTION_DROP = 0.35;            // chance of a potion after a normal fight (elites/bosses: always)
 
   // ---------- new relics (special ones never appear randomly) ----------
   Object.assign(D.RELICS, {
-    smiling_mask:     { name: 'Mask of the Smiling Merchant', icon: '🎭', hook: 'passive', effects: [], desc: 'Shop prices are 20% lower.' },
-    illithid_tadpole: { name: 'Illithid Tadpole', icon: '🦑', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane (+2 damage per hit). It whispers to you…' },
-    tymora_coin:      { name: "Tymora's Lucky Coin", icon: '🪙', hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
-    wyrm_scale:       { name: 'Red Wyrmling Scale', icon: '🐉', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'armor', n: 2, to: 'self' }, { t: 'status', status: 'thorns', n: 1, to: 'self' }], desc: 'Start each fight with 2 Armor and 1 Retaliate.' },
+    smiling_mask:     { name: 'Mask of the Smiling Merchant', hook: 'passive', effects: [], desc: 'Shop prices are 20% lower.' },
+    illithid_tadpole: { name: 'Illithid Tadpole', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane (+2 damage per hit). It whispers to you…' },
+    tymora_coin:      { name: "Tymora's Lucky Coin", hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
+    wyrm_scale:       { name: 'Red Wyrmling Scale', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'armor', n: 2, to: 'self' }, { t: 'status', status: 'thorns', n: 1, to: 'self' }], desc: 'Start each fight with 2 Armor and 1 Retaliate.' },
   });
 
   // ---------- event-only monsters ----------
   Object.assign(D.MONSTERS, {
-    wyrmling: { name: 'Red Dragon Wyrmling', portrait: '🐉', hp: [50, 54], elite: true,
+    wyrmling: { name: 'Red Dragon Wyrmling', hp: [50, 54], elite: true,
       moves: {
         bite:    { name: 'Bite', intent: 'attack', effects: [{ t: 'attack', n: 9 }] },
         buffet:  { name: 'Wing Buffet', intent: 'attack_defend', effects: [{ t: 'block', n: 8 }, { t: 'attack', n: 4 }] },
         breath:  { name: 'Fire Breath', intent: 'attack', effects: [{ t: 'attack', n: 16 }] },
         roar:    { name: 'Tantrum', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }] },
       }, ai: { opener: 'roar', pattern: ['bite', 'buffet', 'breath'] } },
-    lesser_mimic: { name: 'Chest Mimic', portrait: '🧰', sprite: 'mimic', hp: [40, 44], elite: true,
+    lesser_mimic: { name: 'Chest Mimic', sprite: 'mimic', hp: [40, 44], elite: true,
       moves: {
         adhesive: { name: 'Adhesive Grip', intent: 'attack_debuff', effects: [{ t: 'attack', n: 6 }, { t: 'status', status: 'prone', n: 1, to: 'target' }] },
         chomp:    { name: 'Chomp', intent: 'attack', effects: [{ t: 'attack', n: 12 }] },

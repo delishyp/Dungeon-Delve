@@ -6,8 +6,8 @@
  * `state.players` is an array (v1 has one hero) to leave room for co-op;
  * a race mode can simply run one state per player with the same seed.
  *
- * Phases: 'map' → 'combat' → 'reward' → 'map' … 'rest' | 'treasure' | 'event' | 'shop' …
- *         boss → next floor map … final boss → 'victory'. Or 'defeat'.
+ * Phases: 'map' -> 'combat' -> 'reward' -> 'map' … 'rest' | 'treasure' | 'event' | 'shop' …
+ *         boss -> next floor map … final boss -> 'victory'. Or 'defeat'.
  * ============================================================ */
 (function (root) {
   let D = root.GameData;

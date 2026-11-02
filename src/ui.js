@@ -62,6 +62,7 @@
   const icon = (k, cls = '') => `<svg class="ico-svg ${cls}" viewBox="0 0 32 32" fill="currentColor" stroke="currentColor">${ICON[k]}</svg>`;
   const flask = (color, empty) => `<svg class="flask" viewBox="0 0 24 32"><path d="M9 2h6v3h-1v6c4 1.5 7 5 7 9.5A9 9 0 013 20.5C3 16 6 12.5 10 11V5H9z" fill="${empty ? 'none' : '#e8e0d0'}" fill-opacity=".18" stroke="#c9a46a" stroke-width="1.4"/>${empty ? '' : `<path d="M5 19c3-1.5 11-1.5 14 0a7.5 7.5 0 01-14 0z" fill="${color}"/><circle cx="9" cy="16.5" r="1.3" fill="#fff" opacity=".6"/>`}</svg>`;
   const I = (n, cls = '', color) => window.Icons.svg(n, 'ico-' + n + ' ' + cls, color);
+  const arrow = () => '<svg class="vi arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l12 8-12 8z"/></svg>';
   const medal = (inner, cls = '') => `<span class="medal ${cls}">${inner}</span>`;
   const relicMedal = (id, cls = '') => medal(I(id, 'relic'), cls);
   const statusIcon = (k) => I(k, 'st', window.Icons.STATUS_COLOR[k]);
@@ -184,7 +185,7 @@
         <div class="playzone"><span>Release to play</span></div>
         <div class="side heroes">${G.players.map(u => unitHTML(u, false)).join('')}</div>
         <div class="side enemies" style="--ne:${G.enemies.length}">${G.enemies.map(u => unitHTML(u, true)).join('')}</div>
-        ${sel && (!E.needsTarget(sel) || E.livingEnemies(G).length === 1) ? `<button class="playbtn" data-act="play">▶ Play ${esc(E.cardDef(sel).name)}</button>` : ''}
+        ${sel && (!E.needsTarget(sel) || E.livingEnemies(G).length === 1) ? `<button class="playbtn" data-act="play">${arrow()} Play ${esc(E.cardDef(sel).name)}</button>` : ''}
         ${sel && E.needsTarget(sel) ? `<div class="hint">${TOUCH ? 'Tap a monster' : 'Click a monster'} to target ${esc(E.cardDef(sel).name)} · ${TOUCH ? 'tap the card again' : 'right-click / Esc'} to cancel</div>` : ''}
         <div class="log">${G.log.slice(-4).map(esc).join('<br>')}</div>
       </div>
@@ -694,7 +695,7 @@
     const st = ui.story, line = st.lines[st.i];
     return `<div class="storyover" data-act="story">
       <div class="storybox">${line.who ? `<img class="who" src="${img(line.who)}" alt="">` : ''}<div class="storytext"><p>${esc(line.text)}</p>
-      <div class="storynav"><span>${st.i + 1} / ${st.lines.length}</span><span class="tapnext">${TOUCH ? 'tap' : 'click'} to continue ▸</span></div></div></div>
+      <div class="storynav"><span>${st.i + 1} / ${st.lines.length}</span><span class="tapnext">${TOUCH ? 'tap' : 'click'} to continue ${arrow()}</span></div></div></div>
       ${st.lines.length > 1 ? '<button class="btn small ghost skipstory" data-act="skipstory">Skip</button>' : ''}</div>`;
   }
 
