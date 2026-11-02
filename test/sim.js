@@ -101,7 +101,9 @@ function runGame(seed, hero, floors) {
     for (const c of p.deck) { const t = E.cardText(s, p, c); if (/\{|undefined|NaN/.test(t)) throw new Error('bad text ' + c.id + ': ' + t); }
     E.takeEvents(s);
     if (s.phase === 'combat') {
-      const n = p.draw.length + p.hand.length + p.discard.length + p.exhaust.length;
+      const real = x => !D.CARDS[x.id].combatOnly;   // Grand Slam junk lives only in the fight
+      const n = [p.draw, p.hand, p.discard, p.exhaust].reduce((t, pile) => t + pile.filter(real).length, 0);
+      if (p.deck.some(c => D.CARDS[c.id].combatOnly)) throw new Error('combat-only card leaked into deck seed ' + seed);
       if (n !== p.deck.length) throw new Error(`card count ${n} != deck ${p.deck.length} seed ${seed}`);
     }
     if (p.hp > p.maxHp || p.hp < 0 || Number.isNaN(p.hp)) throw new Error('bad hp');

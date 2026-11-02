@@ -78,7 +78,7 @@
     const def = E.cardDef(c), base = D.CARDS[c.id], fr = D.frameOf(base, c.id);
     const text = E.cardText(opts.live ? G : null, opts.live ? P() : null, c, opts.live ? liveTarget() : null);
     const cls = ['card', def.type, 'fr-' + fr, c.up ? 'upg' : '', opts.cls || ''].join(' ');
-    const rar = def.rarity !== 'starter' && def.rarity !== 'curse' ? ' · ' + def.rarity : '';
+    const rar = def.rarity !== 'starter' && def.rarity !== 'curse' && def.rarity !== 'junk' ? ' · ' + def.rarity : '';
     const emblem = base.cls === 'curse' ? 'curse' : base.cls;
     return `<div class="${cls}" data-cls="${base.cls}" data-rar="${def.rarity}" data-frame="${fr}" ${opts.attrs || ''}>
       <div class="cface"><img class="cart" src="${img('card_' + c.id)}" alt="" draggable="false"><img class="cframe" src="${img('frame_' + fr)}" alt="" draggable="false">
@@ -112,7 +112,8 @@
     const parts = [];
     if (i.damage != null) { ic += I('sword', 'in-atk'); text += i.times > 1 ? `${i.damage}×${i.times}` : `${i.damage}`; parts.push(`attack for ${i.damage} damage${i.times > 1 ? ' ' + i.times + ' times' : ''}`); }
     if (i.block) { ic += I('shield', 'in-blk'); parts.push(`gain ${i.block} Block`); }
-    if (i.debuff) { ic += I('skull', 'in-deb'); parts.push('weaken you'); }
+    if (i.cards) { ic += I('curse', 'in-deb'); text += ` +${i.cards}`; parts.push(`put ${i.cards} ${esc(i.cardName)} cards in your hand`); }
+    else if (i.debuff) { ic += I('skull', 'in-deb'); parts.push('weaken you'); }
     if (i.buff) { ic += I('up', 'in-buf'); parts.push('empower itself or its allies'); }
     return `<div class="intent ${i.kind}" data-tip="${esc(e.name)} intends to use <b>${esc(i.name)}</b>: ${parts.join(', ')}.">${ic} ${text}</div>`;
   }
@@ -854,6 +855,8 @@
       const st = D.STATUSES[ev.status]; floatAt(ev.target, `${statusIcon(ev.status)} ${esc(st.name)}`, 'st');
       anim(spriteOf(ev.target), st.debuff ? 'glow-debuff' : 'glow-buff'); sfx(st.debuff ? 'debuff' : 'buff');
     }
+    else if (ev.kind === 'addCards') { floatAt(ev.target, `+${ev.n} ${esc(D.CARDS[ev.card].name)}`, 'st'); anim(spriteOf(ev.target), 'glow-debuff'); sfx('debuff'); }
+    else if (ev.kind === 'shove') { floatAt(ev.source, `Shoved off`, 'st'); anim(spriteOf(ev.source), 'glow-buff'); sfx('buff'); }
     else if (ev.kind === 'relic') floatAt(ev.target, relicMedal(ev.relic), 'st');
     else if (ev.kind === 'potion') { sfx('potion'); floatAt(ev.source, esc(D.POTIONS[ev.potion].name), 'st'); anim(spriteOf(ev.source), 'glow-buff'); }
     else if (ev.kind === 'death') {

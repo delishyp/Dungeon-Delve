@@ -530,6 +530,14 @@
       } else if (fx.t === 'block') gainBlock(s, e, fx.n);
       else if (fx.t === 'healAllies') livingEnemies(s).forEach(a => heal(s, a, fx.n));
       else if (fx.t === 'healSelf') heal(s, e, fx.n);
+      else if (fx.t === 'addCards') {   // combat-only junk: hand up to the cap, the rest to the discard pile; never the deck
+        if (!alive(tgt)) continue;
+        for (let i = 0; i < fx.n; i++) {
+          const c = { uid: uid(s, 'c'), id: fx.card };
+          if (tgt.hand.length < 10) tgt.hand.push(c); else tgt.discard.push(c);
+        }
+        emit(s, { kind: 'addCards', source: e.uid, target: tgt.uid, card: fx.card, n: fx.n });
+      }
       else if (fx.t === 'status') {
         const ts = fx.to === 'self' ? [e] : fx.to === 'allies' ? livingEnemies(s) : [tgt];
         ts.forEach(t => addStatus(s, t, fx.status, fx.n, t === e));
@@ -549,6 +557,7 @@
       if (fx.t === 'block') out.block += fx.n;
       if (fx.t === 'status') { if (D.STATUSES[fx.status].debuff) out.debuff = true; else out.buff = true; }
       if (fx.t === 'healAllies' || fx.t === 'healSelf') out.buff = true;
+      if (fx.t === 'addCards') { out.debuff = true; out.cards = (out.cards || 0) + fx.n; out.cardName = D.CARDS[fx.card].name; }
     }
     return out;
   }
@@ -603,8 +612,17 @@
     p.energy -= def.cost;
     emit(s, { kind: 'cardPlayed', source: p.uid, card: c.id, target: tgt && tgt.uid });
     log(s, `${p.name} plays ${def.name}.`);
+    const shovers = s.enemies.filter(e => alive(e) && D.MONSTERS[e.monsterId].shove).map(e => ({ e, before: e.hp + e.block }));
     runEffects(s, p, def.effects, tgt, c);
     (def.exhaust ? p.exhaust : p.discard).push(c);
+    for (const { e, before } of shovers) {   // one big hit shoves one junk card off (Beast's Grand Slam)
+      const sh = D.MONSTERS[e.monsterId].shove, k = p.hand.findIndex(x => x.id === sh.card);
+      if (k >= 0 && before - (Math.max(0, e.hp) + e.block) >= sh.at) {
+        const j = p.hand.splice(k, 1)[0]; p.exhaust.push(j);
+        emit(s, { kind: 'shove', source: p.uid, target: e.uid, card: j.id });
+        log(s, `${p.name} shoves the ${D.CARDS[j.id].name} off.`);
+      }
+    }
     checkEnd(s);
     return { ok: true };
   }
@@ -750,7 +768,7 @@
 
   function takeEvents(s) { const ev = s.events; s.events = []; return ev; }
 
-  const Engine = { newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
+  const Engine = { startEncounter, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, find, getPlayer, reachable, choiceAllowed, canUpgrade };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;

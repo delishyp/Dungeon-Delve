@@ -4,7 +4,7 @@
   "description": "Dev/test tooling for Dungeon Delve (the app itself lives in electron/)",
   "scripts": {
     "build": "node build.js",
-    "test": "node test/sim.js && node test/selftest.js",
+    "test": "node test/sim.js && node test/grandslam.js && node test/selftest.js",
     "test:sim": "node test/sim.js",
     "test:self": "node test/selftest.js",
     "shots:shop": "node test/shopshots.js",

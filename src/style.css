@@ -374,7 +374,7 @@ body.touch .card.selected{transform:translateY(-48px) scale(1.45)!important;z-in
 .card[data-rar="common"]{--g1:#fff7e6;--g2:#bfb3a0;--g3:#4a4036}
 .card[data-rar="uncommon"]{--g1:#c8f0ff;--g2:#2f8fe0;--g3:#0a2350}
 .card[data-rar="rare"]{--g1:#fff2a8;--g2:#f0a51e;--g3:#6a2a00}
-.card[data-rar="curse"]{--g1:#b3c48a;--g2:#3e4a2a;--g3:#0a0d06}
+.card[data-rar="curse"],.card[data-rar="junk"]{--g1:#b3c48a;--g2:#3e4a2a;--g3:#0a0d06}
 .cface{position:absolute;inset:0;border-radius:inherit;overflow:hidden;background:#120c10}
 .cart{position:absolute;left:3%;top:2.2%;width:94%;height:95.6%;object-fit:cover;object-position:50% 26%;pointer-events:none}
 .cframe{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
