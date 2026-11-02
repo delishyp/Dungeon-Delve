@@ -1,8 +1,8 @@
 // Beast of Saint Brennick: Grand Slam timing, combat-only junk cards, shove-off, mid-fight save/reload.
 const D = require('../src/data.js'); require('../src/content.js'); const E = require('../src/engine.js');
 const ok = (c, m) => { if (!c) { console.error('FAIL: ' + m); process.exit(1); } };
-const junk = p => p.hand.filter(c => c.id === 'junk_grand_slam').length;
-const total = p => [p.hand, p.draw, p.discard, p.exhaust].reduce((t, x) => t + x.filter(c => c.id === 'junk_grand_slam').length, 0);
+const junk = p => p.hand.filter(c => c.id === 'junk_broken_bone').length;
+const total = p => [p.hand, p.draw, p.discard, p.exhaust].reduce((t, x) => t + x.filter(c => c.id === 'junk_broken_bone').length, 0);
 for (const hero of Object.keys(D.HEROES)) {
   let s = E.newGame({ seed: 4242, heroes: [hero], floors: 1 });
   E.startEncounter(s, D.FLOORS[0].boss); E.takeEvents(s);
@@ -11,15 +11,15 @@ for (const hero of Object.keys(D.HEROES)) {
   const seen = [];
   for (let t = 1; t <= 7; t++) {
     const i = E.describeIntent(s, s.enemies[0]); seen.push(s.enemies[0].intent.move);
-    if (seen[t - 1] === 'slam') ok((t !== 3 || i.damage === 24) && i.cards === 2 && i.cardName === 'Grand Slam', 'slam intent shows 24 dmg and 2 cards ' + JSON.stringify(i) + JSON.stringify(p.statuses));
+    if (seen[t - 1] === 'slam') ok((t !== 3 || i.damage === 24) && i.cards === 2 && i.cardName === 'Broken Bone', 'slam intent shows 24 dmg and 2 cards ' + JSON.stringify(i) + JSON.stringify(p.statuses));
     p.hp = p.maxHp; // keep the hero alive while we only end turns
     const r = E.dispatch(s, { type: 'END_TURN', player: p.uid }); ok(r.ok, 'end turn ' + r.error); E.takeEvents(s);
     if (t === 3) {
-      ok(junk(p) === 2, `2 Grand Slam cards in hand after the slam (${junk(p)})`);
+      ok(junk(p) === 2, `2 Broken Bone cards in hand after the slam (${junk(p)})`);
       // mid-fight save and reload (the UI saves the whole state as JSON)
       s = JSON.parse(JSON.stringify(s)); p = s.players[0];
       ok(junk(p) === 2, 'junk survives save/reload');
-      ok(!E.canPlay(s, p, p.hand.find(c => c.id === 'junk_grand_slam')), 'junk is unplayable');
+      ok(!E.canPlay(s, p, p.hand.find(c => c.id === 'junk_broken_bone')), 'junk is unplayable');
       // shove: one card that takes 6+ off her exhausts one junk
       const atk = p.hand.find(c => E.canPlay(s, p, c) && D.CARDS[c.id].effects.some(f => f.t === 'damage'));
       if (atk) {

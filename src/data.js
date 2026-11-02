@@ -268,13 +268,13 @@
     owlbear: { name: 'The Beast of Saint Brennick', hp: [96, 96], boss: true,
       // Grand Slam (Anna, Nov 3 2026): slams on turns 3, 7, 11... Each slam puts 2 combat-only junk cards in your hand;
       // a single card that takes 6+ (HP + Block) off her shoves one off (exhausts it).
-      shove: { card: 'junk_grand_slam', at: 6 },
+      shove: { card: 'junk_broken_bone', at: 6 },
       moves: {
         screech: { name: 'Terrifying Screech', intent: 'debuff', effects: [{ t: 'status', status: 'frightened', n: 2, to: 'target' }, { t: 'block', n: 8 }] },
         rend:    { name: 'Rend', intent: 'attack', effects: [{ t: 'attack', n: 6, times: 2 }] },
         beak:    { name: 'Beak Peck', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
         rearup:  { name: 'Rear Up', intent: 'defend', effects: [{ t: 'block', n: 10 }] },
-        slam:    { name: 'Grand Slam', intent: 'attack_debuff', effects: [{ t: 'attack', n: 24 }, { t: 'addCards', card: 'junk_grand_slam', n: 2 }] },
+        slam:    { name: 'Grand Slam', intent: 'attack_debuff', effects: [{ t: 'attack', n: 24 }, { t: 'addCards', card: 'junk_broken_bone', n: 2 }] },
       }, ai: { opener: 'screech', pattern: ['rearup', 'slam', 'rend', 'beak'] } },
 
     // ---------- Floor 2: the Underdark ----------

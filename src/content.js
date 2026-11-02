@@ -26,8 +26,8 @@
     curse_guilt:    { cls: 'curse', name: 'Guilty Conscience', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. You know what you did.', effects: [] },
     // Combat-only junk from the Beast's Grand Slam: never enters the deck, gone when the fight ends.
-    junk_grand_slam: { cls: 'curse', name: 'Grand Slam', cost: 0, type: 'junk', rarity: 'junk', target: 'none', unplayable: true, combatOnly: true,
-      desc: 'Unplayable. Gone after this fight. Deal 6 or more damage to the Beast with one card to shove one off.', effects: [] },
+    junk_broken_bone: { cls: 'curse', name: 'Broken Bone', cost: 0, type: 'junk', rarity: 'junk', target: 'none', unplayable: true, combatOnly: true,
+      desc: 'Unplayable. Deal 6 or more damage to her with one card to remove this.', effects: [] },
   });
   D.KEYWORDS.Unplayable = 'Unplayable: this card cannot be played. Remove curses at a shop, the purifying fountain, or some events.';
 
@@ -302,7 +302,7 @@
  * curse   (black)  curses
  * FRAME_OVERRIDE can pin a card to a frame by hand. */
 (function (G) {
-  G.FRAME_OVERRIDE = { junk_grand_slam: 'curse' };
+  G.FRAME_OVERRIDE = { junk_broken_bone: 'curse' };
   G.FRAME_COLORS = { attack: 'red', defense: 'blue', buff: 'green', debuff: 'purple', utility: 'gold', curse: 'black' };
   G.frameOf = function (def, id) {
     if (G.FRAME_OVERRIDE[id]) return G.FRAME_OVERRIDE[id];
