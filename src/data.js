@@ -435,14 +435,17 @@
     // rollback and is the fallback if the new file is missing.
     owlbear: { name: 'The Beast of Saint Brennick', hp: [245, 245], boss: true, sprite: 'enemy_owlbear_idle',
       // Grand Slam (Anna, Nov 3 2026): slams on turns 3, 7, 11... Each slam puts 2 combat-only junk cards in your hand;
-      // a single card that takes 6+ (HP + Block) off her shoves one off (exhausts it).
+      // a single card that takes 6+ (HP + Block) off her shoves one off (exhausts it): "she stays on you until you push back".
+      // Telegraphed (Producer, demo.2): `telegraph` shows the slam and its hint a turn ahead, over her Rear Up intent.
+      // Hint word for word from lore/text/events_merchant_v1.md (Slam hint, CANON, Anna 15:12).
       shove: { card: 'junk_broken_bone', at: 6 },
       moves: {
         screech: { name: 'Terrifying Screech', intent: 'debuff', effects: [{ t: 'status', status: 'frightened', n: 2, to: 'target' }, { t: 'block', n: 8 }] },
-        rend:    { name: 'Rend', intent: 'attack', effects: [{ t: 'attack', n: 9, times: 2 }] },
-        beak:    { name: 'Beak Peck', intent: 'attack_debuff', effects: [{ t: 'attack', n: 11 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
+        rend:    { name: 'Rend', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },   // demo.2: 9x2 -> 7x2 (the slam carries the weight)
+        beak:    { name: 'Beak Peck', intent: 'attack_debuff', effects: [{ t: 'attack', n: 10 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
         rearup:  { name: 'Rear Up', intent: 'defend', effects: [{ t: 'block', n: 10 }] },
-        slam:    { name: 'Grand Slam', intent: 'attack_debuff', effects: [{ t: 'attack', n: 20 }, { t: 'addCards', card: 'junk_broken_bone', n: 2 }] },
+        slam:    { name: 'Grand Slam', intent: 'attack_debuff', effects: [{ t: 'attack', n: 26 }, { t: 'addCards', card: 'junk_broken_bone', n: 2 }],   // demo.2: 20 -> 26, telegraphed
+          telegraph: true, hint: 'She rears up over you. Brace. She comes down with everything, and she stays on you until you push back.' },
       }, ai: { opener: 'screech', pattern: ['rearup', 'slam', 'rend', 'beak'] } },
 
     // ---------- Floor 2: the Underdark ----------

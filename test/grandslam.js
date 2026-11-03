@@ -1,6 +1,9 @@
 // Beast of Saint Brennick: Grand Slam timing, combat-only junk cards, shove-off, mid-fight save/reload.
 const D = require('../src/data.js'); require('../src/content.js'); const E = require('../src/engine.js');
 const ok = (c, m) => { if (!c) { console.error('FAIL: ' + m); process.exit(1); } };
+const HINT = 'She rears up over you. Brace. She comes down with everything, and she stays on you until you push back.';   // events_merchant_v1.md, word for word
+ok(require('fs').readFileSync(__dirname + '/../lore/text/events_merchant_v1.md', 'utf8').includes(HINT) || !require('fs').existsSync(__dirname + '/../lore/text/events_merchant_v1.md'), 'hint matches the lore file');
+ok(D.MONSTERS.owlbear.moves.slam.hint === HINT && D.MONSTERS.owlbear.moves.slam.effects[0].n === 26, 'slam: 26 damage, hint word for word');
 const junk = p => p.hand.filter(c => c.id === 'junk_broken_bone').length;
 const total = p => [p.hand, p.draw, p.discard, p.exhaust].reduce((t, x) => t + x.filter(c => c.id === 'junk_broken_bone').length, 0);
 for (const hero of Object.keys(D.HEROES)) {
@@ -11,7 +14,10 @@ for (const hero of Object.keys(D.HEROES)) {
   const seen = [];
   for (let t = 1; t <= 7; t++) {
     const i = E.describeIntent(s, s.enemies[0]); seen.push(s.enemies[0].intent.move);
-    if (seen[t - 1] === 'slam') ok(i.damage === 20 && i.cards === 2 && i.cardName === 'Broken Bone', 'slam intent shows 20 dmg and 2 cards ' + JSON.stringify(i) + JSON.stringify(p.statuses));
+    if (seen[t - 1] === 'slam') ok(i.damage >= 26 && i.cards === 2 && i.cardName === 'Broken Bone' && !i.next, 'slam intent shows 26+ dmg and 2 cards ' + JSON.stringify(i) + JSON.stringify(p.statuses));
+    // telegraph (demo.2): on Rear Up, the slam and its hint show a turn ahead; no other move carries it
+    if (seen[t - 1] === 'rearup') ok(i.next && i.next.name === 'Grand Slam' && i.next.damage >= 26 && i.next.cards === 2 && i.next.hint === HINT, 'Rear Up telegraphs the slam ' + JSON.stringify(i.next));
+    else if (seen[t - 1] !== 'slam') ok(!i.next, 'no telegraph on ' + seen[t - 1]);
     p.hp = p.maxHp; // keep the hero alive while we only end turns
     const r = E.dispatch(s, { type: 'END_TURN', player: p.uid }); ok(r.ok, 'end turn ' + r.error); E.takeEvents(s);
     if (t === 3) {

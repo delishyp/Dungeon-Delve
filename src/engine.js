@@ -590,6 +590,11 @@
       e.intent = { move: patternMove(m, e), target: e.intent.target };
   }
   const patternOf = (m, e) => (e.phased && m.phase && m.phase.pattern) || m.ai.pattern;
+  // The move after the current intent, for a plain pattern AI (null for weighted / summoner AIs or a forced intent).
+  function nextPatternMove(e) {
+    const m = D.MONSTERS[e.monsterId]; if (!m.ai.pattern || m.ai.summoner || !e.intent || e.intent.exposed || e.intent.goaded) return null;
+    const pat = patternOf(m, e); return pat[Math.max(0, e.moveCount + 1 - (m.ai.opener ? 1 : 0)) % pat.length];
+  }
   function patternMove(m, e) { const pat = patternOf(m, e); return pat[Math.max(0, e.moveCount - (m.ai.opener ? 1 : 0)) % pat.length]; }
   // The move as it plays now: phase overrides (e.g. attack times) merged over the base move.
   function moveOf(e, key) {
@@ -830,6 +835,16 @@
       if (fx.t === 'summon') out.summon = D.MONSTERS[fx.monster].name;
       if (fx.t === 'wait') out.wait = true;
       if (fx.t === 'addCards') { out.debuff = true; out.cards = (out.cards || 0) + fx.n; out.cardName = D.CARDS[fx.card].name; out.cardsTo = fx.to === 'discard' ? 'discard' : 'hand'; }
+    }
+    // Telegraphed move (the Beast's Grand Slam): shown a turn ahead, over the move before it in a pattern AI.
+    const nx = nextPatternMove(e);
+    if (nx && nx !== e.intent.move) {
+      const nm = moveOf(e, nx);
+      if (nm.telegraph) {
+        const t = { name: nm.name, hint: nm.hint || '', damage: null, times: 1, cards: 0 };
+        for (const fx of nm.effects) { if (fx.t === 'attack') { t.damage = attackDamage(e, tgt, fx.n); t.times = fx.times || 1; } if (fx.t === 'addCards') { t.cards += fx.n; t.cardName = D.CARDS[fx.card].name; } }
+        out.next = t;
+      }
     }
     return out;
   }

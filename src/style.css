@@ -799,3 +799,12 @@ body.is-modal #fx .speech,body.is-modal #fx .dmcaption{display:none}
   .charsel{padding-top:10px}.cs-row{gap:8px}.cs-hero{width:31vw;padding:6px}.cs-pic{height:26vw}.cs-name{font-size:18px}
   .cs-detail{flex-direction:column;gap:8px;padding:10px;width:100%}.cs-text{width:auto}.cs-deck{--cw:calc((100vw - 70px) / 5)}.cs-cards{flex-wrap:wrap;gap:6px}
 }
+
+/* Telegraphed boss move (the Beast's Grand Slam): shown a turn ahead, above the intent */
+.telegraph{position:absolute;bottom:calc(100% + 40px);left:50%;transform:translateX(-50%);z-index:3;width:300px;text-align:center;cursor:help;
+  background:linear-gradient(#3a1a10f0,#160a06f0);border:1px solid #d9763a;border-radius:10px;padding:6px 10px;box-shadow:0 0 18px #ff5a1a55,0 6px 14px #000;animation:teleIn .5s ease-out both}
+.tele-next{font-family:Arial;font-weight:bold;font-size:15px;color:#ffb08a;display:flex;align-items:center;justify-content:center;gap:5px}
+.tele-hint{font-style:italic;font-size:14px;line-height:1.35;color:#f1dcc0;margin-top:3px}
+@keyframes teleIn{from{opacity:0;translate:0 6px}to{opacity:1;translate:0 0}}
+body.reduced .telegraph{animation:none}
+@media (max-width: 999px){.telegraph{width:220px;padding:4px 6px;bottom:calc(100% + 30px)}.tele-hint{font-size:11px}.tele-next{font-size:12px}}

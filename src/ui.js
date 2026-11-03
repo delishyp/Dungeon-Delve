@@ -337,7 +337,13 @@
     if (i.healMinions) parts.push(`heal its Sewn ${i.healMinions} HP`);
     if (i.buff && !i.blockLeader && !i.healMinions) { ic += I('up', 'in-buf'); parts.push('empower itself or its allies'); }
     else if (i.blockLeader || i.healMinions) ic += I('up', 'in-buf');
-    return `<div class="intent ${i.kind}" data-tip="${esc(e.name)} intends to use <b>${esc(i.name)}</b>: ${parts.join(', ')}.">${ic} ${text}</div>`;
+    let tele = '';
+    if (i.next) {   // telegraphed big move next turn (the Beast's Grand Slam): its numbers and the hint, a turn ahead
+      const n = i.next, nt = (n.damage != null ? (n.times > 1 ? `${n.damage}×${n.times}` : `${n.damage}`) : '') + (n.cards ? ` +${n.cards}` : '');
+      tele = `<div class="telegraph" data-tip="Next turn: <b>${esc(n.name)}</b>${n.damage != null ? `, attack for ${n.damage} damage` : ''}${n.cards ? `, put ${n.cards} ${esc(n.cardName)} card${n.cards > 1 ? 's' : ''} in your hand` : ''}.">`
+        + `<div class="tele-next">${I('sword', 'in-atk')} Next turn: <b>${esc(n.name)}</b> ${nt}</div>${n.hint ? `<div class="tele-hint">${esc(n.hint)}</div>` : ''}</div>`;
+    }
+    return `<div class="intent ${i.kind}" data-tip="${esc(e.name)} intends to use <b>${esc(i.name)}</b>: ${parts.join(', ')}.">${ic} ${text}</div>${tele}`;
   }
 
   // ---------- action poses (Darkest Dungeon-style swap) ----------
