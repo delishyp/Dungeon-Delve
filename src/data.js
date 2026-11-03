@@ -360,7 +360,7 @@
     drow_patrol:  { name: 'Drow Patrol', enemies: ['drow', 'drow_mage'], scene: 'Deep Tunnels' },
     troll:        { name: 'Cave Troll', enemies: ['troll'], scene: 'Troll Bridge' },
     cube:         { name: 'Gelatinous Cube', enemies: ['gelatinous_cube'], scene: 'Suspiciously Clean Hall' },
-    mind_flayer:  { name: 'The Surgeon', enemies: ['mind_flayer'], scene: 'The Stitching Room', elite: true },
+    mind_flayer:  { name: 'The Surgeon', enemies: ['mind_flayer'], scene: 'The Long Table', elite: true },
     mimic:        { name: 'Treasure Mimic', enemies: ['mimic'], scene: 'Treasure Vault?', elite: true },
     beholder:     { name: 'The Watcher', enemies: ['beholder'], scene: 'The Watching Cavern', boss: true },
   };
