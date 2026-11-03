@@ -75,7 +75,8 @@ ok(/Arcane Focus makes this card stronger/.test(D.KEYWORDS.Spell) && /stays in y
   }
   // every real card with keyword lines (e.g. the Fighter's Retain cards) shows them as their own lines with a tooltip
   for (const id of Object.keys(R.plain)) { const d = E.cardDef({ id: id.replace('+', ''), up: id.endsWith('+') }), k = D.keywordLines(d);
-    if (k.length) ok(new RegExp(k.map(w => '<br><span class="kw" data-tip="' + w + ': [^"]+">' + w + '</span>\\.').join('') + '$').test(R.plain[id].html), `${id}: keyword lines ${k} after the effect: ${R.plain[id].html.slice(-160)}`); }
+    if (k.length) ok(new RegExp(k.map(w => { const [kw, ...num] = w.split(' ');   // "Repeat 2": the keyword span, then its number (pool 34: Absorb Elements)
+      return '<br><span class="kw" data-tip="' + kw + '[^"]*: [^"]+">' + kw + '</span>' + (num.length ? ' ' + num.join(' ') : '') + '\\.'; }).join('') + '$').test(R.plain[id].html), `${id}: keyword lines ${k} after the effect: ${R.plain[id].html.slice(-160)}`); }
   ok(R.plain.strike.cw === 160 && !R.plain.strike.small, 'hand card is 160 px and a short text keeps the normal font');
   for (const id of ['goad', 'blood_up', 'bear_beneath', 'goad+', 'blood_up+', 'bear_beneath+']) {
     const r = R.kwRes[id]; ok(r && r.fits, `${id}: fits with both keyword lines (small=${r && r.small})`);

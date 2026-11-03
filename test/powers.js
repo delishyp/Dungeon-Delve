@@ -5,7 +5,7 @@ const ALL_POWERS = Object.keys(D.CARDS).filter(id => D.CARDS[id].type === 'power
 // Barbarian deck styles B1-B3 (Nov 3) added blood_up, last_tally, scar_tissue, bear_beneath. The hook-only ones (no status
 // effect of their own) are covered in test/deckstyles.js; this file keeps checking every Power that applies a status.
 ok(ALL_POWERS.sort().join() === ['arcane_study', 'battle_cry', 'bear_beneath', 'bear_totem', 'blood_up', 'defense_style', 'kindling', 'last_tally', 'mage_armor', 'mindless_rage', 'retaliation', 'scar_tissue',
-  'the_wall_holds', 'read_the_opening', 'ten_thousand_drills', 'no_wasted_motion', 'old_scars'].sort().join(), 'power list: ' + ALL_POWERS.join());
+  'the_wall_holds', 'read_the_opening', 'ten_thousand_drills', 'no_wasted_motion', 'old_scars', 'wish'].sort().join(), 'power list: ' + ALL_POWERS.join());
 for (const id of ALL_POWERS) ok(!D.CARDS[id].exhaust && !/exhaust/i.test(D.CARDS[id].desc.replace(/Whenever a card Exhausts/g, '')), id + ' has no Exhaust flag or wording (a Kindling-style "Whenever a card Exhausts" trigger is allowed)');
 const POWERS = ALL_POWERS.filter(id => D.CARDS[id].effects.some(f => f.t === 'status'));
 // wz9 (Anna 15:09): the starter Power arcane_focus is removed; Arcane Study is the only card that gives Arcane Focus.

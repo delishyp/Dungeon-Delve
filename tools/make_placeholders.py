@@ -24,6 +24,8 @@ ONLY = set(sys.argv[1:])
 for c in cards:
     if ONLY and c['id'] not in ONLY: continue
     if os.path.exists(os.path.join(ROOT, 'assets', 'card_' + c['art'] + '.webp')): continue
+    # a card whose art points at another placeholder (Acid Splash -> placeholder_acid) reuses it (pool 34)
+    if c['art'] != c['id'] and os.path.exists(os.path.join(OUT, 'placeholder_' + c['art'] + '.webp')): continue
     W, H = 600, 800
     im = Image.new('RGB', (W, H), COL.get(c['frame'], (90, 90, 90)))
     d = ImageDraw.Draw(im)

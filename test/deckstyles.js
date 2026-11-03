@@ -147,7 +147,7 @@ for (const id of ['blood_up', 'last_tally', 'scar_tissue', 'bear_beneath']) {
   ok(p.powers.some(x => x.uid === c.uid) && ![p.hand, p.draw, p.discard, p.exhaust].some(x => x.some(y => y.uid === c.uid)), id + ' stays in play, out of the piles');
 }
 ok(['enraged', 'last_tally', 'bear_beneath'].every(id => D.CARDS[id].rarity === 'legendary'), 'Enraged, The Last Tally, The Bear Beneath are legendary');
-ok(Object.values(D.CARDS).filter(d => d.rarity === 'legendary').every(d => d.cls === 'barbarian' || d.cls === 'fighter'), 'only the Barbarian and the Fighter have legendaries so far');
+ok(Object.values(D.CARDS).filter(d => d.rarity === 'legendary').every(d => ['barbarian', 'fighter', 'wizard'].includes(d.cls)), 'legendaries are hero cards (the Wizard has hers since pool 34)');
 { const bar = { legendary: 0, other: 0 };
   for (let seed = 1; seed <= 300; seed++) {
     const s = E.newGame({ seed, heroes: ['barbarian'] }), p = s.players[0];
@@ -198,7 +198,9 @@ const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid &&
 // ---------- card data as written ----------
 { const b = (id) => D.CARDS[id], u = (id) => E.cardDef({ id, up: true });
   ok(FNEW.every(id => b(id) && b(id).cls === 'fighter'), 'all ten new Fighter cards exist');
-  ok(['the_wall_holds', 'read_the_opening', 'ten_thousand_drills', 'no_wasted_motion', 'old_scars'].every(id => b(id).type === 'power' && b(id).rarity === 'legendary'), 'five legendary Powers');
+  ok(['the_wall_holds', 'read_the_opening', 'ten_thousand_drills', 'no_wasted_motion', 'old_scars'].every(id => b(id).type === 'power'), 'five Powers');
+  // Pool 34 (Producer 21:54): Old Scars and Ten Thousand Drills legendary -> rare; the other three stay legendary.
+  ok(['the_wall_holds', 'read_the_opening', 'no_wasted_motion'].every(id => b(id).rarity === 'legendary') && ['ten_thousand_drills', 'old_scars'].every(id => b(id).rarity === 'rare'), 'three legendary Powers, Drills and Old Scars rare');
   ok(['the_wall_holds', 'no_wasted_motion', 'old_scars'].every(id => b(id).cost === 2 && u(id).cost === 1), 'The Wall Holds, No Wasted Motion, Old Scars: cost 2, upgraded 1');
   ok(['read_the_opening', 'ten_thousand_drills'].every(id => b(id).cost === 3 && u(id).cost === 2), 'Read the Opening, Ten Thousand Drills: cost 3, upgraded 2 (balance nudge)');
   ok(['hilt_to_the_teeth', 'give_ground', 'wait_for_it'].every(id => b(id).rarity === 'common' && b(id).cost === 0), 'three 0-cost Tempo commons');
@@ -209,7 +211,7 @@ const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid &&
   ok(E.cardText(null, null, { id: 'wait_for_it', up: true }) === 'Draw «+3» cards.', 'Wait for It+ text: ' + E.cardText(null, null, { id: 'wait_for_it', up: true }));
   ok(b('form_and_repeat').cost === 0 && b('form_and_repeat').effects.map(f => f.n).join() === '4,1' && u('form_and_repeat').effects.map(f => f.n).join() === '6,1', 'Form and Repeat 0: 4 Block draw 1 (upgraded 6)');
   ok(b('field_dressing').cost === 1 && b('field_dressing').retain && b('field_dressing').exhaust && b('field_dressing').effects[0].n === 8 && u('field_dressing').effects[0].n === 11, 'Field Dressing 1: heal 8, Retain, Exhaust (upgraded 11)');
-  ok(b('ten_thousand_drills').power.thirdCardMightCap === 5 && u('ten_thousand_drills').power.thirdCardMightCap === 5 && u('no_wasted_motion').power.zeroCostDrawPerTurn === 3, 'caps never change on upgrade (Drills 5, No Wasted Motion 3 a turn)');
+  ok(b('ten_thousand_drills').power.thirdCardMightCap === 4 && u('ten_thousand_drills').power.thirdCardMightCap === 4 && u('no_wasted_motion').power.zeroCostDrawPerTurn === 3, 'caps never change on upgrade (Drills 4 since pool 34, No Wasted Motion 3 a turn)');
   for (const id of FNEW) { ok(!/\{\d\}/.test(E.cardText(null, null, { id })) && !/\{\d\}/.test(E.cardText(null, null, { id, up: true })), id + ' text fills in'); ok(u(id).name === b(id).name + '+', id + '+ named'); }
   for (let seed = 1; seed <= 300; seed++) { const f = E.newGame({ seed, heroes: ['fighter'] }); ok(E.rollCardRewards(f, f.players[0], 3, 'boss').every(id => D.CARDS[id].rarity === 'legendary'), 'Fighter boss rewards are legendary now'); }
   for (let seed = 1; seed <= 300; seed++) { const f = E.newGame({ seed, heroes: ['fighter'] }); ok(E.rollCardRewards(f, f.players[0], 3, 'fight').every(id => D.CARDS[id].rarity !== 'legendary'), 'no legendaries outside boss rewards'); }
@@ -233,12 +235,12 @@ const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid &&
 { const { s, p, e } = ffight(); play(s, p, 'read_the_opening', false); e.statuses.prone = 2;
   const h = mine(play(s, p, 'whirlwind', false).ev, p); ok(h.map(x => x.amount).join() === '14,7', 'Whirlwind 5x2 on Prone: 7 -> 14 first hit only, then 7'); }
 { const { s, p, e } = ffight(); e.statuses.prone = 2; ok(mine(play(s, p, 'strike', false, e).ev, p)[0].amount === 9, 'without the Power, Prone is the usual x1.5'); }
-// ---------- F3 Ten Thousand Drills: the third card each turn gives 1 Might, up to 5 a fight ----------
+// ---------- F3 Ten Thousand Drills: the third card each turn gives 1 Might, up to 4 a fight (5 before pool 34) ----------
 { const { s, p, e } = ffight(); play(s, p, 'ten_thousand_drills', false); play(s, p, 'defend', false);
   ok(!p.statuses.might, 'two cards played: no Might yet'); play(s, p, 'defend', false); ok(p.statuses.might === 1, 'third card (the Power counts as the first): 1 Might');
   play(s, p, 'defend', false); play(s, p, 'defend', false); play(s, p, 'defend', false); ok(p.statuses.might === 1, 'only the third card each turn');
   for (let t = 0; t < 7; t++) { enemyHits(s, e, 0, 1); endTurn(s, p); p.hand = []; for (let i = 0; i < 3; i++) play(s, p, 'defend', false); }
-  ok(p.statuses.might === 5, 'capped at 5 Might from Drills in a fight: ' + p.statuses.might);
+  ok(p.statuses.might === 4, 'capped at 4 Might from Drills in a fight: ' + p.statuses.might);
   E.startEncounter(s, 'rat_swarm'); E.takeEvents(s); ok(!p.fightFx.drillMight, 'the cap resets next fight'); }
 // ---------- F4 No Wasted Motion: draw 1 on each 0-cost card, up to 3 a turn ----------
 { const { s, p, e } = ffight(); play(s, p, 'no_wasted_motion', false); const d0 = p.draw.length;
