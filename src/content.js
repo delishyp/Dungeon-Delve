@@ -349,8 +349,9 @@
   G.typeWord = function (def, id) { return G.TYPE_WORDS[def.type === 'power' ? 'power' : G.frameOf(def, id)]; };
   // Keyword lines (Anna 11:17): no tag pills. Spell and Retain are written in the rules text, each on its own line after the
   // effect ("Deal 12 damage. / Spell. / Retain."). Cantrip is the default and gets no line.
-  // Base keywords (Anna 11:33) follow in the How to Play order: Spell, Retain, Vanish, Repeat X, Replay, Eternal.
-  // Exhaust stays in the effect text, as on every existing Exhaust card.
+  // Base keywords (Anna 11:33) follow in the How to Play order: Spell, Retain, Vanish, Repeat X, Replay, Eternal, Fading.
+  // Exhaust stays in the effect text, as on every existing Exhaust card. Bloodied and Last Word are effect lines of their own
+  // ("Bloodied: <extra>" right after the effect, "Last Word: <effect>" last), drawn by the UI from engine cardLines.
   G.keywordLines = function (def) {
     const k = [];
     if (def.kind === 'spell') k.push('Spell');
@@ -359,6 +360,7 @@
     if (def.repeat > 1) k.push('Repeat ' + Math.floor(def.repeat));
     if (def.replay) k.push('Replay');
     if (def.eternal) k.push('Eternal');
+    if (def.fading) k.push('Fading');
     return k;
   };
   // Keyword data check (Producer 11:34, how_to_play_v1: "A card never has both Retain and Vanish"). Runs on load, so a bad
@@ -369,7 +371,35 @@
       for (const d of [c, c.upgrade].filter(Boolean)) {
         if ((d.retain || c.retain) && (d.vanish || c.vanish)) bad.push(id + ': has both retain and vanish');
         if (d.repeat != null && !(Number.isInteger(d.repeat) && d.repeat >= 2)) bad.push(id + ': repeat must be a whole number of 2 or more (got ' + d.repeat + ')');
-        for (const f of ['eternal', 'vanish', 'replay', 'retain', 'exhaust']) if (d[f] != null && typeof d[f] !== 'boolean') bad.push(id + ': ' + f + ' must be true or false');
+        for (const f of ['eternal', 'vanish', 'replay', 'retain', 'exhaust', 'fading']) if (d[f] != null && typeof d[f] !== 'boolean') bad.push(id + ': ' + f + ' must be true or false');
+        const k0 = (f) => (d[f] != null ? d[f] : c[f]);   // an upgrade inherits fields it doesn't set
+        const okLine = (L) => L && typeof L === 'object' && typeof L.desc === 'string' && Array.isArray(L.effects) && L.effects.length > 0;
+        const k = (f) => ((f === 'bloodied' || f === 'lastWord') && !okLine(k0(f)) ? null : k0(f));   // malformed lines are reported once, below
+        const effects = d.effects || c.effects || [];
+        // Bloodied / Last Word lines: { desc, effects }, every {i} in desc has an effect
+        for (const f of ['bloodied', 'lastWord']) {
+          const L = k0(f); if (L == null) continue;
+          if (!okLine(L)) { bad.push(id + ': ' + f + ' must be { desc, effects: [...] }'); continue; }
+          for (const m of L.desc.matchAll(/\{(\d+)\}/g)) if (!L.effects[+m[1]]) bad.push(id + ': ' + f + ' desc uses {' + m[1] + '} with no effect');
+        }
+        // Last Word only fires when the card Exhausts or Vanishes (Fading at 0 Exhausts); it runs with no target.
+        if (k('lastWord')) {
+          if (!(k('exhaust') || k('vanish') || k('fading'))) bad.push(id + ': Last Word needs Exhaust, Vanish or Fading');
+          if (k('lastWord').effects.some(f => ['damage', 'damageFromBlock', 'goad'].includes(f.t) || (f.t === 'status' && f.to === 'target'))) bad.push(id + ': a Last Word effect cannot need a single target');
+          if (k('repeat')) bad.push(id + ': Last Word with Repeat is not defined yet');
+        }
+        if (k('bloodied')) {
+          if (k('repeat') || k('replay')) bad.push(id + ': Bloodied with Repeat or Replay is not defined yet');
+          if (k('bloodied').effects.some(f => ['damage', 'damageFromBlock', 'goad'].includes(f.t) || (f.t === 'status' && f.to === 'target')) && (d.target || c.target) !== 'enemy') bad.push(id + ': a targeted Bloodied effect needs a targeted card');
+        }
+        // Fading: "Fading cards have only one number" (keyword_use_v2 part 3), and it must be a playable, non-Power card.
+        if (k('fading')) {
+          const nums = effects.filter(f => f.n != null).length + effects.filter(f => f.times > 1 || f.timesFrom).length
+            + ['bloodied', 'lastWord'].reduce((a, f) => a + (k(f) ? k(f).effects.filter(x => x.n != null).length : 0), 0);
+          if (nums !== 1) bad.push(id + ': a Fading card must have exactly one number (has ' + nums + ')');
+          if ((d.type || c.type) === 'power' || k('unplayable')) bad.push(id + ': Fading needs a playable, non-Power card');
+          if (k('replay')) bad.push(id + ': Fading with Replay printed on the card is not defined yet');
+        }
       }
     }
     if (bad.length) throw new Error('Card keyword data check failed: ' + [...new Set(bad)].join('; '));

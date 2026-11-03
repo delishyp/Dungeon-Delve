@@ -85,6 +85,13 @@
   // never stacks past one extra, Producer 11:41), so Replay + Repeat X = 2xX.
   const repeatOf = (def) => Math.max(1, Math.floor(def.repeat || 1));
   const playsOf = (def) => (def.replay ? 2 : 1);
+  // Fading (how_to_play_v1, keyword_use_v2 part 3, Producer 11:56): each play this fight drops the card's one number by 1
+  // (fightPlays: Replay counts 2, Repeat 1); at 0 it Exhausts; back to full next fight (each fight deals fresh copies).
+  const fadeDrop = (def, c) => (def.fading ? (c.fightPlays || 0) : 0);
+  const fadeFx = (def, c, effects) => { const d = fadeDrop(def, c); return d ? effects.map(f => (f.n != null ? { ...f, n: Math.max(0, f.n - d) } : f)) : effects; };
+  const fadeLeft = (def, c) => { const f = def.effects.find(x => x.n != null); return f ? Math.max(0, f.n - fadeDrop(def, c)) : 0; };
+  // Bloodied (how_to_play_v1): the Bloodied line only counts while you're at half your HP or less; checked when played.
+  const isBloodied = (p) => !!p && p.hp > 0 && p.hp * 2 <= p.maxHp;
 
   // ---------- helpers ----------
   const alive = (e) => !!e && e.hp > 0;
@@ -679,7 +686,7 @@
     const gone = p.hand.filter(c => cardDef(c).vanish && canRemove(c));
     if (!gone.length) return;
     p.hand = p.hand.filter(c => !gone.includes(c)); p.exhaust.push(...gone);
-    for (const c of gone) { emit(s, { kind: 'vanish', source: p.uid, card: c.id }); log(s, `${D.CARDS[c.id].name} vanishes.`); }
+    for (const c of gone) { emit(s, { kind: 'vanish', source: p.uid, card: c.id }); log(s, `${D.CARDS[c.id].name} vanishes.`); lastWord(s, p, c); }
   }
 
   function enemyTurn(s) {
@@ -865,6 +872,7 @@
     // Replay = a second play (Fading hook: notePlay runs once per play); Repeat X = the effect X times inside ONE play.
     // Replay on an Exhaust/Vanish card plays both times, then the card leaves once (Producer 11:34).
     const plays = playsOf(def), reps = repeatOf(def);
+    const bloodied = !!def.bloodied && isBloodied(p);   // checked when the card is played (before its effects)
     for (let k = 0; k < plays; k++) {
       if (k > 0) {
         if (!alive(p) || !livingEnemies(s).length) break;
@@ -872,22 +880,36 @@
         emit(s, { kind: 'cardReplayed', source: p.uid, card: c.id, target: tgt && tgt.uid });
         log(s, `${def.name} plays again (Replay).`);
       }
-      for (let r = 0; r < reps; r++) runEffects(s, p, def.effects, tgt, c);
+      for (let r = 0; r < reps; r++) runEffects(s, p, fadeFx(def, c, def.effects), tgt, c);   // Fading: this play uses the number left
+      if (bloodied) { emit(s, { kind: 'bloodied', source: p.uid, card: c.id }); runEffects(s, p, def.bloodied.effects, tgt, c); }
       notePlay(s, p, c);
     }
+    const fadedOut = !!def.fading && fadeLeft(def, c) <= 0;
+    if (fadedOut) { emit(s, { kind: 'fadedOut', source: p.uid, card: c.id }); log(s, `${def.name} fades out.`); }
     // Powers (Anna): once played they stay in play for the rest of the fight, in their own list, not in any pile.
     if (def.type === 'power') { (p.powers = p.powers || []).push(c); emit(s, { kind: 'powerPlayed', source: p.uid, card: c.id, up: !!c.up }); }
-    else (def.exhaust ? p.exhaust : p.discard).push(c);
+    else if (def.exhaust || fadedOut) exhaustCard(s, p, c);
+    else p.discard.push(c);
     for (const { e, before } of shovers) {   // one big hit shoves one status card off (Beast's Grand Slam)
       const sh = D.MONSTERS[e.monsterId].shove, k = p.hand.findIndex(x => x.id === sh.card);
       if (k >= 0 && before - (Math.max(0, e.hp) + e.block) >= sh.at) {
-        const j = p.hand.splice(k, 1)[0]; p.exhaust.push(j);
+        const j = p.hand.splice(k, 1)[0]; exhaustCard(s, p, j);
         emit(s, { kind: 'shove', source: p.uid, target: e.uid, card: j.id });
         log(s, `${p.name} shoves the ${D.CARDS[j.id].name} off.`);
       }
     }
     checkEnd(s);
     return { ok: true };
+  }
+
+  // Every Exhaust goes through here, so a Last Word always fires (Exhaust keyword, a Fading card at 0, a shoved status card).
+  function exhaustCard(s, p, c) { p.exhaust.push(c); lastWord(s, p, c); }
+  // Last Word (how_to_play_v1): when this card Exhausts or Vanishes, its Last Word line happens (once, with no target).
+  function lastWord(s, p, c) {
+    const def = cardDef(c);
+    if (!def.lastWord || !alive(p) || s.phase !== 'combat') return;
+    emit(s, { kind: 'lastWord', source: p.uid, card: c.id }); log(s, `${def.name}: Last Word.`);
+    runEffects(s, p, def.lastWord.effects, null, c);
   }
 
   // Counts a play of a card copy this fight: a Replay counts twice, Repeat once (Producer 11:56). The Fading hook reads this.
@@ -897,11 +919,20 @@
    * Changed values are wrapped as «+N» (better than printed) or «-N» (worse). */
   function cardText(s, p, c, targetUid) {
     const def = cardDef(c), base = D.CARDS[c.id];
+    return liveText(s, p, c, targetUid, def.desc, fadeFx(def, c, def.effects), base.effects);
+  }
+  // The Bloodied and Last Word lines, live values like cardText, without their keyword prefix (the UI adds it). null if absent.
+  function cardLines(s, p, c, targetUid) {
+    const def = cardDef(c), base = D.CARDS[c.id], out = {};
+    for (const k of ['bloodied', 'lastWord']) out[k] = def[k] ? liveText(s, p, c, targetUid, def[k].desc, def[k].effects, (base[k] || def[k]).effects) : null;
+    return out;
+  }
+  function liveText(s, p, c, targetUid, desc, effects, printedFx) {
     const inCombat = s && s.phase === 'combat' && p;
     const tgt = inCombat && targetUid ? find(s, targetUid) : null;
     let blockSoFar = 0;
-    const vals = def.effects.map((fx, i) => {
-      let v = fx.n || 0, printed = (base.effects[i] && base.effects[i].n) || 0;
+    const vals = effects.map((fx, i) => {
+      let v = fx.n || 0, printed = (printedFx[i] && printedFx[i].n) || 0;
       if (fx.t === 'block') blockSoFar += fx.n;
       if (fx.t === 'damage' || fx.t === 'damageAll') {
         v = inCombat ? attackDamage(p, tgt, attackBase(p, fx)) : attackBase({ statuses: {} }, fx);
@@ -913,7 +944,7 @@
       if (v < printed) return `«-${v}»`;
       return String(v);
     });
-    return def.desc.replace(/\{(\d+)\}/g, (_, i) => vals[+i]);
+    return desc.replace(/\{(\d+)\}/g, (_, i) => vals[+i]);
   }
 
   // ---------- win / lose / rewards ----------
@@ -1045,7 +1076,7 @@
 
   const Engine = { startEncounter, startFight, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade,
-    weightOdds, choiceWeights, rewardRarityWeights, describeChoice, isEternal, canRemove, canTransform, removeFromDeck, transformCard, repeatOf, playsOf };
+    weightOdds, choiceWeights, rewardRarityWeights, describeChoice, isEternal, canRemove, canTransform, removeFromDeck, transformCard, repeatOf, playsOf, fadeLeft, isBloodied, cardLines };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
 })(typeof window !== 'undefined' ? window : globalThis);

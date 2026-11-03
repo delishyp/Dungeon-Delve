@@ -64,6 +64,9 @@
     Repeat:     'Repeat X: the card\'s effect happens X times. "Deal 4 damage. Repeat 3." deals 12 in total.',
     Replay:     "Replay: the card is played one more time. A card with Replay and Repeat 3 does its effect 6 times. If it also has Exhaust or Vanish, it's played both times before it's removed.",
     Eternal:    'Eternal: the card can never be removed from your deck, in any way. Shops, events, the Silver Spring and card effects can\'t take it, though you can still upgrade it.',
+    Fading:     "Fading: each time you play it this fight, its numbers drop by 1. At 0, it Exhausts. It's back to full in the next fight.",
+    'Last Word': 'Last Word: when this card Exhausts or Vanishes, its Last Word line happens.',
+    Bloodied:   "Bloodied: the Bloodied line only counts while you're at half your HP or less.",
   };
   for (const k in STATUSES) KEYWORDS[STATUSES[k].name] = STATUSES[k].tip;
 

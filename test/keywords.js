@@ -151,6 +151,90 @@ for (const k in TIPS) eq(D.KEYWORDS[k], TIPS[k], k + ' tooltip wording');
   if (fs.existsSync(htp)) { const t = fs.readFileSync(htp, 'utf8');
     for (const k in TIPS) { const m = t.match(new RegExp('^- \\*\\*' + (k === 'Repeat' ? 'Repeat X' : k) + ':\\*\\* (.*)$', 'm')); ok(m && TIPS[k] === (k === 'Repeat' ? 'Repeat X' : k) + ': ' + m[1], k + ' tooltip matches how_to_play_v1.md'); } } }
 
+// ======== Fading, Last Word, Bloodied (Anna 11:54/12:19; how_to_play_v1 section 3; keyword_use_v2 part 3; Producer 11:56) ========
+const might1 = { t: 'status', status: 'might', n: 1, to: 'self' };
+Object.assign(D.CARDS, {
+  kw_fade: atk({ fading: true }), kw_fade_rep2: atk({ fading: true, repeat: 2, effects: [{ t: 'damage', n: 3 }] }),
+  kw_fade_draw: { cls: 'wizard', name: 'KW Candle', cost: 0, type: 'skill', rarity: 'common', target: 'none', fading: true, desc: 'Draw {0} cards.', effects: [{ t: 'draw', n: 3 }] },
+  kw_fade_lw: atk({ fading: true, effects: [{ t: 'damage', n: 2 }], lastWord: { desc: 'Remove all your debuffs.', effects: [{ t: 'cleanse' }] } }),
+  kw_exh_lw: blk({ exhaust: true, desc: 'Gain {0} Block. Exhaust.', lastWord: { desc: 'Gain {0} Rage.', effects: [{ t: 'status', status: 'rage', n: 2, to: 'self' }] } }),
+  kw_replay_exh_lw: atk({ replay: true, exhaust: true, desc: 'Deal {0} damage. Exhaust.', lastWord: { desc: 'Gain {0} Might.', effects: [might1] } }),
+  kw_van_lw: blk({ vanish: true, lastWord: { desc: 'Gain {0} Might.', effects: [might1] } }),
+  kw_van_lw_eternal: blk({ vanish: true, eternal: true, lastWord: { desc: 'Gain {0} Might.', effects: [might1] } }),
+  kw_blood: atk({ bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 5 }] } }),
+  kw_blood_self: blk({ desc: 'Lose {0} HP. Gain {1} Block.', effects: [{ t: 'loseHp', n: 10 }, { t: 'block', n: 1 }], bloodied: { desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 5 }] } }),
+});
+D.checkKeywordData(D.CARDS);
+const fresh = (enc) => { const f = fight(enc); f.p.hp = f.p.maxHp; return f; };
+// ---- Fading: one drop per play, at 0 it Exhausts, full again next fight ----
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kw_fade'), hits = [];
+  for (let i = 0; i < 4; i++) { const h = e.hp; if (i) p.hand.push(p.discard.splice(p.discard.indexOf(c), 1)[0]); ok(E.fadeLeft(D.CARDS.kw_fade, c) === 4 - i, 'fadeLeft before play ' + (i + 1));
+    ok(E.cardText(s, p, c, e.uid) === (i ? `Deal «-${4 - i}» damage.` : 'Deal 4 damage.'), 'live text shows the faded number: ' + E.cardText(s, p, c, e.uid));
+    const { ev } = play(s, p, c, e); hits.push(h - e.hp); if (i < 3) { eq(where(p, c), ['discard'], 'Fading card discarded while its number is above 0'); ok(!ev.some(x => x.kind === 'fadedOut'), 'not faded yet'); } else ok(ev.some(x => x.kind === 'fadedOut'), 'fadedOut event at 0'); }
+  eq(hits, [4, 3, 2, 1], 'Fading: 4, 3, 2, 1 damage'); eq(where(p, c), ['exhaust'], 'at 0 the Fading card Exhausts'); eq(c.fightPlays, 4, 'fightPlays 4');
+  const deckCard = { uid: 'fdk', id: 'kw_fade' }; p.deck.push(deckCard); E.startEncounter(s, 'lone_goblin'); E.takeEvents(s);
+  const copy = p.draw.concat(p.hand).find(x => x.uid === 'fdk'); ok(copy && !copy.fightPlays && E.fadeLeft(D.CARDS.kw_fade, copy) === 4, 'next fight the Fading card is back to full'); ok(!deckCard.fightPlays, 'the deck card itself is never marked'); }
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kw_fade', true); const h = e.hp; play(s, p, c, e); eq(h - e.hp, 7, 'upgraded Fading starts from the upgraded number (7)'); eq(E.fadeLeft(E.cardDef(c), c), 6, 'and drops to 6'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; p.statuses.might = 2; const c = give(p, 'kw_fade'); c.fightPlays = 3; const h = e.hp; play(s, p, c, e);
+  eq(h - e.hp, 1 + 2, 'Fading drops the printed number; Might still adds on top'); eq(where(p, c), ['exhaust'], 'and it exhausts at 0'); }
+// Repeat on a Fading card: one play, so it drops by 1 (Producer 11:56); every repeat uses the same number
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kw_fade_rep2'); let h = e.hp; play(s, p, c, e); eq(h - e.hp, 3 * 2, 'Fading + Repeat 2: 3 twice');
+  eq(c.fightPlays, 1, 'Repeat counts one play'); p.hand.push(p.discard.pop()); h = e.hp; play(s, p, c, e); eq(h - e.hp, 2 * 2, 'next play: 2 twice (dropped by 1)'); }
+// a non-damage number fades too: draws 3, then 2, then 1, then it's gone
+{ const { s, p } = fresh(), c = give(p, 'kw_fade_draw'), drawn = [];
+  for (let i = 0; i < 3; i++) { if (i) p.hand.push(p.discard.splice(p.discard.indexOf(c), 1)[0]); p.discard.push(...p.hand.filter(x => x !== c)); p.hand = [c]; play(s, p, c, null); drawn.push(p.hand.length); }
+  eq(drawn, [3, 2, 1], 'Fading draw: 3, 2, 1'); eq(where(p, c), ['exhaust'], 'then it Exhausts'); }
+// the Fading count survives a mid-fight save (state JSON round trip, as the game saves)
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kw_fade'); play(s, p, c, e); play(s, p, (p.hand.push(p.discard.pop()), c), e);
+  const s2 = JSON.parse(JSON.stringify(s)), p2 = s2.players[0], c2 = p2.discard.find(x => x.uid === c.uid); ok(c2 && c2.fightPlays === 2, 'fightPlays saved');
+  p2.discard.splice(p2.discard.indexOf(c2), 1); p2.hand.push(c2); const e2 = s2.enemies[0], h = e2.hp; play(s2, p2, c2, e2); eq(h - e2.hp, 2, 'after load the Fading card goes on at 2'); }
+// ---- Last Word: when the card Exhausts or Vanishes ----
+{ const { s, p } = fresh(), c = give(p, 'kw_exh_lw'); const { ev } = play(s, p, c, null);
+  eq([p.block, p.statuses.rage], [5, 2], 'Exhaust card: effect, then Last Word (2 Rage)'); eq(ev.filter(x => x.kind === 'lastWord').length, 1, 'one lastWord event'); eq(where(p, c), ['exhaust'], 'exhausted'); }
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kw_replay_exh_lw'), h = e.hp; const { ev } = play(s, p, c, e);
+  eq(h - e.hp, 8, 'Replay + Exhaust + Last Word: plays twice'); eq(p.statuses.might, 1, 'Last Word happens once (exhausts once)'); eq(ev.filter(x => x.kind === 'lastWord').length, 1, 'one lastWord event'); }
+{ const { s, p } = fresh(), c = give(p, 'kw_van_lw'); E.dispatch(s, { type: 'END_TURN', player: p.uid }); const ev = E.takeEvents(s);
+  eq(where(p, c), ['exhaust'], 'unplayed Vanish card vanished'); eq(p.statuses.might, 1, 'its Last Word happened'); ok(ev.findIndex(x => x.kind === 'vanish') < ev.findIndex(x => x.kind === 'lastWord'), 'vanish, then Last Word'); }
+{ const { s, p } = fresh(), c = give(p, 'kw_van_lw'); const { ev } = play(s, p, c, null); ok(!p.statuses.might && !ev.some(x => x.kind === 'lastWord'), 'a played Vanish card does not trigger its Last Word (Parting Shot rule)'); }
+{ const { s, p } = fresh(), c = give(p, 'kw_van_lw_eternal'); E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); ok(!p.statuses.might, 'Eternal blocks the Vanish, so no Last Word'); }
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kw_fade_lw'); c.fightPlays = 1; p.statuses.frightened = 2; const { ev } = play(s, p, c, e);
+  eq(where(p, c), ['exhaust'], 'Fading card at 0 exhausts'); ok(!p.statuses.frightened && ev.some(x => x.kind === 'lastWord'), 'and its Last Word happens (debuffs removed)'); }
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kw_fade_lw'); p.statuses.frightened = 2; play(s, p, c, e); ok(p.statuses.frightened === 2, 'no Last Word while the Fading card is still above 0'); }
+{ const { s, p } = fresh(), c = give(p, 'kw_exh_lw'); s.enemies.forEach(e => { e.hp = 0; }); E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s);
+  ok(s.phase !== 'combat' && !p.statuses.rage, 'no Last Word from cards cleared at fight end'); }
+// ---- Bloodied: at half HP or less, checked when played ----
+for (const [maxHp, hp, on] of [[80, 40, true], [80, 41, false], [75, 37, true], [75, 38, false], [80, 1, true]]) {
+  const { s, p } = fresh(), e = s.enemies[0]; p.maxHp = maxHp; p.hp = hp; ok(E.isBloodied(p) === on, `isBloodied ${hp}/${maxHp} = ${on}`);
+  const h = e.hp, c = give(p, 'kw_blood'); const { ev } = play(s, p, c, e); eq(h - e.hp, on ? 9 : 4, `Bloodied card at ${hp}/${maxHp}`); eq(ev.some(x => x.kind === 'bloodied'), on, 'bloodied event ' + on); }
+{ const { s, p } = fresh(); p.maxHp = 80; p.hp = 45; const c = give(p, 'kw_blood_self'); play(s, p, c, null); eq([p.hp, p.block], [35, 1], 'Bloodied is checked when played: HP lost by the card itself does not count'); }
+{ const { s, p } = fresh(); p.maxHp = 80; p.hp = 30; const c = give(p, 'kw_blood_self'); play(s, p, c, null); eq(p.block, 6, 'already Bloodied: the extra Block is added'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; p.statuses.might = 2; eq(E.cardLines(s, p, { id: 'kw_blood', uid: 'bl' }, e.uid), { bloodied: 'Deal «+7» more.', lastWord: null }, 'Bloodied line shows live numbers');
+  eq(E.cardLines(null, null, { id: 'kw_exh_lw' }), { bloodied: null, lastWord: 'Gain 2 Rage.' }, 'Last Word line text'); }
+// ---- data checks for the new keywords ----
+const bad = (def, re, m) => ok(re.test(throws(() => D.checkKeywordData({ kw_x: Object.assign({ type: 'attack', target: 'enemy', effects: [{ t: 'damage', n: 4 }] }, def) })) || ''), m);
+bad({ fading: true, effects: [{ t: 'damage', n: 4 }, { t: 'block', n: 2 }] }, /exactly one number/, 'Fading with two numbers fails');
+bad({ fading: true, effects: [{ t: 'damage', n: 4, times: 2 }] }, /exactly one number/, 'Fading with "X times" fails');
+bad({ fading: true, lastWord: { desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 3 }] } }, /exactly one number/, 'Fading with a numbered Last Word fails');
+bad({ fading: true, type: 'power' }, /playable, non-Power/, 'Fading on a Power fails');
+bad({ fading: true, replay: true }, /Fading with Replay/, 'printed Fading + Replay fails (undefined at 1)');
+bad({ fading: 1 }, /must be true or false/, 'fading must be boolean');
+bad({ lastWord: { desc: 'Gain {0} Might.', effects: [might1] } }, /needs Exhaust, Vanish or Fading/, 'Last Word without Exhaust/Vanish/Fading fails');
+bad({ exhaust: true, lastWord: { desc: 'Deal {0}.', effects: [{ t: 'damage', n: 3 }] } }, /single target/, 'single-target Last Word fails');
+bad({ exhaust: true, repeat: 2, lastWord: { desc: 'Gain {0} Might.', effects: [might1] } }, /Last Word with Repeat/, 'Last Word + Repeat fails (undefined)');
+bad({ exhaust: true, lastWord: { desc: 'Gain {1} Might.', effects: [might1] } }, /uses \{1\} with no effect/, 'Last Word desc placeholder check');
+bad({ exhaust: true, lastWord: 'Gain 1 Might.' }, /must be \{ desc, effects/, 'Last Word must be an object');
+bad({ bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 3 }] }, repeat: 2 }, /Bloodied with Repeat or Replay/, 'Bloodied + Repeat fails (undefined)');
+bad({ bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 3 }] }, replay: true }, /Bloodied with Repeat or Replay/, 'Bloodied + Replay fails (undefined)');
+bad({ target: 'none', bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 3 }] } }, /targeted Bloodied effect/, 'targeted Bloodied on an untargeted card fails');
+bad({ bloodied: { desc: 'x', effects: [] } }, /must be \{ desc, effects/, 'empty Bloodied fails');
+bad({ upgrade: { fading: true, effects: [{ t: 'damage', n: 4 }, { t: 'block', n: 1 }] } }, /exactly one number/, 'checks run on the upgrade too');
+eq(D.keywordLines({ kind: 'spell', vanish: true, repeat: 2, replay: true, eternal: true, fading: true }), ['Spell', 'Vanish', 'Repeat 2', 'Replay', 'Eternal', 'Fading'], 'Fading line comes after Eternal');
+const TIPS2 = { Fading: "Fading: each time you play it this fight, its numbers drop by 1. At 0, it Exhausts. It's back to full in the next fight.",
+  'Last Word': 'Last Word: when this card Exhausts or Vanishes, its Last Word line happens.', Bloodied: "Bloodied: the Bloodied line only counts while you're at half your HP or less." };
+for (const k in TIPS2) eq(D.KEYWORDS[k], TIPS2[k], k + ' tooltip wording');
+{ const htp = path.join(__dirname, '../lore/text/how_to_play_v1.md');
+  if (fs.existsSync(htp)) { const t = fs.readFileSync(htp, 'utf8'); for (const k in TIPS2) { const m = t.match(new RegExp('^- \\*\\*' + k + ':\\*\\* (.*)$', 'm')); ok(m && TIPS2[k] === k + ': ' + m[1], k + ' tooltip matches how_to_play_v1.md'); } } }
+
 // ---- page: keyword lines with tooltips on the card face, removal grids skip Eternal ----
 (async () => {
   const puppeteer = require('puppeteer-core');
@@ -172,6 +256,16 @@ for (const k in TIPS) eq(D.KEYWORDS[k], TIPS[k], k + ' tooltip wording');
       cards[el.dataset.id + (el.classList.contains('upg') ? '+' : '')] = { html: sp.innerHTML, fits: sp.offsetHeight <= box.clientHeight + 0.5 && sp.scrollWidth <= box.clientWidth + 0.5,
         kw: [...sp.querySelectorAll('.kw')].map(x => [x.textContent, x.dataset.tip || '']) }; }
     p.hand = []; g.render();
+    // Fading / Bloodied / Last Word lines
+    const d2 = { kwq_order: { kind: 'spell', vanish: true, eternal: true, effects: [{ t: 'damage', n: 6 }], bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 3 }] }, lastWord: { desc: 'Gain {0} Might.', effects: [{ t: 'status', status: 'might', n: 1, to: 'self' }] } },
+      kwq_fade: { fading: true } };
+    for (const id in d2) D.CARDS[id] = Object.assign({}, base, d2[id]);
+    const faded = { id: 'kwq_fade', uid: 'qf1', fightPlays: 2 };
+    p.hand = [{ id: 'kwq_order', uid: 'qo1' }, { id: 'kwq_order', uid: 'qo2', up: true }, { id: 'kwq_fade', uid: 'qf0' }, faded]; g.ui.selected = null; g.render();
+    const lines = {};
+    for (const el of document.querySelectorAll('.hand .card')) { const box = el.querySelector('.cdesc'), sp = box.firstElementChild;
+      lines[el.dataset.card] = { html: sp.innerHTML, fits: sp.offsetHeight <= box.clientHeight + 0.5 && sp.scrollWidth <= box.clientWidth + 0.5 }; }
+    p.hand = []; g.render();
     // shop removal grid and event remove grid
     p.deck.push({ uid: 'etp1', id: 'kwp_ret' }); p.gold = 999;
     const grid = () => [...document.querySelectorAll('.pileview .card')].map(el => el.dataset.card);
@@ -181,7 +275,7 @@ for (const k in TIPS) eq(D.KEYWORDS[k], TIPS[k], k + ' tooltip wording');
     g.ui.shopRemoving = false; g.state.phase = 'event'; g.state.event = { id: 'purifying_fountain', stage: 'pick', pick: 'remove', log: [], next: null }; g.render();
     const evGrid = grid();
     Object.assign(g.state, saved); g.render();
-    return { cards, shopGrid, evGrid, deck: p.deck.map(c => c.uid) };
+    return { cards, shopGrid, evGrid, deck: p.deck.map(c => c.uid), lines };
   });
   const tip = (k) => D.KEYWORDS[k];
   const lineRe = (word, shown) => `<br><span class="kw" data-tip="${tip(word).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))}">${word}</span>${shown || ''}.`;
@@ -194,6 +288,13 @@ for (const k in TIPS) eq(D.KEYWORDS[k], TIPS[k], k + ' tooltip wording');
     const r2 = R.cards['kwp_rep2' + up]; ok(r2.html.endsWith(lineRe('Repeat', ' 2')), 'kwp_rep2' + up + ': Repeat 2. line');
     const x = R.cards['kwp_exh' + up]; ok(x.html.endsWith(lineRe('Replay')) && /Exhaust<\/span>\.<br>/.test(x.html), 'kwp_exh' + up + ': Exhaust stays in the effect line, Replay after it');
   }
+  const kwSpan = (word) => `<span class="kw" data-tip="${tip(word).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))}">${word}</span>`;
+  for (const u of ['qo1', 'qo2']) { const h = R.lines[u].html, idx = ['Bloodied', 'Spell', 'Vanish', 'Eternal', 'Last Word'].map(w => h.indexOf('<br>' + kwSpan(w)));
+    ok(idx.every(i => i > 0) && idx.every((i, j) => !j || i > idx[j - 1]), u + ': order is effect / Bloodied: / Spell. / Vanish. / Eternal. / Last Word: ' + h);
+    ok(/<br><span class="kw"[^>]*>Bloodied<\/span>: Deal \d+ more\.<br>/.test(h) && /<br><span class="kw"[^>]*>Last Word<\/span>: Gain 1 <span class="kw"[^>]*>Might<\/span>\.$/.test(h), u + ': Bloodied and Last Word lines carry their text');
+    ok(R.lines[u].fits, u + ': fits the rules box'); }
+  ok(R.lines.qf0.html.endsWith('<br>' + kwSpan('Fading') + '.'), 'Fading. line with its tooltip');
+  ok(/<span class="v-down">4<\/span>/.test(R.lines.qf1.html), 'a Fading card played twice shows its number live (6 -> 4, marked lower): ' + R.lines.qf1.html);
   ok(R.deck.includes('etp1'), 'Eternal card is in the deck');
   ok(R.shopGrid.length > 0 && !R.shopGrid.includes('etp1'), 'shop removal grid does not offer the Eternal card (' + R.shopGrid.length + ' offered)');
   ok(R.evGrid.length > 0 && !R.evGrid.includes('etp1'), 'event remove grid does not offer the Eternal card (' + R.evGrid.length + ' offered)');

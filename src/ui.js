@@ -83,10 +83,12 @@
     return l.length === 1 ? l[0].uid : null;
   }
   const TPL_RARITIES = ['starter', 'common', 'uncommon', 'rare', 'legendary'];
-  // Rules box: the effect text, then one line per keyword (Spell, Retain, Vanish, Repeat X, Replay, Eternal; Anna 11:17/11:33),
-  // each with its kwTips hover tooltip.
-  function rulesHTML(text, def, base) {
-    return withKeywords(text, base.kwTips) + D.keywordLines(def).map(k => '<br>' + withKeywords(k + '.', base.kwTips)).join('');
+  // Rules box: the effect text, a "Bloodied: ..." line, one line per keyword (Spell, Retain, Vanish, Repeat X, Replay, Eternal,
+  // Fading; Anna 11:17/11:33), then a "Last Word: ..." line last; each keyword carries its kwTips hover tooltip.
+  function rulesHTML(text, def, base, lines) {
+    const L = lines || {}, line = (t) => '<br>' + withKeywords(t, base.kwTips);
+    return withKeywords(text, base.kwTips) + (L.bloodied != null ? line('Bloodied: ' + L.bloodied) : '')
+      + D.keywordLines(def).map(k => line(k + '.')).join('') + (L.lastWord != null ? line('Last Word: ' + L.lastWord) : '');
   }
   function cardHTML(c, opts = {}) {
     const def = E.cardDef(c), base = D.CARDS[c.id], fr = D.frameOf(base, c.id);
@@ -110,14 +112,14 @@
       ${foil ? FOIL_LAYERS : ''}${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname${def.name.length > 15 ? ' long' : ''}"><span>${esc(def.name)}</span></div>
       <div class="cclass" title="${esc(base.cls)}">${I(emblem)}</div>
       <div class="ctype">${tword}</div>
-      <div class="cdesc"><span>${rulesHTML(text, def, base)}</span></div></div>
+      <div class="cdesc"><span>${rulesHTML(text, def, base, E.cardLines(opts.live ? G : null, opts.live ? P() : null, c, opts.live ? liveTarget() : null))}</span></div></div>
       ${def.unplayable ? '' : `<div class="cost ${def.cost < base.cost ? 'cheaper' : ''}"><span>${def.cost}</span></div>`}</div>`;
   }
   function refreshHandText() {
     if (!G || G.phase !== 'combat') return;
     $app.querySelectorAll('.hand .card').forEach(el => {
       const c = P().hand.find(x => x.uid === el.dataset.card); if (!c) return;
-      el.querySelector('.cdesc span').innerHTML = rulesHTML(E.cardText(G, P(), c, liveTarget()), E.cardDef(c), D.CARDS[c.id]);
+      el.querySelector('.cdesc span').innerHTML = rulesHTML(E.cardText(G, P(), c, liveTarget()), E.cardDef(c), D.CARDS[c.id], E.cardLines(G, P(), c, liveTarget()));
       fitRules(el);
     });
   }
