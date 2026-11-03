@@ -32,7 +32,7 @@ function textChecks() {
   const tf = textChecks();
   if (tf.length) { console.log('TEXT CHECK FAIL\n' + [...new Set(tf)].join('\n')); process.exit(1); }
   console.log('TEXT CHECK PASS (placeholders filled, no old names in built display text)');
-  const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'], protocolTimeout: 900000 });   // the one waitForFunction below can run past puppeteer's 180 s default (demo.2: three more bosses)
   const page = await browser.newPage();
   const errs = [];
   page.on('pageerror', e => errs.push(e.message));

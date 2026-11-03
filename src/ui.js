@@ -12,7 +12,7 @@
   let G = null;                 // the game state (plain object)
   let me = null;                // uid of the local player (multiplayer: one per client)
   const ui = { screen: 'title', selected: null, pile: null, busy: false, holdCombat: false, upgrading: false, hoverTarget: null,
-    story: null, potionMenu: null, shopRemoving: false, drag: null, deadShown: {}, flavor: {},
+    story: null, potionMenu: null, shopRemoving: false, drag: null, deadShown: {}, flavor: {}, bossFx: {},
     fast: params.includes('selftest') || params.includes('fast') };
   const wait = (ms) => new Promise(r => setTimeout(r, ui.fast ? 0 : ms * window.Settings.speedMul()));
   const S = window.Sfx || { play() {}, music() {}, disable() {} };
@@ -331,7 +331,7 @@
     if (i.stripBlock) parts.unshift('remove all your Block');
     if (i.cards) { ic += I('curse', 'in-deb'); text += ` +${i.cards}`; parts.push(`put ${i.cards} ${esc(i.cardName)} card${i.cards > 1 ? 's' : ''} in your ${i.cardsTo === 'discard' ? 'discard pile' : 'hand'}`); }
     if (i.statusDebuff || (i.debuff && !i.cards)) { ic += I('skull', 'in-deb'); parts.push('weaken you'); }
-    if (i.summon) { ic += I('needle', 'in-sum'); text += ' +1'; parts.push(`sew up a new ${esc(i.summon)}`); }
+    if (i.summon) { ic += I('needle', 'in-sum'); text += ' +1'; parts.push(`${D.MONSTERS[e.monsterId].ai.summoner ? 'sew up a new' : 'bring in a new'} ${esc(i.summon)}`); }
     if (i.wait) { ic += I('hourglass', 'in-wait'); parts.push('do nothing: it is still being sewn together and acts next turn'); }
     if (i.blockLeader) parts.push(`give its maker ${i.blockLeader} Block`);
     if (i.healMinions) parts.push(`heal its Sewn ${i.healMinions} HP`);
@@ -352,7 +352,8 @@
   // Enemies: enemy_<id>_<pose> (idle, attack, hit), used only when enemy_<id>_idle exists (same canvas);
   // a missing attack/hit falls back to that idle. Without pose files the legacy single sprite is drawn.
   const POSES = ['idle', 'attack', 'defend', 'cast', 'hit'];
-  const POSE_MS = 520;                 // how long a pose holds before returning to idle (normal speed)
+  const POSE_MS = 520;
+  const BFX_MS = 3200;                 // how long a boss state effect (D.BOSS_FX) plays after its move                 // how long a pose holds before returning to idle (normal speed)
   const BEAT_ZOOM = 1.05, SHAKE_PX = 3, SHAKE_MS = 220;
   // Hero pose canvases are drawn at one scale for every class: the 752-px idle figure stays about as tall as the old Barbarian.
   const HERO_POSE_H = 263;
@@ -443,10 +444,12 @@
     const h = Math.round((cv ? cv.size * HERO_POSE_H / 900 : !isEnemy && pset ? HERO_POSE_H : D.SPRITE_H[isEnemy ? baseMon(u.monsterId) : u.heroId] || 170) * k);
     const cut = cv ? Math.round(cv.top * HERO_POSE_H / 900 * k) : 0;
     const goneCls = dead ? (ui.deadShown[u.uid] ? 'dead gone' : '') : '';
-    const bfx = isEnemy && D.BOSS_FX && D.BOSS_FX[baseMon(u.monsterId)];
+    // boss state effect (D.BOSS_FX): plays for BFX_MS after the boss uses the move; re-renders keep its place in the animation
+    const bst = isEnemy && D.BOSS_FX && D.BOSS_FX[baseMon(u.monsterId)] && ui.bossFx[u.uid], bage = bst ? Date.now() - bst.t0 : 0;
+    const bfx = bst && bage < BFX_MS ? bst.fx : null;
     return `<div class="unit ${isEnemy ? 'enemy' : 'player'} ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${goneCls} ${targetable ? 'targetable' : ''} ${guarded ? 'untargetable' : ''}" data-uid="${u.uid}" style="--sh:${h}px${cut ? `;--cut:${cut}px` : ''}"${cv ? ` data-cutf="${(cv.top / cv.size).toFixed(4)}"` : ''}>
       ${isEnemy && !dead ? intentHTML(u) : ''}
-      <div class="sprite-wrap"><div class="idle" style="${idleStyle(u, def.boss)}"><img class="sprite" src="${pset ? pset[curPose(u.uid)] : isEnemy ? (img(key) || monsterPic(u.monsterId)) : img(key)}" alt="${esc(u.name)}" draggable="false"></div>${bfx ? `<div class="bossfx fx-${bfx}" aria-hidden="true"><i></i><i></i><i></i></div>` : ''}<div class="shadow"></div></div>
+      <div class="sprite-wrap"><div class="idle" style="${idleStyle(u, def.boss)}"><img class="sprite" src="${pset ? pset[curPose(u.uid)] : isEnemy ? (img(key) || monsterPic(u.monsterId)) : img(key)}" alt="${esc(u.name)}" draggable="false"></div>${bfx ? `<div class="bossfx fx-${bfx}" style="--bage:-${bage}ms" aria-hidden="true"><i></i><i></i><i></i></div>` : ''}<div class="shadow"></div></div>
       <div class="plate"><div class="uname">${esc(u.name)}${def.elite ? ' <span class="tag">Elite</span>' : ''}${def.boss ? ' <span class="tag">Boss</span>' : ''}</div>
       <div class="hpbar ${u.block ? 'blocked' : ''}">${u.block ? `<div class="blockbadge" data-tip="${esc(D.KEYWORDS.Block)}">${u.block}</div>` : ''}
         <div class="fill" style="width:${pct}%"></div><div class="txt">${u.hp} / ${u.maxHp}</div></div>
@@ -540,14 +543,14 @@
       const open = G.pos === n.id && reach.includes(t);
       lines += `<line x1="${a.x}%" y1="${a.y}" x2="${b.x}%" y2="${b.y}" class="${walked ? 'walked' : open ? 'open' : ''}"/>`;
     }
-    const bossKey = D.ENCOUNTERS[D.FLOORS[G.floor].boss].enemies[0];
+    const bossEnc = E.floorBoss(G), bossKey = D.ENCOUNTERS[bossEnc].enemies[0];
     const nh = nodes.map(n => {
       const t = D.NODE_TYPES[n.type], pos = nodeXY(n);
       const shown = n.revealed && n.revealed !== 'event' ? n.revealed : n.type;
       const isBoss = n.type === 'boss';
       const cls = ['mapnode', n.type, reach.includes(n.id) ? 'reachable' : '', visited.includes(n.id) ? 'visited' : '', G.pos === n.id ? 'current' : '',
         !reach.includes(n.id) && !visited.includes(n.id) && n.row <= (G.pos ? G.map.nodes[G.pos].row : -1) ? 'locked' : ''].join(' ');
-      const tip = `<b>${t.name}</b><br>${esc(t.tip)}${isBoss ? '<br>' + esc(D.ENCOUNTERS[D.FLOORS[G.floor].boss].name) + ' awaits.' : ''}${n.revealed ? '<br><i>It was: ' + esc(D.NODE_TYPES[n.revealed].name) + '</i>' : ''}${ST.get('devMode') && n.type === 'event' && !n.revealed ? devOddsTip('This room turns out to be', E.weightOdds(D.MAP.unknown), k => D.NODE_TYPES[k].name) : ''}`;
+      const tip = `<b>${t.name}</b><br>${esc(t.tip)}${isBoss ? '<br>' + esc(D.ENCOUNTERS[bossEnc].name) + ' awaits.' : ''}${n.revealed ? '<br><i>It was: ' + esc(D.NODE_TYPES[n.revealed].name) + '</i>' : ''}${ST.get('devMode') && n.type === 'event' && !n.revealed ? devOddsTip('This room turns out to be', E.weightOdds(D.MAP.unknown), k => D.NODE_TYPES[k].name) : ''}`;
       return `<div class="${cls}" data-type="${n.type}" style="left:${pos.x}%;top:${pos.y}px" ${reach.includes(n.id) ? `data-act="node" data-node="${n.id}"` : ''} data-tip="${esc(tip)}">
         ${isBoss ? `<img src="${img(bossKey)}" alt="">` : icon(shown)}${n.revealed && n.revealed !== 'event' ? '<i class="q">?</i>' : ''}</div>`;
     }).join('');
@@ -1141,7 +1144,7 @@
     if (!all && st.i < st.lines.length - 1) { st.i++; render(); return; }
     ui.story = null; render(); st.done();
   }
-  const bossLines = (id, which) => D.STORY[which][id].map(t => ({ text: t, who: /^[A-Z][A-Z ]*:/.test(t) ? id : null }));
+  const bossLines = (id, which) => (D.STORY[which][id] || []).map(t => ({ text: t, who: /^[A-Z][A-Z ]*:/.test(t) ? id : null }));
   function dmCaption(text) {
     const c = document.createElement('div'); c.className = 'dmcaption'; c.textContent = fill(text);
     $fx.appendChild(c); setTimeout(() => c.remove(), ui.fast ? 50 : 3800);
@@ -1220,6 +1223,9 @@
       if (el) { el.classList.add('dead'); el.querySelector('.intent')?.remove(); }
     }
     else if (ev.kind === 'enemyAct') {
+      const src = E.find(G, ev.source), bf = src && D.BOSS_FX && D.BOSS_FX[baseMon(src.monsterId)], bfx = bf && bf[ev.move];
+      if (bfx) { ui.bossFx[ev.source] = { fx: bfx, t0: Date.now() }; const w = unitEl(ev.source) && unitEl(ev.source).querySelector('.sprite-wrap');
+        if (w) { const o = w.querySelector('.bossfx'); if (o) o.remove(); w.insertAdjacentHTML('beforeend', `<div class="bossfx fx-${bfx}" style="--bage:0ms" aria-hidden="true"><i></i><i></i><i></i></div>`); } }
       const el = unitEl(ev.source); if (!el) return;
       const mv = D.MONSTERS[E.find(G, ev.source).monsterId].moves;
       if (Object.values(mv).some(m => m.name === ev.name && m.effects.some(f => f.t === 'attack'))) { lunge(ev.source); setPose(ev.source, 'attack'); beat([ev.source].concat(G.players.filter(p => p.hp > 0).map(p => p.uid))); }

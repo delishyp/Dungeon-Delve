@@ -10,8 +10,8 @@ const md5 = (f) => crypto.createHash('md5').update(fs.readFileSync(path.join(__d
 eq([md5('enemy_beholder_idle.webp'), md5('enemy_crier_idle.webp'), md5('enemy_owlbear_idle.webp')],
   ['9de88837a6b124f787f1475b107e2bfd', 'a66f0f0ab9c58f0fc45b4eb6e3b7f380', '9b1bf2602662ee06f0254e074a2122d8'], 'Palette handoff files, byte for byte (Beast: the repaint, not 56319da7)');
 eq([md5('enemy_toll_idle.webp'), md5('enemy_brood_idle.webp')], ['8ad6c5a45e35e4c8ff88119cbb059747', 'de536106bae92432c581eecdb7ab9a98'], 'Toll (shut) and Brood (sealed) files, byte for byte (Brood: not a277d410)');
-eq(D.BOSS_FX, { toll: 'dust', brood: 'pulse' }, 'Toll dust and Brood pulse are code effects');
-ok(!D.MONSTERS.toll && !D.MONSTERS.brood, 'no Toll/Brood enemy data yet (Producer decide), so only the sprites and idle effects are wired');
+eq(D.BOSS_FX, { toll: { breath: 'dust', count: 'count' }, brood: { pulse: 'pulse', split: 'split' } }, 'Toll dust/count and Brood pulse/split are code effects, keyed to their moves (demo.2)');
+ok(['breath', 'count'].every(k => D.MONSTERS.toll.moves[k]) && ['pulse', 'split'].every(k => D.MONSTERS.brood.moves[k]), 'every effect has its move in the enemy data');
 ok(fs.existsSync(path.join(__dirname, '../assets/beholder.webp')) && fs.existsSync(path.join(__dirname, '../assets/owlbear.webp')), 'legacy beholder.webp and owlbear.webp kept for rollback');
 eq([D.MONSTERS.beholder.sprite, D.MONSTERS.owlbear.sprite], ['enemy_beholder_idle', 'enemy_owlbear_idle'], 'boss slots point at the new files');
 eq([D.MONSTERS.beholder.name, D.ENCOUNTERS.beholder.name], ['Vessa the Unsleeping', 'Vessa the Unsleeping'], 'Vessa\'s name is on (LORE: the Watcher was a placeholder until her art existed)');
@@ -43,7 +43,11 @@ ok(!/owlbear: \[[^\]]*(wing|half-bald|rises, huge)/i.test(src), 'no wings, half-
       const hero = document.querySelector('.unit.player .sprite'); await hero.decode?.(); out.heroScale = hero.offsetHeight / 900;
       for (const id of ['beholder', 'owlbear', 'crier', 'toll', 'brood']) { e.monsterId = id; e.intent = { move: Object.keys(D.MONSTERS[id].moves)[0], target: g.state.players[0].uid }; g.render();
         const sp = document.querySelector('.unit.enemy .sprite'), u = sp.closest('.unit'), it = u.querySelector('.intent'), r = sp.getBoundingClientRect(), ir = it && it.getBoundingClientRect();
-        out[id] = { src: sp.getAttribute('src') || '', h: sp.offsetHeight, cutf: +(u.dataset.cutf || 0), introw: ir ? ir.bottom - (r.top + r.height * +(u.dataset.cutf || 0)) : null, fx: [...u.querySelectorAll('.bossfx')].map(x => x.className + '|' + getComputedStyle(x.firstElementChild).animationName) }; }
+        out[id] = { src: sp.getAttribute('src') || '', h: sp.offsetHeight, cutf: +(u.dataset.cutf || 0), introw: ir ? ir.bottom - (r.top + r.height * +(u.dataset.cutf || 0)) : null, fx: [...u.querySelectorAll('.bossfx')].map(x => x.className + '|' + getComputedStyle(x.firstElementChild).animationName) };
+        // the resting state (Toll shut, Brood sealed) has no layer; a move's effect plays for a few seconds after the move
+        const f0 = D.BOSS_FX[id] && Object.values(D.BOSS_FX[id])[0];
+        if (f0) { g.ui.bossFx[e.uid] = { fx: f0, t0: Date.now() }; g.render(); out[id].fxOn = [...document.querySelectorAll('.unit.enemy .bossfx')].map(x => x.className + '|' + getComputedStyle(x.firstElementChild).animationName);
+          g.ui.bossFx[e.uid] = { fx: f0, t0: Date.now() - 60000 }; g.render(); out[id].fxOld = document.querySelectorAll('.unit.enemy .bossfx').length; delete g.ui.bossFx[e.uid]; } }
       return out;
     });
     await pg.close(); return r;
@@ -62,7 +66,8 @@ ok(!/owlbear: \[[^\]]*(wing|half-bald|rises, huge)/i.test(src), 'no wings, half-
     eq([c.all.cards - c.hidden.cards, c.all.relics - c.hidden.relics, c.dev.cards - c.all.cards, c.dev.relics - c.all.relics], [1, 1, 0, 0], 'compendium totals leave it out too');
     await pg.close(); }
   eq([on.beholder.src === on.A.nb, on.owlbear.src === on.A.no, on.crier.src === on.A.nc, on.toll.src === on.A.nt, on.brood.src === on.A.nr], [true, true, true, true, true], 'the new files are drawn');
-  eq([on.toll.fx, on.brood.fx, on.beholder.fx], [['bossfx fx-dust|tollDust'], ['bossfx fx-pulse|broodPulse'], []], 'Toll dust / Brood pulse layers, nothing on the others');
+  eq([on.toll.fx, on.brood.fx, on.beholder.fx], [[], [], []], 'no effect layer at rest (Toll shut, Brood sealed)');
+  eq([on.toll.fxOn, on.brood.fxOn, on.toll.fxOld, on.brood.fxOld], [['bossfx fx-dust|tollDust'], ['bossfx fx-pulse|broodPulse'], 0, 0], 'Toll dust / Brood pulse play after their move, then end');
   for (const id of ['beholder', 'owlbear', 'crier', 'toll', 'brood']) {
     ok(Math.abs(on[id].h / 1400 - on.heroScale) < 0.01, `${id}: boss canvas drawn at the hero scale (${(on[id].h / 1400).toFixed(3)} vs ${on.heroScale.toFixed(3)} px per canvas px)`);
     ok(on[id].cutf > 0 && on[id].introw != null && on[id].introw <= 15 && on[id].introw >= -40, `${id}: the intent sits on the body's top edge, no more than 15 px into it, at most 40 px above it (${on[id].introw && on[id].introw.toFixed(1)} px)`);

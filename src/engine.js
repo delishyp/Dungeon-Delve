@@ -221,8 +221,20 @@
     rows[R - 1].forEach(id => nodes[id].next.push(bossId));
     rows.push([bossId]);
     for (const n of Object.values(nodes)) delete n.prev;
-    return { rows, nodes, cols: C };
+    return { rows, nodes, cols: C, boss: pickFloorBoss(s) };
   }
+  // The floor's boss for this run (FLOORS[].bossPool, weights). Drawn from a hash of the seed and floor, not from s.rng, so the
+  // rest of the run's randomness is the same as before the pool existed.
+  function pickFloorBoss(s) {
+    const F = D.FLOORS[s.floor]; if (!F || !F.bossPool) return F && F.boss;
+    let t = (Math.imul((s.seed | 0) ^ 0x5bd1e995, 31) + (s.floor + 1) * 0x9E3779B1) | 0;
+    t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    const r = ((t ^ (t >>> 14)) >>> 0) / 4294967296, E = Object.entries(F.bossPool).filter(([, w]) => w > 0);
+    let x = r * E.reduce((a, [, w]) => a + w, 0);
+    for (const [k, w] of E) if ((x -= w) < 0) return k;
+    return E[E.length - 1][0];
+  }
+  const floorBoss = (s) => (s.map && s.map.boss && D.ENCOUNTERS[s.map.boss]) ? s.map.boss : D.FLOORS[s.floor].boss;
   function reachable(s) {
     if (s.phase !== 'map') return [];
     return s.pos ? s.map.nodes[s.pos].next.slice() : s.map.rows[0].slice();
@@ -230,7 +242,7 @@
 
   function startFight(s, row, type) {
     const F = D.FLOORS[s.floor];
-    let pool = type === 'boss' ? [F.boss] : type === 'elite' ? F.elites : (row <= 3 ? F.easy : F.hard);
+    let pool = type === 'boss' ? [floorBoss(s)] : type === 'elite' ? F.elites : (row <= 3 ? F.easy : F.hard);
     // Variant copies (sameAs) count as the same fight for the no-repeat rule.
     const encKey = e => (D.ENCOUNTERS[e] && D.ENCOUNTERS[e].sameAs) || e;
     if (pool.length > 1 && s.lastEnc) { const f = pool.filter(e => encKey(e) !== encKey(s.lastEnc)); if (f.length) pool = f; }
@@ -783,11 +795,15 @@
       }
       else if (fx.t === 'addCards') {   // status cards (combat-only): hand up to the cap (or the discard pile with to:'discard'); never the deck
         if (!alive(tgt)) continue;
-        for (let i = 0; i < fx.n; i++) {
+        // `max` (the Crier's Echoes, max 3): no more copies than that in the hero's hand, draw and discard piles at once
+        const have = fx.max ? [tgt.hand, tgt.draw, tgt.discard].reduce((a, pile) => a + pile.filter(c => c.id === fx.card).length, 0) : 0;
+        const n = fx.max ? Math.max(0, Math.min(fx.n, fx.max - have)) : fx.n;
+        if (!n) continue;
+        for (let i = 0; i < n; i++) {
           const c = { uid: uid(s, 'c'), id: fx.card };
           if (fx.to !== 'discard' && tgt.hand.length < 10) tgt.hand.push(c); else tgt.discard.push(c);
         }
-        emit(s, { kind: 'addCards', source: e.uid, target: tgt.uid, card: fx.card, n: fx.n, to: fx.to === 'discard' ? 'discard' : 'hand' });
+        emit(s, { kind: 'addCards', source: e.uid, target: tgt.uid, card: fx.card, n, to: fx.to === 'discard' ? 'discard' : 'hand' });
       }
       else if (fx.t === 'status') {
         const ts = fx.to === 'self' ? [e] : fx.to === 'allies' ? livingEnemies(s) : [tgt];
@@ -807,7 +823,7 @@
     if (dead >= 0) s.enemies[dead] = n; else s.enemies.splice(s.enemies.indexOf(e), 0, n);
     n.summoned = true;
     emit(s, { kind: 'summon', source: e.uid, target: n.uid, monster: fx.monster });
-    log(s, `${e.name} sews up ${n.name}.`);
+    log(s, D.MONSTERS[e.monsterId].ai.summoner ? `${e.name} sews up ${n.name}.` : `${n.name} comes through.`);
     chooseIntent(s, n);
     syncGuards(s);
   }
@@ -1182,7 +1198,7 @@
     return gone;
   }
 
-  const Engine = { sanitizeState, startEncounter, startFight, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
+  const Engine = { sanitizeState, startEncounter, startFight, floorBoss, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade,
     weightOdds, choiceWeights, rewardRarityWeights, describeChoice, cardInPool, isEternal, canRemove, canTransform, removeFromDeck, transformCard, repeatOf, playsOf, fadeLeft, isBloodied, cardLines };
   root.Engine = Engine;

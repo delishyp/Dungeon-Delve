@@ -31,6 +31,10 @@
     junk_broken_bone: { cls: 'curse', name: 'Broken Bone', cost: 0, type: 'status', rarity: 'status', target: 'none', unplayable: true, combatOnly: true,
       kwTips: { Unplayable: 'Unplayable: this card cannot be played. It is gone when the fight ends.' },
       desc: 'Unplayable. Deal 6 or more damage to her with one card to remove this.', effects: [] },
+    // Status card from the Crier's calls (Anna's pick B, Echoes). Playing it (1 Energy) silences it (Exhaust). Reuses the
+    // Whispers curse art until it has its own. Name from LORE; the card text is a placeholder for Lorekeeper.
+    echo: { cls: 'curse', name: 'Echo', art: 'curse_whispers', cost: 1, type: 'status', rarity: 'status', target: 'none', exhaust: true, combatOnly: true, endTurnHpLoss: 3,
+      desc: 'Play to silence it. Exhaust. If this is in your hand at the end of your turn, lose 3 HP.', effects: [] },
     // Status card from the Gelatinous Cube's Engulf: goes into the discard pile, gone when the fight ends.
     // Own placeholder art (assets/placeholder/placeholder_acid.webp) until it is painted; no longer reuses Mummy Rot's art.
     acid: { cls: 'curse', name: 'Acid', cost: 0, type: 'status', rarity: 'status', target: 'none', unplayable: true, combatOnly: true,
@@ -89,7 +93,7 @@
     goblin: 130, goblin_cutter: 140, goblin_archer: 140, goblin_shaman: 140, kobold: 120, giant_rat: 90, skeleton: 175, gnoll: 195,
     bugbear: 215, ogre: 250, owlbear: 270, ghoul: 170, drow: 190, drow_mage: 195, troll: 265, gelatinous_cube: 220,
     mind_flayer: 230, sewn: 255, mimic: 190, lesser_mimic: 150, beholder: 290, wyrmling: 200,
-    crier: 409, toll: 409, brood: 409 };   // boss-canvas files only (below); 409 = 1400 canvas px at hero scale   // the Crier has only a boss-canvas file (below); 409 = 1400 canvas px at hero scale, used if ever drawn legacy-style
+    crier: 409, toll: 409, brood: 409, toll_penitent: 170, toll_bones: 165, toll_tally: 140, brood_husk: 165, brood_shell: 220 };   // boss-canvas files only (below); 409 = 1400 canvas px at hero scale   // the Crier has only a boss-canvas file (below); 409 = 1400 canvas px at hero scale, used if ever drawn legacy-style
   // Boss-canvas files (Palette handoff Nov 3, STYLE_GUIDE s7): 1400x1400, feet (700,1391), 1 canvas px = 1 hero px. They are drawn
   // at one fixed scale (the hero pose scale), not scaled to fit, so the bosses keep their relative sizes. `top` is the first
   // opaque row: the layout box starts there, so the intent and hit effects sit on the body, not on empty canvas.
@@ -98,10 +102,11 @@
     // Floor 2 trial bosses (Anna 15:28): the Toll's `shut` state and the Brood's `sealed` state. Neither has enemy data yet, so
     // they are drawn once a 'toll' / 'brood' monster exists; their states (breath/count, pulse/split) are code effects (BOSS_FX).
     enemy_toll_idle: { size: 1400, top: 332 }, enemy_brood_idle: { size: 1400, top: 492 } };
-  // Code effects drawn over a boss sprite (no extra art): idle only for now, since the Toll and the Brood have no fight
-  // data to hook their state changes to (Producer decide). toll: dust breathing out of the gate's gap (pose `breath`);
-  // brood: the pods breathing spore dust (pose `pulse`). The `split` and `count` moments need fight events first.
-  D.BOSS_FX = { toll: 'dust', brood: 'pulse' };
+  // Code effects drawn over a boss sprite (no extra art), played when the boss uses the move (fight event enemyAct); the idle
+  // sprite is the resting state (the Toll `shut`, the Brood `sealed`). toll: dust breathing out of the gate's gap (pose `breath`)
+  // and one tally mark glowing amber (pose `count`); brood: the pods breathing spore dust (pose `pulse`) and a pod tearing open
+  // (pose `split`).
+  D.BOSS_FX = { toll: { breath: 'dust', count: 'count' }, brood: { pulse: 'pulse', split: 'split' } };
 
   // ---------- map ----------
   // 16 rows with 3 full '?' rows (Producer 10:56, design/event_variety_plan.md option D): ~7.8 fights + elites per path as before.
@@ -305,6 +310,11 @@
     bossIntro: {
       owlbear: ["The nest is woven from bones.", "A huge grey shape rises over it: a starving owlbear with milky eyes.", "The Beast of Saint Brennick stands, huge and heavy, and lowers her head."],
       beholder: ["A cavern lit by nothing. Feral drow kneel around its edges, all facing the middle.", "Above them hangs something round and swollen, made almost entirely of eyes. Every one of them opens at once.", "VESSA: \"I see who you were. Oh, I see it. Shall I tell you?\""],
+      // demo.2 bosses: Lorekeeper's DRAFT v2 cutscene lines (boss_cutscenes_v2.md), word for word minus the pose tags, until the
+      // final intros come; the Crier uses hint B (Echoes, Anna's pick). No defeat lines exist yet (Lorekeeper).
+      crier: ["Something in the dark goes quiet when you do.", 'THE CRIER: "Over here. I\'ve got a light."', 'THE CRIER: "Please. It\'s so quiet down here."', "The voices follow you down. Don't hold on to them."],
+      toll: ["The passage narrows to a gate cut into the rock. Above it, someone carved a long row of marks.", "Behind the stone, something breathes. Slow. Patient.", "Bones lie heaped at the threshold. Beside each body there are a few scratches: six, seven. None reach the end.", "Hold for the count and the way opens. Brace when it comes. Every time you give ground, more of it comes through."],
+      brood: ["The walls here are furred grey, and rows of swollen pods grow out of them.", "They breathe out when you breathe in. The air tastes of old bread.", "A note sits under a dead delver's hand, half grown over: \"Count the rows. When the bottom row bursts, it's the last one.\"", "Burst them before they ripen. Whatever you break now can't walk out later."],
     },
     bossDefeat: {
       owlbear: ["The Beast sinks down over her nest and goes still.", "Behind the nest, a crack in the rock climbs upward, toward the town."],

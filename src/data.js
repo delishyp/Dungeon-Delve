@@ -448,6 +448,65 @@
           telegraph: true, hint: 'She rears up over you. Brace. She comes down with everything, and she stays on you until you push back.' },
       }, ai: { opener: 'screech', pattern: ['rearup', 'slam', 'rend', 'beak'] } },
 
+    // ---------- demo.2 bosses (Producer, Nov 3): movesets drafted from the approved designs (LORE 1j, boss_cutscenes_v2.md),
+    // built only from mechanics already in the engine. Move names marked (ph) are placeholders for Lorekeeper.
+    // The Crier (Floor 1 boss, 50/50 with the Beast). Anna's pick B, Echoes: her calls put Echo cards in your hand (at most 3
+    // of them in the fight at once). Each one still in hand at the end of your turn costs 3 HP; playing one (1 Energy) silences it.
+    crier: { name: 'The Crier', hp: [228, 228], boss: true, sprite: 'enemy_crier_idle',
+      moves: {
+        call:   { name: 'Call', intent: 'debuff', effects: [{ t: 'addCards', card: 'echo', n: 1, max: 3 }, { t: 'block', n: 8 }] },                       // (ph) pose `call`
+        reach:  { name: 'Reach', intent: 'attack', effects: [{ t: 'attack', n: 14 }] },                                                                  // (ph) pose `reach`
+        voice:  { name: 'Borrowed Voice', intent: 'attack_debuff', effects: [{ t: 'attack', n: 6, times: 2 }, { t: 'addCards', card: 'echo', n: 1, max: 3 }] },   // (ph)
+        listen: { name: 'Listen', intent: 'defend', effects: [{ t: 'block', n: 12 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },             // (ph) pose `listen`
+      }, ai: { opener: 'call', pattern: ['reach', 'voice', 'listen', 'call'] } },
+    // The Toll of the Narrows (Floor 2 trial boss, 50/50 with the Brood). The gate itself; it sends what it owns: the Kneeling
+    // Penitent holds it up (while she kneels the gate can't be hit), the risen bones come through on its Breath (they fall when the
+    // gate opens), and the Count cuts a tally (all its things grow stronger) and lets the Tally-Scratcher through.
+    toll: { name: 'The Toll of the Narrows', hp: [185, 185], boss: true, sprite: 'enemy_toll_idle', minion: 'toll_bones', guardedBy: 'toll_penitent',
+      moves: {
+        kneel:  { name: 'The Penitent Kneels', intent: 'summon', effects: [{ t: 'summon', monster: 'toll_penitent', max: 1 }, { t: 'block', n: 10 }] },   // (ph)
+        breath: { name: 'Breath', intent: 'summon', effects: [{ t: 'summon', monster: 'toll_bones', max: 2 }] },                                      // (ph) pose `breath`: dust
+        narrow: { name: 'The Narrows Close', intent: 'attack', effects: [{ t: 'attack', n: 30 }] },                                                   // (ph)
+        count:  { name: 'The Count', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 2, to: 'allies' }, { t: 'summon', monster: 'toll_tally', max: 1 }] },   // (ph) pose `count`
+        shut:   { name: 'Shut', intent: 'defend', effects: [{ t: 'block', n: 12 }] },                                                                 // (ph) pose `shut`
+      }, ai: { opener: 'kneel', pattern: ['narrow', 'breath', 'count', 'shut'] } },
+    toll_penitent: { name: 'Kneeling Penitent', hp: [44, 44], sprite: 'ghoul',
+      moves: {
+        hold:    { name: 'Holds Them Up', intent: 'buff', effects: [{ t: 'blockLeader', leader: 'toll', n: 10 }] },   // (ph)
+        penance: { name: 'Penance', intent: 'attack', effects: [{ t: 'attack', n: 16 }] },                          // (ph)
+      }, ai: { pattern: ['hold', 'penance'] } },
+    toll_bones: { name: 'Risen Bones', hp: [16, 18], sprite: 'skeleton',   // (ph) name; LORE: "the bones of those who stopped, standing back up"
+      moves: {
+        wait:   { name: 'Standing Back Up', intent: 'wait', effects: [{ t: 'wait' }] },   // (ph)
+        hack:   { name: 'Hack', intent: 'attack', effects: [{ t: 'attack', n: 15 }] },     // (ph)
+        rattle: { name: 'Rattle', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },   // (ph)
+      }, ai: { opener: 'wait', pattern: ['hack', 'rattle'] } },
+    toll_tally: { name: 'Tally-Scratcher', hp: [30, 30], sprite: 'goblin_shaman',   // (ph) name; LORE: "scratches a new tally on itself every turn and gets stronger"
+      moves: {
+        scratch: { name: 'Another Mark', intent: 'attack', effects: [{ t: 'status', status: 'might', n: 1, to: 'self' }, { t: 'attack', n: 11 }] },   // (ph)
+      }, ai: { pattern: ['scratch'] } },
+    // The Brood (Floor 2 trial boss): the grey spore wall. Its Split grows a Husk that is still in its pod for a turn ("burst them
+    // before they ripen": a fresh Husk has low HP and does nothing that turn); the Mossed Shell gives the wall Block; the Pulse
+    // breathes spore dust (Poisoned). The Husks go still when the wall goes dormant.
+    brood: { name: 'The Brood', hp: [160, 160], boss: true, sprite: 'enemy_brood_idle', minion: 'brood_husk',
+      moves: {
+        seal:  { name: 'Sealed', intent: 'summon', effects: [{ t: 'summon', monster: 'brood_shell', max: 1 }, { t: 'block', n: 12 }] },   // (ph) pose `sealed`
+        split: { name: 'Split', intent: 'summon', effects: [{ t: 'summon', monster: 'brood_husk', max: 2 }] },                           // (ph) pose `split`
+        pulse: { name: 'Pulse', intent: 'debuff', effects: [{ t: 'status', status: 'poisoned', n: 8, to: 'target' }, { t: 'block', n: 8 }] },   // (ph) pose `pulse`
+        rot:   { name: 'Slow Rot', intent: 'attack_debuff', effects: [{ t: 'attack', n: 28 }, { t: 'status', status: 'poisoned', n: 3, to: 'target' }] },   // (ph)
+      }, ai: { opener: 'seal', pattern: ['split', 'rot', 'pulse', 'split'] } },
+    brood_husk: { name: 'Husk', hp: [11, 13], sprite: 'ghoul',
+      moves: {
+        wait:  { name: 'Still in the Pod', intent: 'wait', effects: [{ t: 'wait' }] },   // (ph)
+        claw:  { name: 'Grey Hands', intent: 'attack', effects: [{ t: 'attack', n: 10 }] },     // (ph)
+        grasp: { name: 'Grasp', intent: 'attack', effects: [{ t: 'attack', n: 5, times: 2 }] },   // (ph)
+      }, ai: { opener: 'wait', pattern: ['claw', 'grasp'] } },
+    brood_shell: { name: 'Mossed Shell', hp: [36, 36], sprite: 'troll',
+      moves: {
+        shelter: { name: 'Shelter', intent: 'buff', effects: [{ t: 'blockLeader', leader: 'brood', n: 6 }] },   // (ph)
+        bump:    { name: 'Lean In', intent: 'attack', effects: [{ t: 'attack', n: 10 }] },                       // (ph)
+      }, ai: { pattern: ['shelter', 'bump'] } },
+
     // ---------- Floor 2: the Underdark ----------
     ghoul: { name: 'Ghoul', hp: [22, 25],
       moves: {
@@ -554,13 +613,19 @@
     mind_flayer:  { name: 'The Surgeon', enemies: ['mind_flayer'], scene: 'The Long Table', elite: true },
     mimic:        { name: 'Treasure Mimic', enemies: ['mimic'], scene: 'Treasure Vault?', elite: true },
     beholder:     { name: 'Vessa the Unsleeping', enemies: ['beholder'], scene: 'The Watching Cavern', boss: true },
+    crier:        { name: 'The Crier', enemies: ['crier'], scene: 'The Quiet Dark', boss: true },             // scene (ph)
+    toll:         { name: 'The Toll of the Narrows', enemies: ['toll'], scene: 'The Narrows', boss: true },   // scene (ph)
+    brood:        { name: 'The Brood', enemies: ['brood'], scene: 'The Spore Wall', boss: true },           // scene (ph)
   };
 
+  // bossPool (demo.2, from ROADMAP/LORE): each floor's boss is picked per run when its map is made (map.boss). Floor 1: the Crier or
+  // the Beast, 50/50 (Anna, Nov 2). Floor 2: Vessa or the survival trial, 50/50, and the trial is the Toll or the Brood, 50/50
+  // (Anna, Nov 3; Producer's reading, a three-way split is still open). `boss` stays the default for saves from before the pool.
   const FLOORS = [
     { name: 'The Bottom of the Fall', slainPrep: 'at', easy: ['lone_goblin', 'rat_swarm', 'kobolds'], hard: ['goblin_pack', 'skeletons', 'gnolls'],
-      elites: ['bugbear', 'ogre'], boss: 'owlbear', gold: { fight: [10, 18], elite: [28, 36], boss: [60, 75] } },
+      elites: ['bugbear', 'ogre'], boss: 'owlbear', bossPool: { owlbear: 1, crier: 1 }, gold: { fight: [10, 18], elite: [28, 36], boss: [60, 75] } },
     { name: 'The Hanging Town', slainPrep: 'in', easy: ['ghouls', 'drow_patrol_early'], hard: ['troll', 'cube', 'drow_patrol'],
-      elites: ['mind_flayer', 'mimic'], boss: 'beholder', gold: { fight: [16, 24], elite: [36, 46], boss: [100, 120] } },
+      elites: ['mind_flayer', 'mimic'], boss: 'beholder', bossPool: { beholder: 2, toll: 1, brood: 1 }, gold: { fight: [16, 24], elite: [36, 46], boss: [100, 120] } },
   ];
 
   // Map layout: one entry per row (bottom to top), weights of node types. Boss row is added after.

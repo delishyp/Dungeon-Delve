@@ -45,15 +45,23 @@ button{font-family:inherit;cursor:pointer}
 .bossfx{position:absolute;left:0;right:0;bottom:0;top:calc(var(--cut, 0px) * var(--ss));pointer-events:none;overflow:visible}
 .bossfx i{position:absolute;border-radius:50%;opacity:0}
 /* the Toll: dust breathing out of the gate's gap in a slow pulse */
-.bossfx.fx-dust i{left:50%;bottom:18%;width:34%;height:22%;margin-left:-17%;background:radial-gradient(closest-side,#c9b99a66,#8a7a6033 55%,transparent);filter:blur(6px);animation:tollDust 6.5s ease-out infinite}
-.bossfx.fx-dust i:nth-child(2){animation-delay:-2.2s;width:26%;margin-left:-9%}
-.bossfx.fx-dust i:nth-child(3){animation-delay:-4.4s;width:22%;margin-left:-15%}
+.bossfx.fx-dust i{left:50%;bottom:18%;width:34%;height:22%;margin-left:-17%;background:radial-gradient(closest-side,#c9b99a66,#8a7a6033 55%,transparent);filter:blur(6px);animation:tollDust 2.6s ease-out var(--bage,0ms) 1 both}
+.bossfx.fx-dust i:nth-child(2){animation-delay:calc(var(--bage,0ms) + .3s);width:26%;margin-left:-9%}
+.bossfx.fx-dust i:nth-child(3){animation-delay:calc(var(--bage,0ms) + .6s);width:22%;margin-left:-15%}
 @keyframes tollDust{0%{opacity:0;transform:translate(0,0) scale(.6)}25%{opacity:.75}100%{opacity:0;transform:translate(-18%,-55%) scale(1.5)}}
-/* the Brood: the pods breathe out faint spore dust */
-.bossfx.fx-pulse i{left:20%;right:20%;top:8%;height:70%;background:radial-gradient(closest-side,#b8c0a455,#7d856a22 60%,transparent);filter:blur(10px);animation:broodPulse 4.8s ease-in-out infinite}
-.bossfx.fx-pulse i:nth-child(2){left:8%;right:52%;top:40%;height:45%;animation-delay:-1.6s}
-.bossfx.fx-pulse i:nth-child(3){left:52%;right:8%;top:40%;height:45%;animation-delay:-3.2s}
-@keyframes broodPulse{0%,100%{opacity:.1;transform:scale(.92)}50%{opacity:.7;transform:scale(1.05)}}
+/* the Toll's count: one tally mark over the arch glows faint amber, freshly cut */
+.bossfx.fx-count i{left:46%;top:4%;width:3%;height:12%;border-radius:2px;background:linear-gradient(#ffcf7a,#d9822a);box-shadow:0 0 14px 4px #ffa24a88;animation:tollCount 3s ease-in-out var(--bage,0ms) 1 both}
+.bossfx.fx-count i:nth-child(n+2){display:none}
+@keyframes tollCount{0%{opacity:0}20%{opacity:.9}70%{opacity:.7}100%{opacity:0}}
+/* the Brood: the pods breathe spore dust (pulse) / a pod in the top row tears open (split) */
+.bossfx.fx-pulse i{left:20%;right:20%;top:8%;height:70%;background:radial-gradient(closest-side,#b8c0a455,#7d856a22 60%,transparent);filter:blur(10px);animation:broodPulse 1.6s ease-in-out var(--bage,0ms) 2 both}
+.bossfx.fx-pulse i:nth-child(2){left:8%;right:52%;top:40%;height:45%;animation-delay:calc(var(--bage,0ms) + .5s)}
+.bossfx.fx-pulse i:nth-child(3){left:52%;right:8%;top:40%;height:45%;animation-delay:calc(var(--bage,0ms) + 1s)}
+@keyframes broodPulse{0%,100%{opacity:0;transform:scale(.92)}50%{opacity:.7;transform:scale(1.05)}}
+.bossfx.fx-split i{left:44%;top:6%;width:16%;height:18%;background:radial-gradient(closest-side,#d8dcc8aa,#9aa08a44 60%,transparent);filter:blur(4px);animation:broodSplit 1.8s ease-out var(--bage,0ms) 1 both}
+.bossfx.fx-split i:nth-child(2){left:38%;top:2%;width:28%;height:26%;filter:blur(9px);animation-delay:calc(var(--bage,0ms) + .25s)}
+.bossfx.fx-split i:nth-child(3){display:none}
+@keyframes broodSplit{0%{opacity:0;transform:scale(.4)}30%{opacity:.95;transform:scale(1.1)}100%{opacity:0;transform:scale(1.6) translateY(-20%)}}
 body.reduced .bossfx i{animation:none;opacity:.25}
 @media (prefers-reduced-motion: reduce){.bossfx i{animation:none;opacity:.25}}
 .idle{height:100%;transform-origin:50% 100%;animation:breathe var(--idur,2.8s) ease-in-out infinite}
