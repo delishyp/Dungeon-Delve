@@ -85,6 +85,17 @@ for (const [id, [cost, upCost, rar, kind, base, up]] of Object.entries(NEW)) {
   eq([plain(E.cardText(null, null, { id })), plain(E.cardText(null, null, { id, up: true }))], [base, up], id + ' text');
   eq(E.cardDef({ id, up: true }).name, d.name + '+', id + '+ name');
 }
+// Upgrade text must say what the upgrade does (Tester, Nov 4): Burning Hands+ adds Poisoned, Chromatic Orb+ applies Vulnerable
+// before the hit (Lorekeeper's wording). Pinned raw, markers included, so an unchanged 18 is never shown as changed.
+eq([E.cardText(null, null, { id: 'burning_hands' }), E.cardText(null, null, { id: 'burning_hands', up: true })],
+  ['Deal 12 damage to ALL enemies.', 'Deal 12 damage to ALL enemies. Apply «+2» Poisoned to ALL.'], 'Burning Hands / Burning Hands+ text');
+eq([E.cardText(null, null, { id: 'chromatic_orb' }), E.cardText(null, null, { id: 'chromatic_orb', up: true })],
+  ['Deal 18 damage.', 'Apply «+1» Vulnerable. Deal 18 damage.'], 'Chromatic Orb / Chromatic Orb+ text');
+// Every upgraded card's text has a value for every {i}, and no number is marked as changed when its effect did not change.
+for (const id of Object.keys(D.CARDS)) {
+  const t = E.cardText(null, null, { id, up: true });
+  ok(!/\{\d+\}|undefined|NaN/.test(t), id + '+ text has no unfilled values');
+}
 eq(Object.keys(NEW).filter(id => D.CARDS[id].cls === 'fighter').length, 6, 'six new Fighter cards');
 eq(Object.keys(NEW).filter(id => D.CARDS[id].cls === 'wizard').length, 15, 'fifteen new Wizard cards');
 eq([D.keywordLines(D.CARDS.evasive_footwork), D.keywordLines(D.CARDS.extra_attack), D.keywordLines(D.CARDS.absorb_elements)].map(l => l.filter(k => k !== 'Spell')), [['Retain'], ['Replay'], ['Repeat 2']], 'Retain / Replay / Repeat 2 keyword lines');

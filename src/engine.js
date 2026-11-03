@@ -1037,8 +1037,17 @@
     const inCombat = s && s.phase === 'combat' && p;
     const tgt = inCombat && targetUid ? find(s, targetUid) : null;
     let blockSoFar = 0; const sb = inCombat ? spellBonus(p, c) : 0;
+    // Compare each effect with the printed effect of the same kind, not just the same slot: an upgrade can add an effect in
+    // front (Chromatic Orb+ applies Vulnerable before the hit), which would otherwise compare 1 Vulnerable with 18 damage.
+    // A new effect with no printed match counts from 0, so it shows as an improvement.
+    const same = (a, b) => a && b && a.t === b.t && a.status === b.status && a.to === b.to;
+    const used = new Set();
+    const match = effects.map((fx, i) => {
+      let j = same(fx, printedFx[i]) && !used.has(i) ? i : printedFx.findIndex((pf, k) => !used.has(k) && same(fx, pf));
+      if (j < 0) return null; used.add(j); return printedFx[j];
+    });
     const vals = effects.map((fx, i) => {
-      let v = fx.n || 0, printed = (printedFx[i] && printedFx[i].n) || 0;
+      let v = fx.n || 0, printed = (match[i] && match[i].n) || 0;
       if (fx.t === 'block') { v = fx.n + sb; blockSoFar += v; }
       if (fx.t === 'status' && fx.status === 'armor' && fx.to === 'self') v = fx.n + sb;
       if ((fx.t === 'damage' || fx.t === 'damageAll' || fx.t === 'damageRandom') && fx.addTo == null) {

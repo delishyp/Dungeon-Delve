@@ -305,7 +305,7 @@
       upgrade: { effects: [{ t: 'damageAll', n: 10 }] } },
     burning_hands: { cls: 'wizard', kind: 'spell', name: 'Burning Hands', cost: 2, type: 'attack', rarity: 'common', target: 'none',
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 12 }],
-      upgrade: { effects: [{ t: 'damageAll', n: 12 }, { t: 'status', status: 'poisoned', n: 2, to: 'all' }] } },   // Designer round 7 C: 12; pass 3 upgrade: plus 2 Poisoned to ALL
+      upgrade: { desc: 'Deal {0} damage to ALL enemies. Apply {1} Poisoned to ALL.', effects: [{ t: 'damageAll', n: 12 }, { t: 'status', status: 'poisoned', n: 2, to: 'all' }] } },   // Designer round 7 C: 12; pass 3 upgrade: plus 2 Poisoned to ALL
     ray_of_frost: { cls: 'wizard', kind: 'cantrip', name: 'Ray of Frost', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Apply {1} Frightened.', effects: [{ t: 'damage', n: 2 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
     thunderwave: { cls: 'wizard', kind: 'spell', name: 'Thunderwave', cost: 2, type: 'attack', rarity: 'common', target: 'none',
@@ -316,7 +316,7 @@
       desc: 'Gain {0} Block. Draw {1} card.', effects: [{ t: 'block', n: 3 }, { t: 'draw', n: 1 }] },
     chromatic_orb: { cls: 'wizard', kind: 'spell', name: 'Chromatic Orb', cost: 2, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 18 }],
-      upgrade: { effects: [{ t: 'status', status: 'prone', n: 1, to: 'target' }, { t: 'damage', n: 18 }] } },   // Designer round 7 C: 18; pass 3 upgrade: 1 Vulnerable then 18
+      upgrade: { desc: 'Apply {0} Vulnerable. Deal {1} damage.', effects: [{ t: 'status', status: 'prone', n: 1, to: 'target' }, { t: 'damage', n: 18 }] } },   // Designer round 7 C: 18; pass 3 upgrade: 1 Vulnerable then 18
     poison_spray: { cls: 'wizard', kind: 'cantrip', name: 'Poison Spray', cost: 1, type: 'skill', rarity: 'common', target: 'enemy',
       desc: 'Apply {0} Poisoned.', effects: [{ t: 'status', status: 'poisoned', n: 7, to: 'target' }] },
     fireball: { cls: 'wizard', kind: 'spell', name: 'Wildfire', cost: 3, type: 'attack', rarity: 'uncommon', target: 'none',
