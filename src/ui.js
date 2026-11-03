@@ -81,29 +81,58 @@
     const l = G && G.phase === 'combat' ? E.targetableEnemies(G) : [];
     return l.length === 1 ? l[0].uid : null;
   }
+  // Rules box: the effect text, then one line per keyword (Spell, Retain; Anna 11:17), each with its kwTips hover tooltip.
+  function rulesHTML(text, def, base) {
+    return withKeywords(text, base.kwTips) + D.keywordLines(def).map(k => '<br>' + withKeywords(k + '.', base.kwTips)).join('');
+  }
   function cardHTML(c, opts = {}) {
     const def = E.cardDef(c), base = D.CARDS[c.id], fr = D.frameOf(base, c.id);
     const text = E.cardText(opts.live ? G : null, opts.live ? P() : null, c, opts.live ? liveTarget() : null);
     const cls = ['card', def.type, 'fr-' + fr, c.up ? 'upg' : '', opts.cls || ''].join(' ');
-    const rar = def.rarity !== 'starter' && def.rarity !== 'curse' && def.rarity !== 'junk' ? ' · ' + def.rarity : '';
+    // Type word = the frame type (Producer/Anna 11:23), no rarity word: rarity shows in the border and gem.
+    const tword = D.typeWord(base, c.id);
+    // Status cards use frame_curse until Palette's status frame lands as assets/frame_status (Anna approved it in rev 4).
+    const frameImg = def.type === 'power' ? 'frame_power' : (A['frame_' + fr] ? 'frame_' + fr : 'frame_curse');
     const emblem = base.cls === 'curse' ? 'curse' : base.cls;
     const foil = def.rarity === 'legendary';   // every legendary gets Palette's foil (only they carry the blend layers)
     if (foil) foilMask(c.id);
     return `<div class="${cls}${foil ? ' foil' : ''}" data-id="${esc(c.id)}" data-cls="${base.cls}" data-rar="${def.rarity}" data-frame="${fr}" ${opts.attrs || ''}>
-      <div class="cface"><img class="cart" src="${img('card_' + (base.art || c.id)) || img('placeholder_' + c.id)}" alt="" draggable="false"><img class="cframe" src="${img(def.type === 'power' ? 'frame_power' : 'frame_' + fr)}" alt="" draggable="false">
+      <div class="cface"><img class="cart" src="${img('card_' + (base.art || c.id)) || img('placeholder_' + c.id)}" alt="" draggable="false"><img class="cframe" src="${img(frameImg)}" alt="" draggable="false">
       ${foil ? FOIL_LAYERS : ''}${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname${def.name.length > 15 ? ' long' : ''}"><span>${esc(def.name)}</span></div>
       <div class="cclass" title="${esc(base.cls)}">${I(emblem)}</div>
-      <div class="ctype">${def.type}${rar}</div>
-      <div class="cdesc"><span>${withKeywords(text, base.kwTips)}</span></div></div>
+      <div class="ctype">${tword}</div>
+      <div class="cdesc"><span>${rulesHTML(text, def, base)}</span></div></div>
       ${def.unplayable ? '' : `<div class="cost ${def.cost < base.cost ? 'cheaper' : ''}"><span>${def.cost}</span></div>`}</div>`;
   }
   function refreshHandText() {
     if (!G || G.phase !== 'combat') return;
     $app.querySelectorAll('.hand .card').forEach(el => {
       const c = P().hand.find(x => x.uid === el.dataset.card); if (!c) return;
-      el.querySelector('.cdesc span').innerHTML = withKeywords(E.cardText(G, P(), c, liveTarget()), D.CARDS[c.id].kwTips);
+      el.querySelector('.cdesc span').innerHTML = rulesHTML(E.cardText(G, P(), c, liveTarget()), E.cardDef(c), D.CARDS[c.id]);
+      fitRules(el);
     });
   }
+  // Rules-box auto-shrink (Producer 11:35/11:40, option a): when a card's rules text overflows its box where it is shown, the
+  // box switches to the smaller rules font (.cdesc.small: 10.2 px instead of 12.6 px on a 160 px hand card, scaled with --cw
+  // everywhere else). Measured at runtime on the real layout, never a hand-kept list of card ids. Every card added to the
+  // page (render, live hand text, inspect clone, animations) is checked by the observer below; hidden cards (no layout) are skipped.
+  function fitRules(card) {
+    const box = card.querySelector('.cdesc'), span = box && box.firstElementChild;
+    if (!span || !box.clientHeight) return;
+    box.classList.remove('small');
+    if (span.offsetHeight > box.clientHeight + 0.5 || span.scrollWidth > box.clientWidth + 0.5) box.classList.add('small');
+  }
+  const fitAll = (root) => { if (root.matches && root.matches('.card')) fitRules(root); if (root.querySelectorAll) root.querySelectorAll('.card').forEach(fitRules); };
+  new MutationObserver((muts) => {
+    const todo = new Set();
+    for (const m of muts) {
+      const t = m.target.nodeType === 1 ? m.target : m.target.parentElement;
+      const own = t && t.closest && t.closest('.card'); if (own) todo.add(own);
+      m.addedNodes.forEach(nd => { if (nd.nodeType === 1) { if (nd.matches('.card')) todo.add(nd); nd.querySelectorAll('.card').forEach(x => todo.add(x)); } });
+    }
+    todo.forEach(c => { if (c.isConnected) fitRules(c); });
+  }).observe(document.body, { childList: true, subtree: true });
+  addEventListener('resize', () => fitAll(document.body));
 
   // ---------- legendary foil + card inspect (Anna approved test/foil/inspect.html, ROADMAP row 8, DECISIONS 04:55) ----------
   // Foil: Palette's art/cards/foil_sample (colours in style.css). Masks are game art, so build.js inlines them like any other:
@@ -216,6 +245,7 @@
     TILT.set(c, Object.assign(tiltOf(c), prev ? { x: prev.x, y: prev.y, mx: prev.mx, my: prev.my, fo: prev.fo } : {}, { tfo: 1, insp: true, w: '' }));
     INSP.src = src; INSP.key = inspKey(src); INSP.clone = c;
     $insp.classList.add('open'); $lift.appendChild(c);
+    fitRules(c);   // re-measure in the inspect box (wider than the hand fan)
     const from = fromSrcTransform(src);   // measured while the source is still visible (fan rotation, hover lift)
     src.style.visibility = 'hidden';
     void $insp.offsetWidth; $insp.classList.add('shown');
@@ -732,9 +762,9 @@
     if (tab === 'cards') {
       const f = ui.compFilter || 'all';
       const ids = Object.keys(D.CARDS).filter(id => f === 'all' || D.CARDS[id].cls === f);
-      body = `<div class="cfilters">${['all', 'fighter', 'barbarian', 'wizard', 'curse'].map(k => `<button class="${f === k ? 'on' : ''}" data-act="compfilter" data-f="${k}">${k === 'all' ? 'All' : (k !== 'curse' ? I(k) + ' ' : '') + k[0].toUpperCase() + k.slice(1) + (k === 'curse' ? 's' : '')}</button>`).join('')}
+      body = `<div class="cfilters">${['all', 'fighter', 'barbarian', 'wizard', 'curse'].map(k => `<button class="${f === k ? 'on' : ''}" data-act="compfilter" data-f="${k}">${k === 'all' ? 'All' : (k !== 'curse' ? I(k) + ' ' + k[0].toUpperCase() + k.slice(1) : 'Curses &amp; Status')}</button>`).join('')}
         <button class="${ui.compUp ? 'on' : ''}" data-act="compup">Show upgraded</button></div>
-        <div class="compcards">${ids.map(id => cardHTML({ id, uid: 'comp_' + id, up: !!ui.compUp && id.indexOf('curse') !== 0 })).join('')}</div>`;
+        <div class="compcards">${ids.map(id => cardHTML({ id, uid: 'comp_' + id, up: !!ui.compUp && D.CARDS[id].type !== 'curse' && D.CARDS[id].type !== 'status' })).join('')}</div>`;
     } else if (tab === 'relics') {
       body = `<div class="compgrid">${Object.entries(D.RELICS).map(([id, r]) => ST.seen.has('relics', id)
         ? `<div class="comptile">${relicMedal(id, 'big')}<b>${esc(r.name)}</b><small>${esc(r.desc)}</small></div>`
@@ -1005,6 +1035,7 @@
     $tip.style.display = 'none';
     if (G && ui.screen === 'game' && G.phase === 'map') scrollMap();
     layoutHand(true);
+    fitAll($app);   // rules-box auto-shrink right away (the observer also catches cards added outside render)
     inspectRelink();
     try { S.music(!G || ui.screen !== 'game' ? 'menu' : (G.node === 'boss' && (G.phase === 'combat' || ui.holdCombat)) ? 'boss:' + G.encounter : G.floor); } catch (e) {}
   }

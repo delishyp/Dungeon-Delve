@@ -13,9 +13,9 @@ JS = """const D=require('./src/data.js');require('./src/content.js');
 console.log(JSON.stringify(Object.entries(D.CARDS).map(([id,c])=>({id,name:c.name,cls:c.cls,type:c.type,rarity:c.rarity,art:c.art||id,frame:D.frameOf(c,id)}))));"""
 cards = json.loads(subprocess.check_output(['node', '-e', JS], cwd=ROOT))
 COL = {'attack': (150, 38, 38), 'defense': (38, 78, 150), 'buff': (44, 122, 58), 'debuff': (104, 48, 140),
-       'utility': (150, 118, 40), 'curse': (40, 36, 40)}
+       'utility': (150, 118, 40), 'curse': (40, 36, 40), 'status': (72, 72, 78)}
 FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf'
-FOR = {'attack': 'attack card', 'skill': 'skill card', 'power': 'power card'}
+FOR = {'attack': 'attack card', 'skill': 'skill card', 'power': 'power card', 'status': 'card'}
 os.makedirs(OUT, exist_ok=True)
 rows = []
 for c in cards:

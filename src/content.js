@@ -13,7 +13,9 @@
 (function (root) {
   const D = root.GameData || (typeof require !== 'undefined' ? require('./data.js') : null);
 
-  // ---------- curses (unplayable junk cards) ----------
+  // ---------- curses and status cards (unplayable) ----------
+  // Anna (Nov 3 11:28): Curses stay in the deck between fights until removed. Status cards are clutter added during a fight
+  // (combatOnly) and are gone when it ends.
   Object.assign(D.CARDS, {
     curse_regret:   { cls: 'curse', name: 'Regret', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. A memory you cannot shake.', effects: [] },
@@ -25,12 +27,13 @@
       desc: 'Unplayable. If this is in your hand at the end of your turn, lose 1 HP.', effects: [] },
     curse_guilt:    { cls: 'curse', name: 'Guilty Conscience', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. You know what you did.', effects: [] },
-    // Combat-only junk from the Beast's Grand Slam: never enters the deck, gone when the fight ends.
-    junk_broken_bone: { cls: 'curse', name: 'Broken Bone', cost: 0, type: 'junk', rarity: 'junk', target: 'none', unplayable: true, combatOnly: true,
+    // Status card from the Beast's Grand Slam: never enters the deck, gone when the fight ends.
+    junk_broken_bone: { cls: 'curse', name: 'Broken Bone', cost: 0, type: 'status', rarity: 'status', target: 'none', unplayable: true, combatOnly: true,
       kwTips: { Unplayable: 'Unplayable: this card cannot be played. It is gone when the fight ends.' },
       desc: 'Unplayable. Deal 6 or more damage to her with one card to remove this.', effects: [] },
-    // Combat-only junk from the Gelatinous Cube's Engulf: goes into the discard pile, gone when the fight ends.
-    acid: { cls: 'curse', name: 'Acid', cost: 0, type: 'junk', rarity: 'junk', target: 'none', unplayable: true, combatOnly: true, art: 'curse_rot',
+    // Status card from the Gelatinous Cube's Engulf: goes into the discard pile, gone when the fight ends.
+    // Own placeholder art (assets/placeholder/placeholder_acid.webp) until it is painted; no longer reuses Mummy Rot's art.
+    acid: { cls: 'curse', name: 'Acid', cost: 0, type: 'status', rarity: 'status', target: 'none', unplayable: true, combatOnly: true,
       kwTips: { Unplayable: 'Unplayable: this card cannot be played. It is gone when the fight ends.' },
       desc: 'Unplayable. It is gone when the fight ends.', effects: [] },
   });
@@ -322,21 +325,35 @@
  * defense (blue)   otherwise: Block, Armor or cleansing
  * buff    (green)  otherwise: buffs yourself (Might, Rage, Arcane, Retaliate)
  * utility (gold)   otherwise: healing, energy, card draw
- * curse   (black)  curses
+ * curse   (black)  curses (stay in the deck between fights)
+ * status  (grey)   status cards (combat-only clutter, gone when the fight ends; Anna 11:28). Until Palette's status frame
+ *                  lands as assets/frame_status.*, cardHTML draws them with frame_curse.
  * FRAME_OVERRIDE can pin a card to a frame by hand. */
 (function (G) {
-  G.FRAME_OVERRIDE = { junk_broken_bone: 'curse', acid: 'curse',
+  G.FRAME_OVERRIDE = {
     // Powers whose effect is a hook (no effect list to read the frame from): Barbarian deck styles B1-B3
     blood_up: 'buff', last_tally: 'buff', scar_tissue: 'defense' };
-  G.FRAME_COLORS = { attack: 'red', defense: 'blue', buff: 'green', debuff: 'purple', utility: 'gold', curse: 'black' };
+  G.FRAME_COLORS = { attack: 'red', defense: 'blue', buff: 'green', debuff: 'purple', utility: 'gold', curse: 'black', status: 'grey' };
   G.frameOf = function (def, id) {
     if (G.FRAME_OVERRIDE[id]) return G.FRAME_OVERRIDE[id];
     if (def.type === 'curse') return 'curse';
+    if (def.type === 'status') return 'status';
     const fx = def.effects || [];
     if (fx.some(f => /^damage/.test(f.t))) return 'attack';
     if (fx.some(f => f.t === 'status' && (f.to === 'target' || f.to === 'all'))) return 'debuff';
     if (fx.some(f => f.t === 'block' || f.t === 'cleanse' || (f.t === 'status' && f.status === 'armor'))) return 'defense';
     if (fx.some(f => f.t === 'status')) return 'buff';
     return 'utility';
+  };
+  // Type word on the card (Producer/Anna 11:23): the frame type, not the engine type ('skill' never shows). Powers say Power.
+  G.TYPE_WORDS = { attack: 'Attack', defense: 'Defense', buff: 'Buff', debuff: 'Debuff', utility: 'Utility', power: 'Power', curse: 'Curse', status: 'Status' };
+  G.typeWord = function (def, id) { return G.TYPE_WORDS[def.type === 'power' ? 'power' : G.frameOf(def, id)]; };
+  // Keyword lines (Anna 11:17): no tag pills. Spell and Retain are written in the rules text, each on its own line after the
+  // effect ("Deal 12 damage. / Spell. / Retain."). Cantrip is the default and gets no line.
+  G.keywordLines = function (def) {
+    const k = [];
+    if (def.kind === 'spell') k.push('Spell');
+    if (def.retain) k.push('Retain');
+    return k;
   };
 })(typeof GameData !== 'undefined' ? GameData : (typeof window !== 'undefined' ? window.GameData : module.exports));

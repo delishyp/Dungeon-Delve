@@ -57,6 +57,9 @@
     Exhaust:    'Exhaust: after you play this card it is removed for the rest of the fight.',
     Energy:     'Energy: you get 3 each turn. Each card costs the number in its corner.',
     Upgrade:    'Upgraded cards (marked +) have better numbers. Upgrade cards at rest sites.',
+    // Keyword lines (Anna 11:17), wording from lore/text/how_to_play_v1.md section 3 (Lorekeeper).
+    Spell:      "Spell: this card is a spell, so Arcane Focus makes it stronger. Cards without the Spell keyword are cantrips. Cantrips are cheap and quick, and Arcane Focus doesn't affect them.",
+    Retain:     "Retain: the card stays in your hand until you play it. It isn't discarded at the end of your turn.",
   };
   for (const k in STATUSES) KEYWORDS[STATUSES[k].name] = STATUSES[k].tip;
 

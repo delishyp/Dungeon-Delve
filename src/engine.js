@@ -62,7 +62,7 @@
     return (upCache[id] = { ...b, name: b.name + '+', cost, effects, upgraded: true });
   }
   const cardDef = (c) => (c.up ? upgradeDef(c.id) : D.CARDS[c.id]);
-  const canUpgrade = (c) => !c.up && D.CARDS[c.id].type !== 'curse';
+  const canUpgrade = (c) => !c.up && D.CARDS[c.id].type !== 'curse' && D.CARDS[c.id].type !== 'status';
 
   // ---------- helpers ----------
   const alive = (e) => !!e && e.hp > 0;
@@ -712,7 +712,7 @@
       else if (fx.t === 'stripBlock') {
         if (alive(tgt) && tgt.block > 0) { const n = tgt.block; tgt.block = 0; emit(s, { kind: 'stripBlock', source: e.uid, target: tgt.uid, amount: n, hp: tgt.hp, block: 0 }); log(s, `${e.name} tears away ${n} Block.`); }
       }
-      else if (fx.t === 'addCards') {   // combat-only junk: hand up to the cap (or the discard pile with to:'discard'); never the deck
+      else if (fx.t === 'addCards') {   // status cards (combat-only): hand up to the cap (or the discard pile with to:'discard'); never the deck
         if (!alive(tgt)) continue;
         for (let i = 0; i < fx.n; i++) {
           const c = { uid: uid(s, 'c'), id: fx.card };
@@ -832,7 +832,7 @@
     // Powers (Anna): once played they stay in play for the rest of the fight, in their own list, not in any pile.
     if (def.type === 'power') { (p.powers = p.powers || []).push(c); emit(s, { kind: 'powerPlayed', source: p.uid, card: c.id, up: !!c.up }); }
     else (def.exhaust ? p.exhaust : p.discard).push(c);
-    for (const { e, before } of shovers) {   // one big hit shoves one junk card off (Beast's Grand Slam)
+    for (const { e, before } of shovers) {   // one big hit shoves one status card off (Beast's Grand Slam)
       const sh = D.MONSTERS[e.monsterId].shove, k = p.hand.findIndex(x => x.id === sh.card);
       if (k >= 0 && before - (Math.max(0, e.hp) + e.block) >= sh.at) {
         const j = p.hand.splice(k, 1)[0]; p.exhaust.push(j);
