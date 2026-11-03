@@ -118,7 +118,7 @@ for (const up of [false, true]) {
 // ---------- Headbutt, Wild Swing, Bloodied Knuckles, Goad ----------
 for (const up of [false, true]) {
   let f = fight(); const hp = f.p.hp, h = hits(play(f.s, f.p, 'headbutt', up, f.e).ev, f.e.uid);
-  ok(h[0].amount === (up ? 7 : 5) && f.p.statuses.rage === 2 && f.p.hp === hp - 2, `Headbutt${up ? '+' : ''}: ${up ? 7 : 5} damage, 2 Rage, lose 2 HP`);
+  ok(h[0].amount === (up ? 8 : 6) && f.p.statuses.rage === 2 && f.p.hp === hp - 2, `Headbutt${up ? '+' : ''}: ${up ? 8 : 6} damage, 2 Rage, lose 2 HP`);
   f = fight('rat_swarm'); const ev = play(f.s, f.p, 'wild_swing', up).ev;
   ok(f.s.enemies.every(x => hits(ev, x.uid)[0].amount === (up ? 8 : 6)) && f.p.statuses.rage === 1, `Wild Swing${up ? '+' : ''}: ${up ? 8 : 6} to ALL, 1 Rage`);
   f = fight(); let hk = hits(play(f.s, f.p, 'bloodied_knuckles', up, f.e).ev, f.e.uid);
@@ -160,14 +160,14 @@ ok(Object.values(D.CARDS).filter(d => d.rarity === 'legendary').every(d => ['bar
 }
 // ---------- upgraded versions: one change each, as written ----------
 { const u = (id) => E.cardDef({ id, up: true }), b = (id) => D.CARDS[id];
-  ok(u('headbutt').effects[0].n === 7 && u('wild_swing').effects[0].n === 8 && u('bloodied_knuckles').effects[0].n === 5 && u('bloodied_knuckles').effects[0].times === 2, 'upgraded numbers: Headbutt 7, Wild Swing 6, Knuckles 5x2');
+  ok(u('headbutt').effects[0].n === 8 && u('wild_swing').effects[0].n === 8 && u('bloodied_knuckles').effects[0].n === 5 && u('bloodied_knuckles').effects[0].times === 2, 'upgraded numbers: Headbutt 7, Wild Swing 6, Knuckles 5x2');
   ok(u('goad').cost === 0 && u('blood_up').cost === 0 && u('last_tally').cost === 1 && u('enraged').effects[0].n === 8, 'upgraded costs: Goad 0, Blood Up 0, Last Tally 1; Enraged 8 a hit');
   ok(u('scar_tissue').power.onHpLossEnemyTurn.block === 6 && /6 Block/.test(u('scar_tissue').desc) && b('scar_tissue').power.onHpLossEnemyTurn.block === 4, 'Scar Tissue+ 6 Block');
   ok(u('bear_beneath').effects.map(f => f.n).join() === '4,4' && u('bear_beneath').power.onHpLossEnemyTurn.rage === 1, 'Bear Beneath+ 4 Armor 4 Retaliate, still 1 Rage per enemy turn');
   ok(u('blood_up').power.rageOnHitPerTurn === 3, 'caps never change on upgrade (Blood Up 3 a turn)');
   ok(u('blood_up').effects.length === 1 && u('blood_up').effects[0].status === 'might' && u('blood_up').effects[0].n === 4 && u('blood_up').effects[0].to === 'self' && /^Gain 4 Might\. /.test(u('blood_up').desc) && b('blood_up').effects.length === 0, 'Blood Up+ (Anna 10:39): cost 0 and Gain 4 Might; base Blood Up unchanged');
   for (const id of NEW) { ok(u(id).name === b(id).name + '+' && u(id).upgraded, id + '+ named'); ok(E.cardText(null, null, { id, up: true }) && !/\{\d\}/.test(E.cardText(null, null, { id, up: true })), id + '+ text fills in'); }
-  ok(E.cardText(null, null, { id: 'headbutt', up: true }) === 'Deal «+7» damage. Gain 2 Rage. Lose 2 HP.', 'Headbutt+ text shows the better number: ' + E.cardText(null, null, { id: 'headbutt', up: true }));
+  ok(E.cardText(null, null, { id: 'headbutt', up: true }) === 'Deal «+8» damage. Gain 2 Rage. Lose 2 HP.', 'Headbutt+ text shows the better number: ' + E.cardText(null, null, { id: 'headbutt', up: true }));
   ok(b('headbutt').cost === 1 && b('wild_swing').cost === 1 && b('goad').cost === 1 && b('bloodied_knuckles').cost === 1 && b('blood_up').cost === 1 && b('scar_tissue').cost === 1 && b('bear_beneath').cost === 2 && b('last_tally').cost === 2, 'base costs as written');
   ok(['headbutt', 'wild_swing'].every(id => b(id).rarity === 'common') && ['goad', 'bloodied_knuckles'].every(id => b(id).rarity === 'uncommon') && ['blood_up', 'scar_tissue'].every(id => b(id).rarity === 'rare'), 'rarities as written');
 }

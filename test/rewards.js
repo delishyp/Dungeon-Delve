@@ -19,12 +19,12 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
 { const num = (id, i = 0) => D.CARDS[id].effects[i].n;
   // Fighter number pass (Nov 3, Producer 06:38): random-pick runs were 73.5%; generic commons, starter Block and the two Powers trimmed.
   ok(num('defend') === 5 && num('shield_bash') === 6 && num('trip_attack') === 7 && num('menacing_attack') === 8, 'Fighter: Shield Block 5, Shield Bash 6, Trip 7, Menacing 8');
-  ok(num('trip_attack', 1) === 1 && num('riposte') === 5 && num('riposte', 1) === 4 && num('rally') === 5 && num('battle_cry') === 1 && num('defense_style') === 2 && num('indomitable') === 11 && num('sundering_blow') === 8,
-    'Fighter: Trip Prone 1, Riposte 5/4, Rally 5, Battle Cry 1, Defense 2, Indomitable 11, Sundering Blow 8');
+  ok(num('trip_attack', 1) === 1 && num('riposte') === 5 && num('riposte', 1) === 4 && num('rally') === 5 && num('battle_cry') === 1 && num('defense_style') === 2 && num('indomitable') === 15 && num('sundering_blow') === 11,
+    'Fighter: Trip Prone 1, Riposte 5/4, Rally 5, Battle Cry 1, Defense 2, Indomitable 15, Sundering Blow 11 (Designer round 2)');
   ok(num('ray_of_frost') === 2 && num('ray_of_frost', 1) === 1 && D.CARDS.ray_of_frost.cost === 0, 'Wizard (wz9 spell set): Ray of Frost cantrip 0 / 2 damage, 1 Frightened');
   // Barbarian floor pass (Anna 11:14): Greataxe 7, Hide Armor 4, Reckless Attack 8, Frenzied Strike 6, Reckless Flurry 10x3, Thick Hide 12, Brutal Critical 15, Whirling Axe 13, Relentless Rage heal 10.
   ok(num('parry') === 4 && num('frenzied_strike') === 6 && num('reckless_flurry') === 10 && D.CARDS.reckless_flurry.effects[0].times === 3, 'Barbarian: Hide Armor 4, Frenzied Strike 6, Reckless Flurry 10x3');
-  ok(num('greataxe') === 7 && num('reckless_attack') === 8 && num('thick_hide') === 12 && num('brutal_critical') === 15 && num('whirling_axe') === 13 && num('relentless_rage') === 10, 'Barbarian floor pass: Greataxe 7, Reckless Attack 8, Thick Hide 12, Brutal Critical 15, Whirling Axe 13, Relentless Rage heal 10');
+  ok(num('greataxe') === 7 && num('reckless_attack') === 8 && num('thick_hide') === 7 && num('brutal_critical') === 17 && num('whirling_axe') === 15 && num('relentless_rage') === 10, 'Barbarian floor pass: Greataxe 7, Reckless Attack 8, Thick Hide 7 (12 before Designer round 2), Brutal Critical 17, Whirling Axe 15 (Designer round 2), Relentless Rage heal 10');
   ok(num('greataxe') === 7 && num('shove') === 7 && num('mindless_rage') === 3 && num('reckless_attack') === 8 && num('rage') === 3, 'Barbarian: Greataxe Chop 7, Shove 7, Mindless Rage 3, Reckless Attack 8, Rage 3');
   ok(num('frenzied_strike') < num('greataxe') && num('headbutt') < num('greataxe'), 'Rage attacks hit for less than a normal attack (Anna 04:20)');
   // Wizard spell set (wz9, Arcane Focus rework Anna 10:36): cantrips unboosted, spells +2 per Arcane Focus stack.
@@ -36,7 +36,7 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
     'Wizard commons: Burning Hands 2/15, Chromatic Orb 2/18, Thunderwave 2/8');
   ok(num('fire_bolt') === 3 && E.cardDef({ id: 'fire_bolt', up: true }).effects[0].n === 5 && c('fire_bolt') === 0 && k('fire_bolt') === 'cantrip' && num('magic_missile') === 4 && D.CARDS.magic_missile.effects[0].times === 3 && c('magic_missile') === 2
     && num('shield_spell') === 5 && k('shield_spell') === 'spell' && k('magic_missile') === 'spell', 'Wizard starter: Fire Bolt 0/3 cantrip, Magic Missile 2/4x3 spell, Shield 1/5 spell');
-  ok(num('fireball') === 20 && c('fireball') === 3 && num('scorching_ray') === 4 && num('mirror_image') === 10 && num('disintegrate') === 28 && num('chain_lightning') === 12 && c('chain_lightning') === 3
+  ok(num('fireball') === 17 && c('fireball') === 3 && num('scorching_ray') === 4 && num('mirror_image') === 10 && num('disintegrate') === 24 && num('chain_lightning') === 12 && c('chain_lightning') === 3
     && num('arcane_torrent') === 6 && c('arcane_torrent') === 2 && num('mage_armor') === 1 && c('arcane_study') === 2, 'Wizard uncommons/rares: wz9 spell set numbers');
   // Arcane Focus: +2 per stack on a spell's damage (every hit) and Block, nothing on a cantrip.
   { const s = E.newGame({ seed: 5, heroes: ['wizard'] }), p = s.players[0];
@@ -52,7 +52,7 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
     ok(fb && fb.name === 'Fireball' && fb.cls === 'wizard' && fb.kind === 'spell' && fb.rarity === 'starter' && fb.cost === 2 && fb.target === 'none'
       && fb.effects.length === 1 && fb.effects[0].t === 'damageAll' && fb.effects[0].n === 6 && fb.desc === 'Deal {0} damage to ALL enemies.', 'Fireball: starter spell, cost 2, 6 to ALL');
     ok(up.cost === 2 && up.effects[0].t === 'damageAll' && up.effects[0].n === 10 && up.name === 'Fireball+', 'Fireball+: 10 to ALL, cost 2');
-    ok(D.CARDS.fireball.name === 'Wildfire' && D.CARDS.fireball.cost === 3 && D.CARDS.fireball.rarity === 'uncommon' && D.CARDS.fireball.effects[0].n === 20, 'old Fireball renamed Wildfire, numbers unchanged');
+    ok(D.CARDS.fireball.name === 'Wildfire' && D.CARDS.fireball.cost === 3 && D.CARDS.fireball.rarity === 'uncommon' && D.CARDS.fireball.effects[0].n === 17, 'old Fireball renamed Wildfire (20 -> 17 to ALL, Designer round 2)');
     ok(!Object.values(D.CARDS).some(c => c !== D.CARDS.fireball_starter && c.name === 'Fireball'), 'only one card is named Fireball');
     ok(/«\+8» damage to ALL/.test(E.cardText({ phase: 'combat' }, Object.assign(E.newGame({ seed: 5, heroes: ['wizard'] }).players[0], { statuses: { arcane: 1 } }), { id: 'fireball_starter' }, null)), 'Fireball gets Arcane Focus (6 + 2)');
     // starter only: never offered in rewards or the shop
