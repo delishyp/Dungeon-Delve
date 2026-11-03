@@ -422,7 +422,9 @@
         smash:  { name: 'Ground Smash', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
         bellow: { name: 'Dim-witted Bellow', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 3, to: 'self' }, { t: 'block', n: 8 }] },
       }, ai: { pattern: ['smash', 'club', 'bellow'] } },
-    owlbear: { name: 'The Beast of Saint Brennick', hp: [245, 245], boss: true,
+    // Palette's repainted boss-canvas file (full fur, no cubs; Tester passed md5 9b1bf260 at 15:18). owlbear.webp stays for
+    // rollback and is the fallback if the new file is missing.
+    owlbear: { name: 'The Beast of Saint Brennick', hp: [245, 245], boss: true, sprite: 'enemy_owlbear_idle',
       // Grand Slam (Anna, Nov 3 2026): slams on turns 3, 7, 11... Each slam puts 2 combat-only junk cards in your hand;
       // a single card that takes 6+ (HP + Block) off her shoves one off (exhausts it).
       shove: { card: 'junk_broken_bone', at: 6 },
@@ -507,7 +509,10 @@
         disguise: { name: 'Play Dead', intent: 'defend', effects: [{ t: 'block', n: 20 }] },
       }, ai: { opener: 'disguise', pattern: ['adhesive', 'chomp', 'disguise'] },
       phase: { at: 0.5, status: { might: 2 }, pattern: ['adhesive', 'chomp'] } },
-    beholder: { name: 'The Watcher', hp: [330, 330], boss: true,
+    // Vessa the Unsleeping (Floor 2 boss). Her design was approved by Anna at 15:04; Palette's game file is enemy_beholder_idle.webp
+    // (boss canvas). The old beholder.webp stays in assets/ for rollback, and the fight falls back to it if the new file is
+    // missing. LORE: "The Watcher" was a placeholder until her art existed, so her name goes on now.
+    beholder: { name: 'Vessa the Unsleeping', hp: [330, 330], boss: true, sprite: 'enemy_beholder_idle',
       moves: {
         fear:     { name: 'I Saw That', intent: 'attack_debuff', effects: [{ t: 'attack', n: 9 }, { t: 'status', status: 'frightened', n: 3, to: 'target' }] },
         rays:     { name: 'Every Eye Opens', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 4 }] },
@@ -536,7 +541,7 @@
     cube:         { name: 'Gelatinous Cube', enemies: ['gelatinous_cube'], scene: 'Suspiciously Clean Hall' },
     mind_flayer:  { name: 'The Surgeon', enemies: ['mind_flayer'], scene: 'The Long Table', elite: true },
     mimic:        { name: 'Treasure Mimic', enemies: ['mimic'], scene: 'Treasure Vault?', elite: true },
-    beholder:     { name: 'The Watcher', enemies: ['beholder'], scene: 'The Watching Cavern', boss: true },
+    beholder:     { name: 'Vessa the Unsleeping', enemies: ['beholder'], scene: 'The Watching Cavern', boss: true },
   };
 
   const FLOORS = [

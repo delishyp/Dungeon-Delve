@@ -88,7 +88,13 @@
   D.SPRITE_H = { fighter: 210, barbarian: 220, wizard: 205,
     goblin: 130, goblin_cutter: 140, goblin_archer: 140, goblin_shaman: 140, kobold: 120, giant_rat: 90, skeleton: 175, gnoll: 195,
     bugbear: 215, ogre: 250, owlbear: 270, ghoul: 170, drow: 190, drow_mage: 195, troll: 265, gelatinous_cube: 220,
-    mind_flayer: 230, sewn: 255, mimic: 190, lesser_mimic: 150, beholder: 290, wyrmling: 200 };
+    mind_flayer: 230, sewn: 255, mimic: 190, lesser_mimic: 150, beholder: 290, wyrmling: 200,
+    crier: 409 };   // the Crier has only a boss-canvas file (below); 409 = 1400 canvas px at hero scale, used if ever drawn legacy-style
+  // Boss-canvas files (Palette handoff Nov 3, STYLE_GUIDE s7): 1400x1400, feet (700,1391), 1 canvas px = 1 hero px. They are drawn
+  // at one fixed scale (the hero pose scale), not scaled to fit, so the bosses keep their relative sizes. `top` is the first
+  // opaque row: the layout box starts there, so the intent and hit effects sit on the body, not on empty canvas.
+  D.SPRITE_CANVAS = { enemy_beholder_idle: { size: 1400, top: 52 }, enemy_crier_idle: { size: 1400, top: 602 },
+    enemy_owlbear_idle: { size: 1400, top: 332 } };
 
   // ---------- map ----------
   // 16 rows with 3 full '?' rows (Producer 10:56, design/event_variety_plan.md option D): ~7.8 fights + elites per path as before.
@@ -290,12 +296,12 @@
       },
     },
     bossIntro: {
-      owlbear: ["The nest is woven from bones, and most of them are small.", "A huge grey shape rises over it: an owlbear, half-bald, with milky eyes.", "The Beast of Saint Brennick spreads her wings. Small skeletons slip out from under them."],
-      beholder: ["A cavern lit by nothing. Feral drow kneel around its edges, all facing the middle.", "Above them hangs something round and swollen, made almost entirely of eyes. Every one of them opens at once.", "THE WATCHER: \"I see who you were. Oh, I see it. Shall I tell you?\""],
+      owlbear: ["The nest is woven from bones.", "A huge grey shape rises over it: a starving owlbear with milky eyes.", "The Beast of Saint Brennick stands, huge and heavy, and lowers her head."],
+      beholder: ["A cavern lit by nothing. Feral drow kneel around its edges, all facing the middle.", "Above them hangs something round and swollen, made almost entirely of eyes. Every one of them opens at once.", "VESSA: \"I see who you were. Oh, I see it. Shall I tell you?\""],
     },
     bossDefeat: {
-      owlbear: ["The Beast sinks down over her nest and goes still, her wings spread over the bones.", "Behind the nest, a crack in the floor leads down. Deeper. Darker."],
-      beholder: ["THE WATCHER: \"Dark. Finally, dark.\"", "Every eye closes. At the edges of the cavern, the drow begin to wander off, like animals after a light goes out."],
+      owlbear: ["The Beast sinks down over her nest and goes still.", "Behind the nest, a crack in the rock climbs upward, toward the town."],
+      beholder: ["VESSA: \"Dark. Finally, dark.\"", "Every eye closes. At the edges of the cavern, the drow begin to wander off, like animals after a light goes out."],
     },
     victory: {
       fighter: ["You climb out into grey daylight above Saint Brennick.", "{fighter_name} looks at the ring on his finger for a long time. He still doesn't know whose it was."],

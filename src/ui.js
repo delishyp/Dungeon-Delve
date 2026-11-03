@@ -349,8 +349,16 @@
   // Hero pose canvases are drawn at one scale for every class: the 752-px idle figure stays about as tall as the old Barbarian.
   const HERO_POSE_H = 263;
   const poseSetCache = {};
+  const enemyPoseBase = (id) => { const m = D.MONSTERS[id] || {}; return 'enemy_' + (m.sprite || id); };
+  // A monster's still picture: its sprite, else (a sprite file not in assets/ yet) the art under its id (beholder.webp and
+  // owlbear.webp are kept for rollback), else enemy_<id>_idle (the Crier).
+  const monsterPic = (id) => img((D.MONSTERS[id] || {}).sprite || id) || img(id) || img('enemy_' + id + '_idle');
+  // Boss-canvas sprite (D.SPRITE_CANVAS): drawn at the hero pose scale (HERO_POSE_H per 900 hero-canvas px), layout box from
+  // the first opaque row down. Null for any other sprite, or when the file is missing and the legacy art is drawn.
+  const canvasKey = (id) => { const m = D.MONSTERS[id] || {}; return [m.sprite, 'enemy_' + id + '_idle'].find(k => k && A[k] && D.SPRITE_CANVAS && D.SPRITE_CANVAS[k]); };
+  const canvasOf = (id) => { const k = canvasKey(id); return k ? D.SPRITE_CANVAS[k] : null; };
   function poseSet(u) {
-    const base = u.side === 'enemy' ? 'enemy_' + (D.MONSTERS[u.monsterId].sprite || u.monsterId) : 'hero_' + u.heroId;
+    const base = u.side === 'enemy' ? enemyPoseBase(u.monsterId) : 'hero_' + u.heroId;
     if (base in poseSetCache) return poseSetCache[base];
     const idle = A[base + '_idle'];
     return (poseSetCache[base] = idle ? Object.fromEntries(POSES.map(p => [p, A[base + '_' + p] || idle])) : null);
@@ -384,7 +392,7 @@
     const f = $app.querySelector('.field'); if (!f) return;
     const fr = f.getBoundingClientRect(), s = (parseFloat(getComputedStyle(f).scale) || 1) * Z();
     let x = 0, y = 0, n = 0;
-    for (const id of uids) { const sp = spriteOf(id); if (!sp) continue; const r = sp.getBoundingClientRect(); x += r.left + r.width / 2; y += r.top + r.height * 0.6; n++; }
+    for (const id of uids) { const sp = spriteOf(id); if (!sp) continue; const r = bodyRect(sp); x += r.left + r.width / 2; y += r.top + r.height * 0.6; n++; }
     if (!n) return;
     const sp = ST.get('speed');
     ui.beat = { ox: (x / n - fr.left) / s, oy: (y / n - fr.top) / s, t0: performance.now(), dur: POSE_MS * (sp === 'fast' ? 0.8 : sp === 'instant' ? 0.6 : 1) };
@@ -423,11 +431,13 @@
     const guarded = isEnemy && !dead && !E.isTargetable(G, u);
     const targetable = isEnemy && !dead && !guarded && sel && E.needsTarget(sel);
     const pct = Math.max(0, 100 * u.hp / u.maxHp);
-    const h = Math.round((!isEnemy && pset ? HERO_POSE_H : D.SPRITE_H[isEnemy ? baseMon(u.monsterId) : u.heroId] || 170) * (innerWidth >= 1000 && !TOUCH ? 1.25 : 1));   // desktop: bigger, StS-like figures
+    const cv = isEnemy ? canvasOf(baseMon(u.monsterId)) : null, k = innerWidth >= 1000 && !TOUCH ? 1.25 : 1;   // desktop: bigger, StS-like figures
+    const h = Math.round((cv ? cv.size * HERO_POSE_H / 900 : !isEnemy && pset ? HERO_POSE_H : D.SPRITE_H[isEnemy ? baseMon(u.monsterId) : u.heroId] || 170) * k);
+    const cut = cv ? Math.round(cv.top * HERO_POSE_H / 900 * k) : 0;
     const goneCls = dead ? (ui.deadShown[u.uid] ? 'dead gone' : '') : '';
-    return `<div class="unit ${isEnemy ? 'enemy' : 'player'} ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${goneCls} ${targetable ? 'targetable' : ''} ${guarded ? 'untargetable' : ''}" data-uid="${u.uid}" style="--sh:${h}px">
+    return `<div class="unit ${isEnemy ? 'enemy' : 'player'} ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${goneCls} ${targetable ? 'targetable' : ''} ${guarded ? 'untargetable' : ''}" data-uid="${u.uid}" style="--sh:${h}px${cut ? `;--cut:${cut}px` : ''}"${cv ? ` data-cutf="${(cv.top / cv.size).toFixed(4)}"` : ''}>
       ${isEnemy && !dead ? intentHTML(u) : ''}
-      <div class="sprite-wrap"><div class="idle" style="${idleStyle(u, def.boss)}"><img class="sprite" src="${pset ? pset[curPose(u.uid)] : img(key)}" alt="${esc(u.name)}" draggable="false"></div><div class="shadow"></div></div>
+      <div class="sprite-wrap"><div class="idle" style="${idleStyle(u, def.boss)}"><img class="sprite" src="${pset ? pset[curPose(u.uid)] : isEnemy ? (img(key) || monsterPic(u.monsterId)) : img(key)}" alt="${esc(u.name)}" draggable="false"></div><div class="shadow"></div></div>
       <div class="plate"><div class="uname">${esc(u.name)}${def.elite ? ' <span class="tag">Elite</span>' : ''}${def.boss ? ' <span class="tag">Boss</span>' : ''}</div>
       <div class="hpbar ${u.block ? 'blocked' : ''}">${u.block ? `<div class="blockbadge" data-tip="${esc(D.KEYWORDS.Block)}">${u.block}</div>` : ''}
         <div class="fill" style="width:${pct}%"></div><div class="txt">${u.hp} / ${u.maxHp}</div></div>
@@ -784,7 +794,7 @@
       body = `<div class="compgrid">${Object.entries(D.POTIONS).map(([id, p]) => `<div class="comptile">${flask(p.color)}<b>${esc(p.name)}</b><small>${esc(p.desc)}</small></div>`).join('')}</div>`;
     } else {
       body = `<div class="compgrid monsters">${Object.entries(D.MONSTERS).filter(([, m]) => !m.variantOf).map(([id, m]) => {
-        const pic = img(m.sprite || id) || img('mimic');
+        const pic = monsterPic(id) || img('mimic');
         if (!ST.seen.has('monsters', id)) return `<div class="comptile mon locked"><div class="mpic"><img src="${pic}" alt=""></div><b>???</b><small>${I('lock')} Not met yet</small></div>`;
         const hp = Array.isArray(m.hp) ? m.hp.join('–') : m.hp;
         const moves = Object.values(m.moves || {}).map(mv => esc(mv.name)).join(' · ');
@@ -1122,7 +1132,7 @@
   }
   function speech(uid, text) {
     const el = unitEl(uid); if (!el) return;
-    const r = el.querySelector('.sprite').getBoundingClientRect();
+    const r = bodyRect(el.querySelector('.sprite'));
     const b = document.createElement('div'); b.className = 'speech'; b.textContent = fill(text);
     b.style.left = (r.left + r.width / 2) / Z() + 'px'; b.style.top = Math.max(70, (r.top - 6) / Z()) + 'px';
     $fx.appendChild(b); setTimeout(() => b.remove(), ui.fast ? 50 : 3200);
@@ -1139,7 +1149,7 @@
   function floatAt(uid, text, cls) {
     const el = unitEl(uid); if (!el) return;
     if (!ST.get('damageNumbers') && /dmg|blk|heal|zero/.test(cls)) return;
-    const r = el.querySelector('.sprite').getBoundingClientRect();
+    const r = bodyRect(el.querySelector('.sprite'));
     const f = document.createElement('div');
     f.className = 'float ' + cls; f.innerHTML = text;
     f.style.left = ((r.left + r.width / 2) / Z() + (Math.random() * 40 - 20)) + 'px'; f.style.top = (r.top + r.height * 0.3) / Z() + 'px';
@@ -1148,6 +1158,12 @@
   function anim(el, cls) { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
   const wrapOf = (uid) => unitEl(uid)?.querySelector('.sprite-wrap');
   const spriteOf = (uid) => unitEl(uid)?.querySelector('.sprite');
+  // The drawn body of a sprite: a boss-canvas file (data-cutf) has empty rows on top, so effects, damage numbers and speech
+  // aim at the body below them, not at the canvas box.
+  function bodyRect(sp) {
+    const r = sp.getBoundingClientRect(), f = +(sp.closest('.unit')?.dataset.cutf || 0);
+    return f ? { left: r.left, width: r.width, top: r.top + r.height * f, height: r.height * (1 - f), right: r.right, bottom: r.bottom } : r;
+  }
   function updateBar(uid, hp, block) {
     const el = unitEl(uid); if (!el) return;
     const u = E.find(G, uid); if (!u) return;
@@ -1405,7 +1421,7 @@
       let ex = d.x, ey = d.y;
       if (tgt) {
         tgt.classList.add('drop-target');
-        const tr = tgt.querySelector('.sprite').getBoundingClientRect(); ex = tr.left + tr.width / 2; ey = tr.top + tr.height * 0.45;
+        const tr = bodyRect(tgt.querySelector('.sprite')); ex = tr.left + tr.width / 2; ey = tr.top + tr.height * 0.45;
       }
       const nt = tgt ? tgt.dataset.uid : null;
       if (nt !== ui.hoverTarget) { ui.hoverTarget = nt; refreshHandText(); }

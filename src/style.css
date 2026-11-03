@@ -39,6 +39,8 @@ button{font-family:inherit;cursor:pointer}
 .side{display:flex;gap:28px;align-items:flex-end}
 .unit{position:relative;display:flex;flex-direction:column;align-items:center;min-width:120px}
 .sprite-wrap{position:relative;display:flex;justify-content:center;align-items:flex-end;height:calc(var(--sh) * var(--ss));transform-origin:50% 100%}
+/* boss-canvas sprite (D.SPRITE_CANVAS): the empty rows above the body are cut from the layout box (they still draw) */
+.unit[style*="--cut"] .sprite-wrap{margin-top:calc(var(--cut) * var(--ss) * -1)}
 .idle{height:100%;transform-origin:50% 100%;animation:breathe var(--idur,2.8s) ease-in-out infinite}
 .boss .idle{animation-name:breathe-big}
 .sprite{height:100%;width:auto;max-width:calc(var(--sh) * var(--ss) * 1.25);object-fit:contain;filter:drop-shadow(0 8px 10px #000c);pointer-events:none;-webkit-user-drag:none}
