@@ -67,6 +67,8 @@
   const medal = (inner, cls = '') => `<span class="medal ${cls}">${inner}</span>`;
   // Painted relic tiles (assets/relic_<id>.webp) already carry their own disc, outline and shadow: drawn as-is, no CSS medal.
   // Top-bar relics are 88 reference px; use Palette's hand-built 73/130 px tiles when they match the real pixel size.
+  // Narrow screens (under about 2100 reference px wide) shrink relics to 72 before wrapping, so 8 fit in one row.
+  const smallRelics = (p) => p.relics.length > 9 || (p.relics.length > 6 && window.innerWidth / Z() < 2100);
   const relicSrc = (id, px) => { for (const n of [73, 130]) if (px && Math.abs(px - n) / n < 0.12 && A['relic_' + id + '_' + n]) return A['relic_' + id + '_' + n]; return A['relic_' + id]; };
   const relicMedal = (id, cls = '', px) => A['relic_' + id] ? `<span class="medal painted ${cls}"><img src="${relicSrc(id, px)}" alt="" draggable="false"></span>` : medal(I(id, 'relic'), cls);
   const statusIcon = (k) => I(k, 'st', window.Icons.STATUS_COLOR[k]);
@@ -171,7 +173,7 @@
       <span class="stat gold" data-tip="Gold: spend it at merchants (shops and some events).">${I('coin')} ${p.gold}</span>
       <span class="stat deckbtn" data-act="pile" data-pile="deck" data-tip="View your whole deck">${I('deck')} ${p.deck.length}</span>
       ${potionsHTML(p)}
-      <span class="relics${p.relics.length > 9 ? ' small' : ''}">${p.relics.map(r => `<span data-tip="${esc(relicTip(r))}">${relicMedal(r, '', (p.relics.length > 9 ? 72 : 88) * Z() * (window.devicePixelRatio || 1))}</span>`).join('')}</span>
+      <span class="relics${smallRelics(p) ? ' small' : ''}">${p.relics.map(r => `<span data-tip="${esc(relicTip(r))}">${relicMedal(r, '', (smallRelics(p) ? 72 : 88) * Z() * (window.devicePixelRatio || 1))}</span>`).join('')}</span>
       <span class="stat floorname">${esc(D.FLOORS[G.floor].name)}</span>
       <span class="tbbtns"><button class="tbbtn" data-act="qmute" data-tip="${S.muted ? 'Sound is off: click to unmute' : 'Mute sound'}">${I(S.muted ? 'mute' : 'speaker')}</button><button class="tbbtn" data-act="pause" data-tip="Menu &amp; settings (Esc)">${I('gear')}</button></span></div>`;
   }
