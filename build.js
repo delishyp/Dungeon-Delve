@@ -25,7 +25,7 @@ const game = (embed) => src('shell.html')
   .replace('/*@@ASSETS@@*/', () => assetsMap(embed) + '\n' + audioMap(embed))
   .replace('/*@@DATA@@*/', () => src('data.js') + '\n' + src('content.js'))
   .replace('/*@@ENGINE@@*/', () => src('engine.js'))
-  .replace('/*@@UI@@*/', () => 'window.GAME_VERSION = ' + JSON.stringify(require('./electron/package.json').version) + ';\n' + src('settings.js') + '\n' + src('icons.js') + '\n' + src('audio.js') + '\n' + src('ui.js'));
+  .replace('/*@@UI@@*/', () => 'window.GAME_VERSION = ' + JSON.stringify(require('./electron/package.json').version) + ';\n' + src('settings.js') + '\n' + src('icons.js') + '\n' + src('sfxcues.js') + '\n' + src('audio.js') + '\n' + src('ui.js'));
 const single = game(true).replace('<!--@@PWA_HEAD@@-->', '');
 fs.writeFileSync(here('index.html'), single);
 

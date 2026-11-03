@@ -18,6 +18,7 @@
   const S = window.Sfx || { play() {}, music() {}, disable() {} };
   if (ui.fast || /demo-/.test(location.hash)) S.disable();
   const sfx = (n) => { try { S.play(n); } catch (e) {} };
+  const CUES = window.SfxCues;
   const P = () => E.getPlayer(G, me);
   const TOUCH = params.includes('touch') || (window.matchMedia && matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
   const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1043,7 +1044,9 @@
     layoutHand(true);
     fitAll($app);   // rules-box auto-shrink right away (the observer also catches cards added outside render)
     inspectRelink();
-    try { S.music(!G || ui.screen !== 'game' ? 'menu' : (G.node === 'boss' && (G.phase === 'combat' || ui.holdCombat)) ? 'boss:' + G.encounter : G.floor); } catch (e) {}
+    const bossFight = !!G && G.node === 'boss' && (G.phase === 'combat' || ui.holdCombat);
+    try { S.music(!G || ui.screen !== 'game' ? 'menu' : bossFight ? 'boss:' + G.encounter : G.phase === 'rest' ? 'rest' : G.floor); } catch (e) {}
+    try { S.ambience && S.ambience(CUES.ambience(G, ui.screen, bossFight)); } catch (e) {}   // floor loop; campfire at the rest site; fades out for boss fights
   }
 
   // ---------- StS-style fanned hand ----------
@@ -1149,9 +1152,9 @@
     const b = el.querySelector('.blockbadge');
     if (b) { if (block > 0) b.textContent = block; else b.remove(); }
   }
-  function banner(text) {
+  function banner(text, sound) {
     const b = document.createElement('div'); b.className = 'banner'; b.textContent = text;
-    sfx(text === 'Enemy Turn' ? 'enemyTurn' : text === 'Your Turn' ? 'turn' : 'turn');
+    sfx(sound || (text === 'Enemy Turn' ? 'enemyTurn' : 'turn'));
     $app.appendChild(b); setTimeout(() => b.remove(), 1000);
   }
   function lunge(uid) { const u = E.find(G, uid); if (u) anim(wrapOf(uid), u.side === 'enemy' ? 'lunge-left' : 'lunge-right'); }
@@ -1232,11 +1235,11 @@
     }
     ui.unraveled = false;
     if (G.phase === 'victory') await tell(D.STORY.victory[P().heroId]);
-    if (G.phase === 'defeat') await tell(D.STORY.defeat);
+    if (G.phase === 'defeat') { await tell(D.STORY.defeat); sfx('defeat_stinger'); }   // the 'You Have Fallen' screen is now showing (Anna 12:10)
   }
   async function actInner(action) {
     if (ui.busy) return { ok: false };
-    const prevFloor = G.floor, g0 = P() ? P().gold : 0, ph0 = G.phase;
+    const prevFloor = G.floor, ph0 = G.phase, snap0 = CUES.snap(D, G, P());
     const playedEl = action.type === 'PLAY_CARD' ? cardEl(action.card) : null;
     const res = E.dispatch(G, action);
     if (!res.ok) return res;
@@ -1244,7 +1247,8 @@
     if (events.some(e => e.kind === 'unravel')) ui.unraveled = true;
     const endedFight = events.some(e => e.kind === 'encounterWon' || e.kind === 'victory' || e.kind === 'defeat');
     ui.hoverTarget = null; ui.potionMenu = null;
-    if (P() && P().gold !== g0) setTimeout(() => sfx('gold'), 150);
+    // general sounds from what the action changed (gold, event HP cost, curse, card gained/removed/upgraded), 150 ms apart
+    CUES.cues(snap0, CUES.snap(D, G, P()), action).forEach((n, i) => setTimeout(() => sfx(n), 150 * (i + 1)));
     if (G.phase === 'victory' && ph0 !== 'victory') setTimeout(() => sfx('victory'), 400);
     if (action.type === 'END_TURN') {
       ui.busy = true;
@@ -1286,7 +1290,7 @@
     }
     ui.upgrading = false; ui.shopRemoving = false;
     render();
-    if (G.floor !== prevFloor) { await tell(D.STORY.floor[G.floor]); banner(D.FLOORS[G.floor].name); }
+    if (G.floor !== prevFloor) { await tell(D.STORY.floor[G.floor]); banner(D.FLOORS[G.floor].name, 'floor_arrive'); }   // arrival fanfare, not the turn horn
     return res;
   }
 
@@ -1522,7 +1526,7 @@
       el.classList.add('buying');
       go({ type: 'BUY', kind, index: +d.index }).then(r => {
         if (!r.ok) { el.classList.remove('buying'); flashHint(r.error); return; }
-        sfx('gold'); merchantSay('buy');
+        merchantSay('buy');   // gold_spend comes from actInner's cues (it used to play twice)
       });
       flyWare(el.querySelector('.wcard') || el.querySelector('.wicon') || el, kind === 'card' ? '.topbar .deckbtn' : kind === 'potion' ? '.topbar .potions' : '.topbar .relics');
     }
@@ -1842,6 +1846,12 @@
           }
         }
         for (const k of ['story', 'event', 'shop', 'buy', 'drag', 'dragCancel', 'tap', 'guard']) if (!seen[k]) throw new Error('selftest never exercised ' + k);
+        // general sounds (Nov 3): the UI hooks fired during these runs (audio itself is off in selftest; Sfx.asked counts the requests)
+        await new Promise(r => setTimeout(r, 1200));   // cues play 150 ms apart after an action
+        const SA = (window.Sfx && window.Sfx.asked) || {};
+        for (const k of ['gold_pickup', 'gold_spend', 'card_gain', 'card_remove', 'card_upgrade', 'floor_arrive', 'defeat_stinger', 'amb:floor0', 'amb:floor1', 'amb:rest', 'amb:null', 'music:rest', 'music:boss:owlbear', 'music:boss:beholder'])
+          if (!SA[k]) throw new Error('sound hook never fired: ' + k + ' ' + JSON.stringify(SA));
+        if (SA.rest_heal) throw new Error('rest_heal must not play (retired 11:59)');
       } catch (ex) { errors.push(String(ex && ex.stack || ex)); }
       delete seen.guardThisTurn;
       results.push('seen=' + JSON.stringify(seen));

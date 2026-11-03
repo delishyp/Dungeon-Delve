@@ -2,14 +2,15 @@
  * AUDIO: sounds are synthesized live with WebAudio, except approved recorded
  * ones in window.AUDIO_FILES (assets/audio/game/<name>.ogg, ui_ prefix optional), which replace the synth
  * version once decoded and play at their own file volume (no extra gain). Sfx.play(name) for effects, Sfx.music(floor|'boss'|null)
- * for the looping background track. Mute + volume are kept in localStorage.
+ * for the looping background track, Sfx.ambience('floor0'|'floor1'|'rest'|null) for the location loop on its own
+ * ambience bus (1.5 s crossfade on every change). Mute + volume are kept in localStorage.
  * ============================================================ */
 (function () {
   const KEY = 'dungeon-delve-audio';
   let cfg = { muted: false, vol: 0.6, music: 0.7, sfx: 0.9 };   // v2.1 saves only had {muted, vol}: the new fields default in
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* no storage */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* ignore */ } };
-  let ctx = null, master = null, sfxBus = null, musBus = null, fileBus = null, noiseBuf = null, disabled = false;
+  let ctx = null, master = null, sfxBus = null, musBus = null, fileBus = null, ambBus = null, noiseBuf = null, disabled = false;
 
   function init() {
     if (ctx || disabled) return !!ctx;
@@ -20,6 +21,7 @@
     sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9; sfxBus.connect(comp);
     musBus = ctx.createGain(); musBus.gain.value = 0.32; musBus.connect(comp);
     fileBus = ctx.createGain(); fileBus.connect(master);   // recorded music: own mastered level, no compressor
+    ambBus = ctx.createGain(); ambBus.connect(master);     // ambience loops: own level (-31 LUFS-I), no compressor, follows the Sound effects slider
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     applyVol();
@@ -31,7 +33,7 @@
     const files = window.AUDIO_FILES || {};
     for (const [key, url] of Object.entries(files)) {
       const name = key.replace(/^ui_/, '');
-      fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(buf => { buffers[name] = buf; if (TRACK_OF[name] && TRACK_OF[name] === wanted) music(wanted, true); })
+      fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(buf => { buffers[name] = buf; if (TRACK_OF[name] && TRACK_OF[name] === wanted) music(wanted, true); if (AMB_OF[name] && AMB_OF[name] === ambWanted) ambience(ambWanted, true); })
         .catch(() => { const k = TRACK_OF[name]; if (k) { delete TRACKS[k]; if (k === wanted) music(wanted, true); } /* keep the synthesized fallback */ });
     }
   }
@@ -42,9 +44,10 @@
     if (!master) return;
     const t = ctx.currentTime;
     master.gain.setTargetAtTime(cfg.muted ? 0 : cfg.vol, t, 0.03);
-    sfxBus.gain.setTargetAtTime(cfg.sfx, t, 0.03); musBus.gain.setTargetAtTime(0.42 * cfg.music, t, 0.05); fileBus.gain.setTargetAtTime(cfg.music, t, 0.05);
+    sfxBus.gain.setTargetAtTime(cfg.sfx, t, 0.03); ambBus.gain.setTargetAtTime(cfg.sfx, t, 0.05); musBus.gain.setTargetAtTime(0.42 * cfg.music, t, 0.05); fileBus.gain.setTargetAtTime(cfg.music, t, 0.05);
   }
-  const unlock = () => { if (init() && ctx.state === 'suspended') ctx.resume(); if (pendingMusic !== undefined) { const m = pendingMusic; pendingMusic = undefined; music(m); } };
+  const unlock = () => { if (init() && ctx.state === 'suspended') ctx.resume(); if (pendingMusic !== undefined) { const m = pendingMusic; pendingMusic = undefined; music(m); }
+    if (pendingAmb !== undefined) { const a = pendingAmb; pendingAmb = undefined; ambience(a); } };
   ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, (e) => { if (e.isTrusted) unlock(); }, { capture: true }));
 
   // ---- building blocks ----
@@ -84,13 +87,20 @@
     victory: (t) => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, t + i * 0.12, 0.4, { type: 'triangle', gain: 0.12 })),
     error: (t) => tone(160, t, 0.12, { type: 'square', gain: 0.07, filter: 800 }),
   };
+  // approved general sounds (assets/audio/game) that have no synth of their own: until the file decodes, the old synth plays
+  const FALLBACK = { gold_pickup: 'gold', gold_spend: 'gold', floor_arrive: 'turn' };
   let last = {};
+  const played = [], asked = {};   // last 50 sound names, and a count of every sound / music / ambience asked for (tests; kept even when audio is off)
+  const ask = (k) => { asked[k] = (asked[k] || 0) + 1; };
   function play(name) {
-    if (!ctx || cfg.muted || !(SFX[name] || buffers[name])) return;
+    played.push(name); if (played.length > 50) played.shift(); ask(name);
+    if (!ctx || cfg.muted) return;
+    const syn = SFX[name] ? name : FALLBACK[name];
+    if (!(buffers[name] || syn)) return;
     const now = ctx.currentTime;
     if (last[name] && now - last[name] < 0.03) return;      // avoid stacking the same sound
     last[name] = now;
-    if (buffers[name]) playFile(buffers[name], now + 0.005); else SFX[name](now + 0.005);
+    if (buffers[name]) playFile(buffers[name], now + 0.005); else SFX[syn](now + 0.005);
   }
 
   // ---- music: small procedural loops per floor ----
@@ -120,8 +130,10 @@
     menu: { intro: 'music_rim_intro', loop: 'music_rim_loop', once: true },
     'boss:crier': { intro: 'music_boss_crier_intro', loop: 'music_boss_crier_loop' },
     'boss:owlbear': { intro: 'music_boss_beast_intro', loop: 'music_boss_beast_loop' },
+    'boss:beholder': { intro: 'music_boss_vessa_intro', loop: 'music_boss_vessa_loop' },   // Vessa (Floor 2 boss, encounter key beholder), Anna 12:07
+    rest: { loop: 'music_rest_site_loop' },   // rest site harp (Anna 11:44/11:51), no intro; the campfire loop runs under it on the ambience bus
   };
-  const TRACK_OF = {}; for (const [k, t] of Object.entries(TRACKS)) { TRACK_OF[t.intro] = k; TRACK_OF[t.loop] = k; }
+  const TRACK_OF = {}; for (const [k, t] of Object.entries(TRACKS)) { if (t.intro) TRACK_OF[t.intro] = k; TRACK_OF[t.loop] = k; }
   const introDone = {};
   let wanted, playing = null;   // playing: { key, gain, srcs }
   function stopFile(fade = 0.8) {
@@ -131,9 +143,9 @@
     p.srcs.forEach(s => { try { s.stop(t + fade + 0.05); } catch (e) {} });
   }
   function startFile(key) {
-    const tr = TRACKS[key], loopBuf = buffers[tr.loop], introBuf = buffers[tr.intro];
+    const tr = TRACKS[key], loopBuf = buffers[tr.loop], introBuf = tr.intro ? buffers[tr.intro] : null;
     const useIntro = introBuf && !(tr.once && introDone[key]);
-    if (!loopBuf || (!introBuf && (window.AUDIO_FILES || {})[tr.intro] && !(tr.once && introDone[key]))) return false;   // still decoding: wait
+    if (!loopBuf || (!introBuf && tr.intro && (window.AUDIO_FILES || {})[tr.intro] && !(tr.once && introDone[key]))) return false;   // still decoding: wait
     const g = ctx.createGain(); g.connect(fileBus);
     const t0 = ctx.currentTime + 0.05, srcs = [];
     g.gain.setValueAtTime(0, ctx.currentTime); g.gain.linearRampToValueAtTime(1, t0 + (useIntro ? 0.05 : 1.2));
@@ -144,6 +156,7 @@
     return true;
   }
   function music(which, retry) {
+    if (!retry && which !== (ctx ? wanted : pendingMusic)) ask('music:' + which);
     if (!ctx) { pendingMusic = which; return; }
     if (retry && which !== wanted) return;
     if (!retry && which === wanted) return;
@@ -158,8 +171,34 @@
     if (timer) { clearInterval(timer); timer = null; }
     if (song) timer = setInterval(sched, 90);
   }
+  // ---- ambience: one location loop at a time on ambBus, 1.5 s crossfade on every change (Producer 05:51/05:52, Soundsmith 12:11).
+  // null fades it out (menus, boss fights: the boss music plays alone, end screens); it comes back when the screen asks for it again.
+  const AMB = { floor0: 'amb_floor1_cave_loop', floor1: 'amb_floor2_hanging_town_loop', rest: 'amb_rest_campfire_loop' };
+  const AMB_OF = {}; for (const [k, f] of Object.entries(AMB)) AMB_OF[f] = k;
+  const AMB_FADE = 1.5;
+  let ambWanted = null, ambPlaying = null, pendingAmb;   // ambPlaying: { key, gain, src }
+  function ambience(key, retry) {
+    if (key != null && !AMB[key]) key = null;
+    if (!retry && key !== (ctx ? ambWanted : (pendingAmb === undefined ? null : pendingAmb))) ask('amb:' + key);
+    if (!ctx) { pendingAmb = key; return; }
+    if (retry ? key !== ambWanted : key === ambWanted) return;
+    ambWanted = key;
+    const t = ctx.currentTime;
+    if (ambPlaying && ambPlaying.key !== key) {
+      const a = ambPlaying; ambPlaying = null;
+      a.gain.gain.cancelScheduledValues(t); a.gain.gain.setValueAtTime(a.gain.gain.value, t); a.gain.gain.linearRampToValueAtTime(0, t + AMB_FADE);
+      try { a.src.stop(t + AMB_FADE + 0.05); } catch (e) {}
+    }
+    if (!key || ambPlaying) return;
+    const buf = buffers[AMB[key]]; if (!buf) return;   // still decoding (or missing): loadFiles retries once it is ready
+    const g = ctx.createGain(); g.connect(ambBus); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + AMB_FADE);
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(g); src.start(t);
+    ambPlaying = { key, gain: g, src };
+  }
   window.Sfx = {
-    play, music, has: (name) => !!buffers[name],
+    play, music, ambience, has: (name) => !!buffers[name], played, asked,
+    get ambienceKey() { return ctx ? ambWanted : (pendingAmb === undefined ? null : pendingAmb); },
+    get ambiencePlaying() { return ambPlaying ? ambPlaying.key : null; },
     get nowPlaying() { return playing ? playing.key : song ? 'synth:' + wanted : null; },
     get muted() { return cfg.muted; }, get volume() { return cfg.vol; },
     setMuted(m) { cfg.muted = !!m; save(); applyVol(); },
