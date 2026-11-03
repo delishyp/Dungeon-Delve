@@ -146,6 +146,7 @@
     todo.forEach(c => { if (c.isConnected) fitRules(c); });
   }).observe(document.body, { childList: true, subtree: true });
   addEventListener('resize', () => fitAll(document.body));
+  addEventListener('resize', () => { if (ui.screen === 'title') layoutMenuBg(); });
 
   // ---------- legendary foil + card inspect (Anna approved test/foil/inspect.html, ROADMAP row 8, DECISIONS 04:55) ----------
   // Foil: Palette's art/cards/foil_sample (colours in style.css). Masks are game art, so build.js inlines them like any other:
@@ -745,12 +746,40 @@
     const p = sv.G.players[0];
     return `${esc(D.HEROES[p.heroId].name)} · ${esc(D.FLOORS[sv.G.floor].name.split(':')[0])} · ${I('heart')} ${p.hp}/${p.maxHp}`;
   }
+  // ---- main menu painting: ONE config object per image (master pixels). A new painting only changes MENU_ART. ----
+  // .mm-stage is the painting at its cover size; the torch glow, the flame breath and the lit-rock flicker are placed from these
+  // image coordinates, so they follow the painting's scale, slow pan and mouse parallax at any window size.
+  // pan: at aspect < narrowAspect the image's left edge pans between left0 and left1 (master px) so the flame and most of its
+  // glow stay on screen at both ends (Tester: v3 at 16:9 showed the image from about x 590); wider windows keep the old 26%-36%.
+  const MENU_ART = {
+    w: 3840, h: 1600,                                   // bg_menu v3 (menu-v3a)
+    glow: { x: 672, y: 1130, core: 225, fade: 550 },   // warm core radius, gone by the fade radius
+    flame: [610, 1084, 651, 1186],                      // x1, y1, x2, y2
+    rocks: [[260, 585, 770, 1080], [490, 940, 890, 1350], [575, 1240, 1370, 1530], [1426, 1459, 1716, 1515]],
+    pan: { narrowAspect: 2.2, left0: 250, left1: 420, bleed: 1.04 },
+  };
+  function menuLightsHTML() {
+    const A = MENU_ART, pc = (v, of) => (100 * v / of).toFixed(3) + '%';
+    const box = (x1, y1, x2, y2) => `left:${pc(x1, A.w)};top:${pc(y1, A.h)};width:${pc(x2 - x1, A.w)};height:${pc(y2 - y1, A.h)}`;
+    const g = A.glow, f = A.flame, fp = Math.max(f[2] - f[0], f[3] - f[1]) * 0.8;
+    const torch = `${box(g.x - g.fade, g.y - g.fade, g.x + g.fade, g.y + g.fade)};--core:${(100 * g.core / g.fade).toFixed(1)}%`;
+    return A.rocks.map((r, i) => `<div class="mm-rock r${i}" style="${box(...r)}"></div>`).join('')
+      + [1, 2, 3].map(i => `<div class="mm-torch t${i}" style="${torch}"></div>`).join('')
+      + `<div class="mm-flame" style="${box(f[0] - fp, f[1] - fp, f[2] + fp, f[3] + fp * 0.6)}"></div>`;
+  }
+  function layoutMenuBg() {
+    const bg = $app.querySelector('.mm-bg'); if (!bg) return;
+    const A = MENU_ART, P = A.pan, W = bg.offsetWidth, H = bg.offsetHeight; if (!W || !H) return;
+    const s = Math.max(W / A.w, H / A.h) * P.bleed, iw = A.w * s, ih = A.h * s, over = iw - W, narrow = W / H < P.narrowAspect;
+    const p0 = narrow ? Math.min(P.left0 * s, over) : over * 0.26, p1 = narrow ? Math.min(P.left1 * s, over) : over * 0.36;
+    const set = (k, v) => bg.style.setProperty(k, v.toFixed(1) + 'px');
+    set('--iw', iw); set('--ih', ih); set('--itop', (H - ih) / 2); set('--p0', -p0); set('--p1', -p1);
+  }
   function titleHTML() {
     const sv = loadSave();
     const cont = sv ? `<button class="menubtn primary" data-act="continue"><span>Continue</span><small>${saveSummary(sv)}</small></button>` : '';
     return `<div class="mainmenu">
-      <div class="mm-bg" style="background-image:url(${img('bg_menu')})"></div>
-      <div class="mm-glow g1"></div><div class="mm-glow g2"></div><div class="mm-glow g3"></div>
+      <div class="mm-bg"><div class="mm-stage" style="background-image:url(${img('bg_menu')})">${menuLightsHTML()}</div></div>
       <div class="mm-fog"></div><div class="mm-embers">${particles(40, 1)}</div><div class="mm-dust">${particles(18, 7)}</div><div class="mm-vignette"></div>
       <div class="mm-panel">
         <div class="mm-logo">${D20}<div><h1>Dungeon <span>Delve</span></h1><small>a Dungeons &amp; Dragons deck-builder</small></div></div>
@@ -1069,6 +1098,7 @@
     if (ui.screen === 'title' && !ui.firstMenuAt) ui.firstMenuAt = performance.now();   // timings for the update tests
     if (ui.disp && ui.disp.pending > 0) html += dispPendingHTML();
     $app.innerHTML = html;
+    if (ui.screen === 'title') layoutMenuBg();
     if (ui.beat) applyBeat();
     markSeen();
     document.body.classList.toggle('is-modal', !!(ui.paused || ui.settingsTab || ui.confirm || ui.modal));
