@@ -223,19 +223,19 @@
       }, ai: { weights: { scimitar: 45, stab: 30, nimble: 25 }, noRepeat: true } },
     goblin_cutter: { name: 'Goblin Cutthroat', hp: [13, 15],
       moves: {
-        slash: { name: 'Slash', intent: 'attack', effects: [{ t: 'attack', n: 6 }] },
-        flurry: { name: 'Flurry', intent: 'attack', effects: [{ t: 'attack', n: 3, times: 2 }] },
+        slash: { name: 'Slash', intent: 'attack', effects: [{ t: 'attack', n: 9 }] },
+        flurry: { name: 'Flurry', intent: 'attack', effects: [{ t: 'attack', n: 5, times: 2 }] },
       }, ai: { weights: { slash: 50, flurry: 50 }, noRepeat: true } },
     goblin_archer: { name: 'Goblin Archer', hp: [10, 12],
       moves: {
-        arrow:  { name: 'Shortbow', intent: 'attack', effects: [{ t: 'attack', n: 5 }] },
-        poison: { name: 'Poison Arrow', intent: 'attack_debuff', effects: [{ t: 'attack', n: 2 }, { t: 'status', status: 'poisoned', n: 3, to: 'target' }] },
+        arrow:  { name: 'Shortbow', intent: 'attack', effects: [{ t: 'attack', n: 8 }] },
+        poison: { name: 'Poison Arrow', intent: 'attack_debuff', effects: [{ t: 'attack', n: 3 }, { t: 'status', status: 'poisoned', n: 3, to: 'target' }] },
       }, ai: { opener: 'poison', pattern: ['arrow', 'arrow', 'poison'] } },
     goblin_shaman: { name: 'Goblin Hexer', hp: [11, 13],
       moves: {
         hex:  { name: 'Hex', intent: 'debuff', effects: [{ t: 'status', status: 'frightened', n: 2, to: 'target' }] },
         mend: { name: 'Mending Chant', intent: 'buff', effects: [{ t: 'healAllies', n: 5 }, { t: 'status', status: 'might', n: 1, to: 'allies' }] },
-        zap:  { name: 'Spark', intent: 'attack', effects: [{ t: 'attack', n: 4 }] },
+        zap:  { name: 'Spark', intent: 'attack', effects: [{ t: 'attack', n: 6 }] },
       }, ai: { opener: 'hex', pattern: ['zap', 'mend', 'hex'] } },
     kobold: { name: 'Kobold', hp: [11, 13],
       moves: {
@@ -248,48 +248,48 @@
         bite:   { name: 'Diseased Bite', intent: 'attack_debuff', effects: [{ t: 'attack', n: 3 }, { t: 'status', status: 'poisoned', n: 2, to: 'target' }] },
         scurry: { name: 'Scurry', intent: 'attack', effects: [{ t: 'attack', n: 5 }] },
       }, ai: { weights: { bite: 50, scurry: 50 }, noRepeat: true } },
-    skeleton: { name: 'Skeleton', hp: [16, 19],
+    skeleton: { name: 'Skeleton', hp: [32, 38],
       moves: {
         sword:  { name: 'Shortsword', intent: 'attack', effects: [{ t: 'attack', n: 7 }] },
         rattle: { name: 'Rattling Guard', intent: 'attack_defend', effects: [{ t: 'block', n: 7 }, { t: 'attack', n: 4 }] },
         bow:    { name: 'Bone Arrows', intent: 'attack', effects: [{ t: 'attack', n: 3, times: 3 }] },
       }, ai: { pattern: ['sword', 'rattle', 'bow'] } },
-    gnoll: { name: 'Gnoll', hp: [22, 26],
+    gnoll: { name: 'Gnoll', hp: [44, 52],
       moves: {
-        rampage: { name: 'Rampage', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 2 }] },
-        bite:    { name: 'Savage Bite', intent: 'attack', effects: [{ t: 'attack', n: 9 }] },
+        rampage: { name: 'Rampage', intent: 'attack', effects: [{ t: 'attack', n: 5, times: 2 }] },
+        bite:    { name: 'Savage Bite', intent: 'attack', effects: [{ t: 'attack', n: 12 }] },
         howl:    { name: 'Blood Howl', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }, { t: 'block', n: 5 }] },
       }, ai: { opener: 'howl', weights: { rampage: 50, bite: 50 }, noRepeat: true } },
-    bugbear: { name: 'Bugbear', hp: [52, 56], elite: true,
+    bugbear: { name: 'Bugbear', hp: [104, 112], elite: true,
       moves: {
-        surprise: { name: 'Surprise Attack', intent: 'attack', effects: [{ t: 'attack', n: 15 }] },
-        morning:  { name: 'Morningstar', intent: 'attack', effects: [{ t: 'attack', n: 10 }] },
-        grab:     { name: 'Brutal Grab', intent: 'attack_debuff', effects: [{ t: 'attack', n: 6 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
+        surprise: { name: 'Surprise Attack', intent: 'attack', effects: [{ t: 'attack', n: 23 }] },
+        morning:  { name: 'Morningstar', intent: 'attack', effects: [{ t: 'attack', n: 15 }] },
+        grab:     { name: 'Brutal Grab', intent: 'attack_debuff', effects: [{ t: 'attack', n: 9 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
         lurk:     { name: 'Lurk in Shadows', intent: 'defend', effects: [{ t: 'block', n: 12 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
       }, ai: { opener: 'surprise', pattern: ['grab', 'morning', 'lurk'] } },
-    ogre: { name: 'Ogre', hp: [66, 70], elite: true,
+    ogre: { name: 'Ogre', hp: [86, 91], elite: true,
       moves: {
-        club:   { name: 'Greatclub', intent: 'attack', effects: [{ t: 'attack', n: 16 }] },
-        smash:  { name: 'Ground Smash', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
+        club:   { name: 'Greatclub', intent: 'attack', effects: [{ t: 'attack', n: 24 }] },
+        smash:  { name: 'Ground Smash', intent: 'attack_debuff', effects: [{ t: 'attack', n: 11 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
         bellow: { name: 'Dim-witted Bellow', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 3, to: 'self' }, { t: 'block', n: 8 }] },
       }, ai: { pattern: ['smash', 'club', 'bellow'] } },
-    owlbear: { name: 'The Beast of Saint Brennick', hp: [96, 96], boss: true,
+    owlbear: { name: 'The Beast of Saint Brennick', hp: [240, 240], boss: true,
       // Grand Slam (Anna, Nov 3 2026): slams on turns 3, 7, 11... Each slam puts 2 combat-only junk cards in your hand;
       // a single card that takes 6+ (HP + Block) off her shoves one off (exhausts it).
       shove: { card: 'junk_broken_bone', at: 6 },
       moves: {
         screech: { name: 'Terrifying Screech', intent: 'debuff', effects: [{ t: 'status', status: 'frightened', n: 2, to: 'target' }, { t: 'block', n: 8 }] },
-        rend:    { name: 'Rend', intent: 'attack', effects: [{ t: 'attack', n: 6, times: 2 }] },
-        beak:    { name: 'Beak Peck', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
+        rend:    { name: 'Rend', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },
+        beak:    { name: 'Beak Peck', intent: 'attack_debuff', effects: [{ t: 'attack', n: 9 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
         rearup:  { name: 'Rear Up', intent: 'defend', effects: [{ t: 'block', n: 10 }] },
-        slam:    { name: 'Grand Slam', intent: 'attack_debuff', effects: [{ t: 'attack', n: 24 }, { t: 'addCards', card: 'junk_broken_bone', n: 2 }] },
+        slam:    { name: 'Grand Slam', intent: 'attack_debuff', effects: [{ t: 'attack', n: 28 }, { t: 'addCards', card: 'junk_broken_bone', n: 2 }] },
       }, ai: { opener: 'screech', pattern: ['rearup', 'slam', 'rend', 'beak'] } },
 
     // ---------- Floor 2: the Underdark ----------
-    ghoul: { name: 'Ghoul', hp: [20, 23],
+    ghoul: { name: 'Ghoul', hp: [23, 26],
       moves: {
-        claw:  { name: 'Paralyzing Claw', intent: 'attack_debuff', effects: [{ t: 'attack', n: 5 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
-        bite:  { name: 'Ravenous Bite', intent: 'attack', effects: [{ t: 'attack', n: 9 }] },
+        claw:  { name: 'Paralyzing Claw', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
+        bite:  { name: 'Ravenous Bite', intent: 'attack', effects: [{ t: 'attack', n: 14 }] },
       }, ai: { weights: { claw: 45, bite: 55 }, noRepeat: true } },
     drow: { name: 'Drow Warrior', hp: [28, 32],
       moves: {
@@ -300,6 +300,19 @@
     drow_mage: { name: 'Drow Mage', hp: [24, 27],
       moves: {
         bolt:  { name: 'Lightning Bolt', intent: 'attack', effects: [{ t: 'attack', n: 13 }] },
+        fear:  { name: 'Spider Curse', intent: 'debuff', effects: [{ t: 'status', status: 'frightened', n: 2, to: 'target' }, { t: 'status', status: 'prone', n: 1, to: 'target' }] },
+        ward:  { name: 'Arcane Ward', intent: 'buff', effects: [{ t: 'block', n: 8, }, { t: 'status', status: 'might', n: 2, to: 'allies' }] },
+      }, ai: { opener: 'fear', pattern: ['bolt', 'ward', 'bolt', 'fear'] } },
+    // Early-row Floor 2 Drow Patrol (balance pass Nov 3): same drow, damage x1.15. Later rows keep the originals above.
+    drow_early: { name: 'Drow Warrior', sprite: 'drow', variantOf: 'drow', hp: [28, 32],
+      moves: {
+        crossbow: { name: 'Poisoned Bolt', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'poisoned', n: 3, to: 'target' }] },
+        blades:   { name: 'Twin Blades', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },
+        darkness: { name: 'Faerie Darkness', intent: 'attack_defend', effects: [{ t: 'block', n: 10 }, { t: 'attack', n: 6 }] },
+      }, ai: { opener: 'crossbow', pattern: ['blades', 'darkness', 'crossbow'] } },
+    drow_mage_early: { name: 'Drow Mage', sprite: 'drow_mage', variantOf: 'drow_mage', hp: [24, 27],
+      moves: {
+        bolt:  { name: 'Lightning Bolt', intent: 'attack', effects: [{ t: 'attack', n: 15 }] },
         fear:  { name: 'Spider Curse', intent: 'debuff', effects: [{ t: 'status', status: 'frightened', n: 2, to: 'target' }, { t: 'status', status: 'prone', n: 1, to: 'target' }] },
         ward:  { name: 'Arcane Ward', intent: 'buff', effects: [{ t: 'block', n: 8, }, { t: 'status', status: 'might', n: 2, to: 'allies' }] },
       }, ai: { opener: 'fear', pattern: ['bolt', 'ward', 'bolt', 'fear'] } },
@@ -319,28 +332,28 @@
     mind_flayer: { name: 'The Surgeon', hp: [66, 66], elite: true, sprite: 'mind_flayer', minion: 'sewn', guardedBy: 'sewn',
       moves: {
         stitch:   { name: 'Fresh Stitches', intent: 'summon', effects: [{ t: 'summon', monster: 'sewn', max: 1 }] },
-        incision: { name: 'The Incision', intent: 'attack_debuff', effects: [{ t: 'attack', n: 12 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
+        incision: { name: 'The Incision', intent: 'attack_debuff', effects: [{ t: 'attack', n: 14 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
         steady:   { name: 'Steady Hands', intent: 'defend', effects: [{ t: 'block', n: 10 }, { t: 'healMinions', monster: 'sewn', n: 6 }] },
       }, ai: { summoner: true, opener: 'stitch', whileUp: ['incision', 'steady'], exposedMove: 'incision', summonMove: 'stitch' } },
     sewn: { name: 'The Sewn', hp: [30, 30], sprite: 'ogre',
       moves: {
         wait:  { name: 'Still Knitting', intent: 'wait', effects: [{ t: 'wait' }] },
-        heavy: { name: 'Heavy Hands', intent: 'attack', effects: [{ t: 'attack', n: 12 }] },
+        heavy: { name: 'Heavy Hands', intent: 'attack', effects: [{ t: 'attack', n: 14 }] },
         guard: { name: 'Stand Guard', intent: 'buff', effects: [{ t: 'blockLeader', leader: 'mind_flayer', n: 6 }] },
-        lurch: { name: 'Lurch', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },
+        lurch: { name: 'Lurch', intent: 'attack', effects: [{ t: 'attack', n: 8, times: 2 }] },
       }, ai: { opener: 'wait', pattern: ['heavy', 'guard', 'lurch'] } },
-    mimic: { name: 'Mimic', hp: [86, 90], elite: true,
+    mimic: { name: 'Mimic', hp: [99, 104], elite: true,
       moves: {
-        adhesive: { name: 'Adhesive Grip', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
-        chomp:    { name: 'Chomp', intent: 'attack', effects: [{ t: 'attack', n: 19 }] },
+        adhesive: { name: 'Adhesive Grip', intent: 'attack_debuff', effects: [{ t: 'attack', n: 10 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
+        chomp:    { name: 'Chomp', intent: 'attack', effects: [{ t: 'attack', n: 25 }] },
         disguise: { name: 'Play Dead', intent: 'defend', effects: [{ t: 'block', n: 20 }] },
       }, ai: { opener: 'disguise', pattern: ['adhesive', 'chomp', 'disguise'] } },
-    beholder: { name: 'The Watcher', hp: [140, 140], boss: true,
+    beholder: { name: 'The Watcher', hp: [350, 350], boss: true,
       moves: {
-        fear:     { name: 'I Saw That', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'frightened', n: 3, to: 'target' }] },
-        rays:     { name: 'Every Eye Opens', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 4 }] },
-        paralyze: { name: 'Held in Her Stare', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
-        disint:   { name: 'Seen Through', intent: 'attack', effects: [{ t: 'attack', n: 22 }] },
+        fear:     { name: 'I Saw That', intent: 'attack_debuff', effects: [{ t: 'attack', n: 9 }, { t: 'status', status: 'frightened', n: 3, to: 'target' }] },
+        rays:     { name: 'Every Eye Opens', intent: 'attack', effects: [{ t: 'attack', n: 5, times: 4 }] },
+        paralyze: { name: 'Held in Her Stare', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
+        disint:   { name: 'Seen Through', intent: 'attack', effects: [{ t: 'attack', n: 25 }] },
         antimagic:{ name: 'She Watches', intent: 'buff', effects: [{ t: 'block', n: 20 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
       }, ai: { pattern: ['fear', 'rays', 'disint', 'paralyze', 'antimagic'] } },
   };
@@ -358,6 +371,7 @@
     owlbear:      { name: 'The Owlbear Den', enemies: ['owlbear'], scene: 'Owlbear Den', boss: true },
     ghouls:       { name: 'Ghoul Pack', enemies: ['ghoul', 'ghoul'], scene: 'Charnel Pit' },
     drow_patrol:  { name: 'Drow Patrol', enemies: ['drow', 'drow_mage'], scene: 'Deep Tunnels' },
+    drow_patrol_early: { name: 'Drow Patrol', enemies: ['drow_early', 'drow_mage_early'], scene: 'Deep Tunnels' },
     troll:        { name: 'Cave Troll', enemies: ['troll'], scene: 'Troll Bridge' },
     cube:         { name: 'Gelatinous Cube', enemies: ['gelatinous_cube'], scene: 'Suspiciously Clean Hall' },
     mind_flayer:  { name: 'The Surgeon', enemies: ['mind_flayer'], scene: 'The Long Table', elite: true },
@@ -368,7 +382,7 @@
   const FLOORS = [
     { name: 'The Bottom of the Fall', slainPrep: 'at', easy: ['lone_goblin', 'rat_swarm', 'kobolds'], hard: ['goblin_pack', 'skeletons', 'gnolls'],
       elites: ['bugbear', 'ogre'], boss: 'owlbear', gold: { fight: [10, 18], elite: [28, 36], boss: [60, 75] } },
-    { name: 'The Hanging Town', slainPrep: 'in', easy: ['ghouls', 'drow_patrol'], hard: ['troll', 'cube', 'drow_patrol'],
+    { name: 'The Hanging Town', slainPrep: 'in', easy: ['ghouls', 'drow_patrol_early'], hard: ['troll', 'cube', 'drow_patrol'],
       elites: ['mind_flayer', 'mimic'], boss: 'beholder', gold: { fight: [16, 24], elite: [36, 46], boss: [100, 120] } },
   ];
 

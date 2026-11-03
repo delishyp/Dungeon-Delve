@@ -24,7 +24,9 @@
   document.body.classList.toggle('touch', TOUCH);
   const pickOne = (arr) => arr[Math.floor(Math.random() * arr.length)];
   const img = (k) => A[k] || '';
-  const fill = (t) => D.fillNames ? D.fillNames(t) : t;   // {fighter_name} etc. in any shown story/event text
+  const fill = (t) => D.fillNames ? D.fillNames(t) : t;
+  // A monster variant (e.g. drow_early, a tuned copy for early rows) shares its base monster's art, size, taunts and compendium entry.
+  const baseMon = (id) => (D.MONSTERS[id] && D.MONSTERS[id].variantOf) || id;   // {fighter_name} etc. in any shown story/event text
 
   // ---------- autosave (phones kill background tabs) ----------
   const SAVE_KEY = 'dungeon-delve-save-v3';
@@ -213,7 +215,7 @@
     const guarded = isEnemy && !dead && !E.isTargetable(G, u);
     const targetable = isEnemy && !dead && !guarded && sel && E.needsTarget(sel);
     const pct = Math.max(0, 100 * u.hp / u.maxHp);
-    const h = Math.round((!isEnemy && pset ? HERO_POSE_H : D.SPRITE_H[isEnemy ? u.monsterId : u.heroId] || 170) * (innerWidth >= 1000 && !TOUCH ? 1.25 : 1));   // desktop: bigger, StS-like figures
+    const h = Math.round((!isEnemy && pset ? HERO_POSE_H : D.SPRITE_H[isEnemy ? baseMon(u.monsterId) : u.heroId] || 170) * (innerWidth >= 1000 && !TOUCH ? 1.25 : 1));   // desktop: bigger, StS-like figures
     const goneCls = dead ? (ui.deadShown[u.uid] ? 'dead gone' : '') : '';
     return `<div class="unit ${isEnemy ? 'enemy' : 'player'} ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${goneCls} ${targetable ? 'targetable' : ''} ${guarded ? 'untargetable' : ''}" data-uid="${u.uid}" style="--sh:${h}px">
       ${isEnemy && !dead ? intentHTML(u) : ''}
@@ -535,7 +537,7 @@
   function compendiumHTML() {
     const tab = ui.compTab || 'cards';
     const tabs = [['cards', 'Cards', Object.keys(D.CARDS).length], ['relics', 'Relics', `${ST.seen.count('relics')}/${Object.keys(D.RELICS).length}`],
-      ['potions', 'Potions', Object.keys(D.POTIONS).length], ['monsters', 'Monsters', `${ST.seen.count('monsters')}/${Object.keys(D.MONSTERS).length}`]];
+      ['potions', 'Potions', Object.keys(D.POTIONS).length], ['monsters', 'Monsters', `${ST.seen.count('monsters')}/${Object.keys(D.MONSTERS).filter(id => !D.MONSTERS[id].variantOf).length}`]];
     let body = '';
     if (tab === 'cards') {
       const f = ui.compFilter || 'all';
@@ -550,7 +552,7 @@
     } else if (tab === 'potions') {
       body = `<div class="compgrid">${Object.entries(D.POTIONS).map(([id, p]) => `<div class="comptile">${flask(p.color)}<b>${esc(p.name)}</b><small>${esc(p.desc)}</small></div>`).join('')}</div>`;
     } else {
-      body = `<div class="compgrid monsters">${Object.entries(D.MONSTERS).map(([id, m]) => {
+      body = `<div class="compgrid monsters">${Object.entries(D.MONSTERS).filter(([, m]) => !m.variantOf).map(([id, m]) => {
         const pic = img(m.sprite || id) || img('mimic');
         if (!ST.seen.has('monsters', id)) return `<div class="comptile mon locked"><div class="mpic"><img src="${pic}" alt=""></div><b>???</b><small>${I('lock')} Not met yet</small></div>`;
         const hp = Array.isArray(m.hp) ? m.hp.join('–') : m.hp;
@@ -740,7 +742,7 @@
   }
   function markSeen() {
     if (!G) return;
-    for (const e of G.enemies || []) ST.seen.mark('monsters', e.monsterId);
+    for (const e of G.enemies || []) ST.seen.mark('monsters', baseMon(e.monsterId));
     const js = JSON.stringify({ ...G, log: null, map: null, events: null });
     for (const id in D.RELICS) if (js.includes('"' + id + '"')) ST.seen.mark('relics', id);
   }
@@ -892,8 +894,8 @@
   function combatIntro() {
     if (G.phase !== 'combat') return;
     if (G.node === 'fight' || G.node === 'elite') dmCaption(pickOne(D.STORY.rooms[G.node]));
-    const foes = E.livingEnemies(G).filter(e => D.STORY.taunts[e.monsterId]);
-    if (foes.length) { const f = pickOne(foes); setTimeout(() => speech(f.uid, pickOne(D.STORY.taunts[f.monsterId])), ui.fast ? 0 : 500); }
+    const foes = E.livingEnemies(G).filter(e => D.STORY.taunts[baseMon(e.monsterId)]);
+    if (foes.length) { const f = pickOne(foes); setTimeout(() => speech(f.uid, pickOne(D.STORY.taunts[baseMon(f.monsterId)])), ui.fast ? 0 : 500); }
   }
 
   // ---------- feedback effects & animations ----------
