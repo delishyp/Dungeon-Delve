@@ -162,7 +162,9 @@
     blood_up: { cls: 'barbarian', name: 'Blood Up', cost: 1, type: 'power', rarity: 'rare', target: 'none',
       desc: 'Whenever one of your attacks hits an enemy, gain 1 Rage (up to 3 a turn). Your Rage no longer fades.',
       effects: [], power: { rageOnHit: 1, rageOnHitPerTurn: 3, rageNoFade: true },
-      upgrade: { cost: 0 } },
+      // Blood Up+ (Anna 10:39): base card unchanged; the upgrade adds 4 Might so the Blood Up route pays off once upgraded.
+      upgrade: { cost: 0, desc: 'Gain 4 Might. Whenever one of your attacks hits an enemy, gain 1 Rage (up to 3 a turn). Your Rage no longer fades.',
+        effects: [{ t: 'status', status: 'might', n: 4, to: 'self' }] } },
     enraged: { cls: 'barbarian', name: 'Enraged', cost: 2, type: 'attack', rarity: 'legendary', target: 'enemy', exhaust: true,
       desc: "Deal {0} damage X times, where X is your Rage. Doesn't spend Rage. Exhaust.",
       effects: [{ t: 'damage', n: 6, timesFrom: 'rage' }],

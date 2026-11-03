@@ -66,6 +66,7 @@ for (const up of [false, true]) {
   ok(E.cardDef({ id: 'blood_up', up }).cost === (up ? 0 : 1), 'Blood Up cost ' + (up ? 0 : 1));
   const { c } = play(s, p, 'blood_up', up);
   ok(p.powers.some(x => x.uid === c.uid) && !p.exhaust.length && !p.discard.some(x => x.uid === c.uid), 'Blood Up is a Power in play');
+  ok((p.statuses.might || 0) === (up ? 4 : 0), 'Blood Up' + (up ? '+ gives 4 Might' : ' gives no Might') + ' (' + (p.statuses.might || 0) + ')');
   play(s, p, 'greataxe', false, e); ok(p.statuses.rage === 1, 'one hit: 1 Rage');
   play(s, p, 'greataxe', false, e); play(s, p, 'greataxe', false, e); play(s, p, 'greataxe', false, e);
   ok(p.statuses.rage === 3, 'four hits: capped at 3 Rage a turn (' + p.statuses.rage + ')');
@@ -164,6 +165,7 @@ ok(Object.values(D.CARDS).filter(d => d.rarity === 'legendary').every(d => d.cls
   ok(u('scar_tissue').power.onHpLossEnemyTurn.block === 6 && /6 Block/.test(u('scar_tissue').desc) && b('scar_tissue').power.onHpLossEnemyTurn.block === 4, 'Scar Tissue+ 6 Block');
   ok(u('bear_beneath').effects.map(f => f.n).join() === '4,4' && u('bear_beneath').power.onHpLossEnemyTurn.rage === 1, 'Bear Beneath+ 4 Armor 4 Retaliate, still 1 Rage per enemy turn');
   ok(u('blood_up').power.rageOnHitPerTurn === 3, 'caps never change on upgrade (Blood Up 3 a turn)');
+  ok(u('blood_up').effects.length === 1 && u('blood_up').effects[0].status === 'might' && u('blood_up').effects[0].n === 4 && u('blood_up').effects[0].to === 'self' && /^Gain 4 Might\. /.test(u('blood_up').desc) && b('blood_up').effects.length === 0, 'Blood Up+ (Anna 10:39): cost 0 and Gain 4 Might; base Blood Up unchanged');
   for (const id of NEW) { ok(u(id).name === b(id).name + '+' && u(id).upgraded, id + '+ named'); ok(E.cardText(null, null, { id, up: true }) && !/\{\d\}/.test(E.cardText(null, null, { id, up: true })), id + '+ text fills in'); }
   ok(E.cardText(null, null, { id: 'headbutt', up: true }) === 'Deal «+7» damage. Gain 2 Rage. Lose 2 HP.', 'Headbutt+ text shows the better number: ' + E.cardText(null, null, { id: 'headbutt', up: true }));
   ok(b('headbutt').cost === 1 && b('wild_swing').cost === 1 && b('goad').cost === 1 && b('bloodied_knuckles').cost === 1 && b('blood_up').cost === 1 && b('scar_tissue').cost === 1 && b('bear_beneath').cost === 2 && b('last_tally').cost === 2, 'base costs as written');
