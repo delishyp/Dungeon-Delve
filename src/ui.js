@@ -245,6 +245,7 @@
   function inspectRelink() {   // render() replaced the screen while a card was inspected: hide the new copy of the card
     if (!INSP.src || INSP.src.isConnected) return;
     const el = inspFind(INSP.key); if (el) { el.style.visibility = 'hidden'; INSP.src = el; }
+    else closeInspect();   // the card isn't on the new screen (fight ended, moved to the map): close the inspect view
   }
   $insp.addEventListener('click', (e) => { e.stopPropagation(); if (!e.target.closest('.card')) closeInspect(); });
   $insp.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); if (!e.target.closest('.card')) closeInspect(); });

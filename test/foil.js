@@ -158,6 +158,15 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   ok(await pg.evaluate(() => !window.__game.inspect.src && window.__game.state.phase !== 'rest'), 'left-click in the upgrade grid still upgrades (no inspect)');
   await pg.evaluate(() => { window.__game.ui.upgrading = false; });
 
+  // ---- 8c) the screen changes while inspecting and the card is gone: the inspect view closes ----
+  await pg.evaluate(() => { const g = window.__game, s = g.state; s.phase = 'rest'; g.ui.upgrading = true; g.render(); });
+  await sleep(300);
+  c = await q('.upgrid .card[data-act="upgrade"]');
+  await pg.mouse.click(c.x, c.y, { button: 'right' }); await sleep(500);
+  ok(await pg.evaluate(() => !!window.__game.inspect.src), 'inspecting before the screen change');
+  await pg.evaluate(() => { const g = window.__game; g.ui.upgrading = false; g.render(); }); await sleep(450);
+  ok(await pg.evaluate(() => !window.__game.inspect.src && !document.getElementById('insp').classList.contains('open') && document.querySelector('.insp-lift').children.length === 0), 'screen change without the card closes the inspect view');
+
   // ---- 9) compendium: left-click inspects ----
   await pg.evaluate(() => { const g = window.__game; g.ui.screen = 'compendium'; g.ui.compTab = 'cards'; g.ui.compFilter = 'barbarian'; g.render(); });
   await sleep(300);
