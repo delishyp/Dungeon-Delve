@@ -322,7 +322,7 @@
       const isBoss = n.type === 'boss';
       const cls = ['mapnode', n.type, reach.includes(n.id) ? 'reachable' : '', visited.includes(n.id) ? 'visited' : '', G.pos === n.id ? 'current' : '',
         !reach.includes(n.id) && !visited.includes(n.id) && n.row <= (G.pos ? G.map.nodes[G.pos].row : -1) ? 'locked' : ''].join(' ');
-      const tip = `<b>${t.name}</b><br>${esc(t.tip)}${isBoss ? '<br>' + esc(D.ENCOUNTERS[D.FLOORS[G.floor].boss].name) + ' awaits.' : ''}${n.revealed ? '<br><i>It was: ' + esc(D.NODE_TYPES[n.revealed].name) + '</i>' : ''}`;
+      const tip = `<b>${t.name}</b><br>${esc(t.tip)}${isBoss ? '<br>' + esc(D.ENCOUNTERS[D.FLOORS[G.floor].boss].name) + ' awaits.' : ''}${n.revealed ? '<br><i>It was: ' + esc(D.NODE_TYPES[n.revealed].name) + '</i>' : ''}${ST.get('devMode') && n.type === 'event' && !n.revealed ? devOddsTip('This room turns out to be', E.weightOdds(D.MAP.unknown), k => D.NODE_TYPES[k].name) : ''}`;
       return `<div class="${cls}" data-type="${n.type}" style="left:${pos.x}%;top:${pos.y}px" ${reach.includes(n.id) ? `data-act="node" data-node="${n.id}"` : ''} data-tip="${esc(tip)}">
         ${isBoss ? `<img src="${img(bossKey)}" alt="">` : icon(shown)}${n.revealed && n.revealed !== 'event' ? '<i class="q">?</i>' : ''}</div>`;
     }).join('');
@@ -379,7 +379,8 @@
       <div class="relicrow">${r.gold ? `<span class="goldline">${I('coin')} +${r.gold} gold</span>` : ''}
       ${[r.relic, r.bonusRelic].filter(Boolean).map(id => `<span class="lootline" data-tip="${esc(relicTip(id))}">${relicMedal(id, 'big')} <b>${esc(D.RELICS[id].name)}</b> <small>${esc(D.RELICS[id].desc)}</small></span>`).join('')}
       ${r.potion ? `<span class="lootline" data-tip="${esc(potionTip(r.potion.id))}">${flask(D.POTIONS[r.potion.id].color)} <b>${esc(D.POTIONS[r.potion.id].name)}</b> <small>${r.potion.taken ? 'added to your belt' : 'belt full: left behind'}</small></span>` : ''}</div>
-      <h2>Choose a card to add to your deck</h2>
+      <h2${ST.get('devMode') && !fromEvent ? ` data-devtip="1" data-tip="${esc(devOddsTip('Each card offered was rolled as', E.weightOdds(E.rewardRarityWeights(G.node)))
+        + (G.node === 'fight' ? devOddsTip('Potion drop after a normal fight', [{ key: 'potion', p: D.POTION_DROP }, { key: 'no potion', p: 1 - D.POTION_DROP }]) : ''))}"` : ''}>Choose a card to add to your deck</h2>
       <div class="rewards">${r.cards.map(id => cardHTML({ id }, { attrs: `data-act="reward" data-reward="${id}"` })).join('')}</div>
       <button class="btn ghost" data-act="reward" data-reward="">Skip</button>
       <p class="muted">Your HP carries over (${I('heart')} ${p.hp}/${p.maxHp}).${G.node === 'boss' ? ' After this you descend deeper and recover 75% of your missing HP.' : ''}</p></div></div>`;
@@ -409,6 +410,21 @@
       ${t.relic ? `<div class="lootline big">${relicMedal(t.relic, 'big')}<div><b>${esc(D.RELICS[t.relic].name)}</b><br><small>${esc(D.RELICS[t.relic].desc)}</small></div></div>` : '<p>The chest held only gold.</p>'}
       <button class="btn" data-act="leave">Continue</button></div></div>`;
   }
+  // ----- Dev / data mode (Settings > Gameplay, off by default): real odds and costs, read from Engine.describeChoice -----
+  const devPct = (x) => (Math.round(x * 1000) / 10) + '%';
+  const devFx = (fx) => fx.length ? fx.map(f => `<span class="${f.bad ? 'dbad' : 'dgood'}">${esc(f.text)}</span>`).join(', ') : '<span class="dnone">nothing happens</span>';
+  function devChoiceTip(p, evId, i) {
+    const d = E.describeChoice(G, p, evId, i), rows = [];
+    if (d.req.length) rows.push(['Requires', esc(d.req.join(', '))]);
+    if (d.cost.length) rows.push(['Cost', devFx(d.cost)]);
+    const gain = d.fixed.filter(f => !f.bad);
+    if (gain.length || (!d.fixed.length && !d.outcomes)) rows.push(['Always', devFx(gain)]);
+    if (d.success != null) rows.push(['Success', devPct(d.success)]);
+    let h = `<div class="devtip"><b class="dh">Dev / data mode</b><table>${rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table>`;
+    if (d.outcomes) h += `<b class="dh2">${d.outcomes.length} possible results</b><table>${d.outcomes.map(o => `<tr><th>${devPct(o.p)}</th><td>${devFx(o.effects)}</td></tr>`).join('')}</table>`;
+    return h + '</div>';
+  }
+  const devOddsTip = (title, odds, names) => `<div class="devtip"><b class="dh">Dev / data mode</b><b class="dh2">${esc(title)}</b><table>${odds.map(o => `<tr><th>${devPct(o.p)}</th><td>${esc(names ? names(o.key) : o.key)}</td></tr>`).join('')}</table></div>`;
   function eventHTML() {
     const p = P(), ev = G.event, def = D.EVENTS[ev.id];
     if (ev.stage === 'pick') {
@@ -418,7 +434,7 @@
     const body = ev.stage === 'choose'
       ? `<p class="dm">${esc(fill(def.text))}</p><div class="evchoices">${def.choices.map((c, i) => {
           const ok = E.choiceAllowed(p, c);
-          return `<button class="evchoice ${ok ? '' : 'disabled'}" ${ok ? `data-act="evchoice" data-choice="${i}"` : 'disabled'}><b>[${esc(fill(c.label))}]</b> <span>${esc(fill(c.hint || ''))}${ok ? '' : ' (you can\'t afford this)'}</span></button>`;
+          return `<button class="evchoice ${ok ? '' : 'disabled'}" ${ok ? `data-act="evchoice" data-choice="${i}"` : 'disabled'}${ST.get('devMode') ? ` data-devtip="1" data-tip="${esc(devChoiceTip(p, ev.id, i))}"` : ''}><b>[${esc(fill(c.label))}]</b> <span>${esc(fill(c.hint || ''))}${ok ? '' : ' (you can\'t afford this)'}</span></button>`;
         }).join('')}</div>`
       : `<p class="dm chosen">» ${esc(fill(def.choices[ev.choice].label))}</p><p class="dm">${esc(fill(ev.result || ''))}</p>
          <div class="evlog">${ev.log.map(l => `<span class="chip ${/^-|Curse/.test(l) ? 'bad' : 'good'}">${esc(l)}</span>`).join('')}</div>
@@ -598,7 +614,8 @@
       + tg('confirmEnd', 'Confirm End Turn with Energy left', 'Asks before ending your turn while you still have playable cards')
       + tg('tooltips', 'Tooltips &amp; keyword help', 'Hover cards, icons and highlighted words for details')
       + tg('skipNarration', 'Skip DM narration', 'Skips the story text boxes (intros, boss speeches)')
-      + tg('damageNumbers', 'Show damage numbers', 'Floating damage, Block and healing numbers');
+      + tg('damageNumbers', 'Show damage numbers', 'Floating damage, Block and healing numbers')
+      + tg('devMode', 'Dev / data mode', 'Hover event choices (and ? rooms, card rewards) to see the real odds and costs. Saved on this computer only');
     else if (tab === 'visuals') body = tg('shake', 'Screen shake', 'A small shake on big hits')
       + tg('reducedMotion', 'Reduced motion', 'Turns off card flights, shakes and menu ambience' + (REDUCED ? ' (your system already asks for this)' : ''))
       + seg('uiScale', 'UI scale', [[90, '90%'], [100, '100%'], [110, '110%'], [125, '125%'], [150, '150%'], [175, '175%']], 'On top of the automatic scaling to your screen size');
@@ -1388,7 +1405,7 @@
     if (hb && hb !== ui.lastHover && !hb.disabled) sfx('hover');
     ui.lastHover = hb;
     const t = e.target.closest && e.target.closest('[data-tip]');
-    if (!t || !ST.get('tooltips')) { $tip.style.display = 'none'; return; }
+    if (!t || (!ST.get('tooltips') && !t.dataset.devtip)) { $tip.style.display = 'none'; return; }
     $tip.innerHTML = t.dataset.tip; $tip.style.display = 'block';
   });
   document.addEventListener('mousemove', (e) => {

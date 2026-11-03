@@ -7,13 +7,14 @@
 (function () {
   const KEY = 'dungeon-delve-settings-v1', SEEN = 'dungeon-delve-seen-v1';
   const DEFAULTS = { speed: 'normal', confirmEnd: true, tooltips: true, skipNarration: false, damageNumbers: true,
-    shake: true, reducedMotion: false, uiScale: 100 };
+    shake: true, reducedMotion: false, uiScale: 100, devMode: false };
   const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } };
   let cfg = Object.assign({}, DEFAULTS, read(KEY) || {});
   // sanitize values from older / hand-edited storage
   if (!['normal', 'fast', 'instant'].includes(cfg.speed)) cfg.speed = 'normal';
   if (![90, 100, 110, 125, 150, 175].includes(+cfg.uiScale)) cfg.uiScale = 100; else cfg.uiScale = +cfg.uiScale;
+  cfg.devMode = cfg.devMode === true;   // Dev / data mode: local only, off unless explicitly switched on
   const listeners = [];
   let seen = Object.assign({ monsters: {}, relics: {}, cards: {}, potions: {} }, read(SEEN) || {});
   let seenDirty = false;

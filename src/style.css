@@ -251,6 +251,11 @@ body.is-dragging .playzone{border-color:#f3d27a44}
 .movename{position:absolute;top:-64px;background:#3a0f0f;border:1px solid #c0392b;color:#ffd8d0;padding:3px 10px;border-radius:8px;font-size:14px;white-space:nowrap;animation:fadeout 1.1s forwards;pointer-events:none;z-index:4}
 @keyframes fadeout{0%,70%{opacity:1}100%{opacity:0}}
 #tooltip{position:fixed;z-index:100;max-width:260px;background:#120d13f2;border:1px solid var(--gold);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.4;pointer-events:none;display:none;font-family:Arial,sans-serif;color:var(--text);box-shadow:0 4px 14px #000}
+#tooltip:has(.devtip){max-width:360px}
+.devtip .dh{display:block;color:var(--gold2);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.devtip .dh2{display:block;margin:6px 0 2px;color:var(--gold2)}
+.devtip table{border-collapse:collapse;width:100%}.devtip th{text-align:left;vertical-align:top;padding:1px 8px 1px 0;white-space:nowrap;color:#c9b48a;font-weight:bold}
+.devtip td{padding:1px 0}.devtip .dgood{color:#9fd88a}.devtip .dbad{color:#ef8a7a}.devtip .dnone{color:#a99}
 body.touch .hand .card:hover{transform:none;box-shadow:0 6px 14px #000c;margin:0 -6px}
 body.touch .rewards .card:hover,body.touch .classcard:hover,body.touch .choice:hover,body.touch .mapnode.reachable:hover,body.touch .shopitem:hover{transform:none}
 body.touch .card.selected{transform:translateY(-48px) scale(1.45)!important;z-index:30}

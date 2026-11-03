@@ -264,6 +264,62 @@
     if (o.shop) ev.next = { shop: o.shop };
     if (o.text) ev.result = ownedAlt ? o.textOwned : o.text;
   }
+  // ---------- odds + Dev / data mode describer ----------
+  // weightOdds / choiceWeights / rewardRarityWeights are the same functions the resolvers roll with, so shown odds can't drift.
+  function weightOdds(weights) {
+    const e = Object.entries(weights).filter(([, w]) => w > 0), t = e.reduce((a, [, w]) => a + w, 0);
+    return e.map(([key, w]) => ({ key, w, p: w / t }));
+  }
+  function choiceWeights(ch) { const w = {}; ch.chance.forEach((b, i) => { w[i] = b.w; }); return w; }
+  const pctStr = (x) => { const v = Math.round(x * 1000) / 10; return v + '%'; };
+  // Mirrors applyOps step by step on a shadow of the player (hp / maxHp / gold), without rolling anything.
+  function previewOps(s, p, sh, o) {
+    const fx = [], add = (text, bad) => fx.push({ text, bad: !!bad });
+    if (o.gold) { const g = Math.max(-sh.gold, o.gold); sh.gold += g;
+      if (o.gold > 0) add('+' + g + ' gold'); else add(-o.gold > -g ? 'Lose all your gold (-' + (-g) + ' now)' : '-' + (-g) + ' gold', true); }
+    if (o.hp > 0) { const a = Math.max(0, Math.min(o.hp, sh.maxHp - sh.hp)); sh.hp += a; add('Heal ' + o.hp + ' HP (+' + a + ' now)'); }
+    if (o.hp < 0) { const n = Math.max(0, Math.min(-o.hp, sh.hp - 1)); sh.hp -= n; add('-' + (-o.hp) + ' HP' + (n !== -o.hp ? ' (' + n + ' now, never below 1)' : ''), true); }
+    if (o.maxHp) { sh.maxHp += o.maxHp; sh.hp += o.maxHp; add((o.maxHp > 0 ? '+' : '') + o.maxHp + ' max HP', o.maxHp < 0); }
+    if (o.healPct) { const a = Math.max(0, Math.min(Math.round(sh.maxHp * o.healPct), sh.maxHp - sh.hp)); sh.hp += a; add('Heal ' + pctStr(o.healPct) + ' of max HP (+' + a + ' now)'); }
+    if (o.relic) {
+      const left = Object.keys(D.RELICS).filter(r => !hasRelic(p, r) && !D.RELICS[r].special).length;
+      if (o.relic !== 'random' && !hasRelic(p, o.relic)) add('Relic: ' + D.RELICS[o.relic].name);
+      else if (left) add('Random relic (1 of ' + left + (o.relic !== 'random' ? ', you already own ' + D.RELICS[o.relic].name : '') + ')');
+      else add('+40 gold (no relics left)');
+    }
+    if (o.potion) { const full = p.potions.length >= D.POTION_SLOTS;
+      add((o.potion === 'random' ? 'Random potion (1 of ' + Object.keys(D.POTIONS).length + ')' : 'Potion: ' + D.POTIONS[o.potion].name) + (full ? ' (belt full: lost)' : '')); }
+    if (o.curse) add('Curse into your deck: ' + D.CARDS[o.curse].name, true);
+    if (o.upgradeRandom) { const n = Math.min(o.upgradeRandom, p.deck.filter(canUpgrade).length); add('Upgrade ' + n + ' random card' + (n === 1 ? '' : 's')); }
+    if (o.removeCurses) { const n = p.deck.filter(c => D.CARDS[c.id].type === 'curse').length; add(n ? 'Remove all ' + n + ' curse' + (n > 1 ? 's' : '') : 'No curses: choose a card to remove'); }
+    if (o.then) {
+      const n = hasRelic(p, 'luckstone') ? 4 : 3;
+      if (o.then === 'remove') add('Choose a card to remove');
+      else if (o.then === 'upgrade') add('Choose a card to upgrade');
+      else { const t = o.then === 'rareCards' ? 'rareOnly' : 'fight';
+        const odds = weightOdds(rewardRarityWeights(t));
+        add('Pick 1 of ' + n + (odds.length === 1 ? ' ' + odds[0].key + ' cards' : ' cards (each: ' + odds.map(r => r.key + ' ' + pctStr(r.p)).join(', ') + ')')); }
+    }
+    if (o.fight) { const enc = (o.fightByFloor && o.fightByFloor[s.floor]) || o.fight;
+      add((o.fightType === 'elite' ? 'Elite fight: ' : 'Fight: ') + D.ENCOUNTERS[enc].name + (o.relicAfter ? ', then relic: ' + D.RELICS[o.relicAfter].name : ''), true); }
+    if (o.shop) { const d = o.shop.discount || 0; add(d ? 'Merchant, prices ' + (d > 0 ? '-' : '+') + pctStr(Math.abs(d)) : 'Merchant, normal prices', d < 0); }
+    return fx;
+  }
+  // Generic: works from the event data alone (req / ops / chance), so new events need no extra code.
+  function describeChoice(s, p, evId, idx) {
+    const ch = D.EVENTS[evId].choices[idx];
+    const sh = { hp: p.hp, maxHp: p.maxHp, gold: p.gold };
+    const req = [];
+    if (ch.req && ch.req.gold) req.push('Needs ' + ch.req.gold + ' gold');
+    if (ch.req && ch.req.hp) req.push('Needs ' + ch.req.hp + ' HP');
+    const fixed = ch.ops ? previewOps(s, p, sh, ch.ops) : [];
+    const outcomes = ch.chance ? weightOdds(choiceWeights(ch)).map(o => {
+      const after = Object.assign({}, sh), effects = previewOps(s, p, after, ch.chance[+o.key]);
+      return { branch: +o.key, p: o.p, effects, bad: effects.some(f => f.bad), after };
+    }) : null;
+    const risky = !!outcomes && outcomes.some(o => o.bad);
+    return { req, fixed, cost: fixed.filter(f => f.bad), outcomes, after: sh, success: risky ? outcomes.filter(o => !o.bad).reduce((a, o) => a + o.p, 0) : null };
+  }
   function eventChoice(s, p, idx) {
     if (s.phase !== 'event' || !s.event || s.event.stage !== 'choose') return err('No event choice');
     const ch = D.EVENTS[s.event.id].choices[idx];
@@ -271,10 +327,7 @@
     if (!choiceAllowed(p, ch)) return err('Requirement not met');
     s.event.choice = idx;
     if (ch.ops) applyOps(s, p, ch.ops);
-    if (ch.chance) {
-      const w = {}; ch.chance.forEach((b, i) => { w[i] = b.w; });
-      applyOps(s, p, ch.chance[+weightedPick(s, w)]);
-    }
+    if (ch.chance) { const b = +weightedPick(s, choiceWeights(ch)); s.event.branch = b; applyOps(s, p, ch.chance[b]); }
     s.event.stage = 'result';
     log(s, D.EVENTS[s.event.id].name + ': ' + (s.event.log.join(', ') || 'nothing happens'));
     emit(s, { kind: 'eventResult' });
@@ -789,13 +842,17 @@
     emit(s, { kind: finalBoss ? 'victory' : 'encounterWon' });
   }
 
-  function rollCardRewards(s, p, n, type) {
-    const cls = D.HEROES[p.heroId] ? p.heroId : 'fighter';
-    const pool = Object.keys(D.CARDS).filter(id => D.CARDS[id].rarity !== 'starter' && D.CARDS[id].cls === cls);
+  function rewardRarityWeights(type) {
     const weights = { ...D.RARITY_WEIGHTS };
     if (type === 'elite' || type === 'boss') { weights.uncommon *= 1.5; weights.rare *= 3; }
     if (type === 'elite') weights.common = 0; // Anna: elite card rewards are uncommon or rare only
     if (type === 'rareOnly') { weights.common = 0; weights.uncommon = 0; weights.rare = 1; }
+    return weights;
+  }
+  function rollCardRewards(s, p, n, type) {
+    const cls = D.HEROES[p.heroId] ? p.heroId : 'fighter';
+    const pool = Object.keys(D.CARDS).filter(id => D.CARDS[id].rarity !== 'starter' && D.CARDS[id].cls === cls);
+    const weights = rewardRarityWeights(type);
     const picks = [];
     let guard = 0;
     while (picks.length < n && picks.length < pool.length && guard++ < 200) {
@@ -877,7 +934,8 @@
   function takeEvents(s) { const ev = s.events; s.events = []; return ev; }
 
   const Engine = { startEncounter, startFight, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
-    attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade };
+    attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade,
+    weightOdds, choiceWeights, rewardRarityWeights, describeChoice };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
 })(typeof window !== 'undefined' ? window : globalThis);
