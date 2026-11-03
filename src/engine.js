@@ -260,7 +260,7 @@
       else ev.next = { then: 'remove' };
     }
     if (o.then) ev.next = { then: o.then };
-    if (o.fight) ev.next = { fight: o.fight, fightType: o.fightType || 'fight', relicAfter: o.relicAfter || null };
+    if (o.fight) ev.next = { fight: (o.fightByFloor && o.fightByFloor[s.floor]) || o.fight, fightType: o.fightType || 'fight', relicAfter: o.relicAfter || null };
     if (o.shop) ev.next = { shop: o.shop };
     if (o.text) ev.result = ownedAlt ? o.textOwned : o.text;
   }
@@ -769,6 +769,7 @@
     const pool = Object.keys(D.CARDS).filter(id => D.CARDS[id].rarity !== 'starter' && D.CARDS[id].cls === cls);
     const weights = { ...D.RARITY_WEIGHTS };
     if (type === 'elite' || type === 'boss') { weights.uncommon *= 1.5; weights.rare *= 3; }
+    if (type === 'elite') weights.common = 0; // Anna: elite card rewards are uncommon or rare only
     if (type === 'rareOnly') { weights.common = 0; weights.uncommon = 0; weights.rare = 1; }
     const picks = [];
     let guard = 0;
@@ -850,7 +851,7 @@
 
   function takeEvents(s) { const ev = s.events; s.events = []; return ev; }
 
-  const Engine = { startEncounter, startFight, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
+  const Engine = { startEncounter, startFight, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;

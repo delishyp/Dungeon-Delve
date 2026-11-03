@@ -6,7 +6,7 @@
  *  gold n | hp n (negative = lose, never below 1) | healPct f | maxHp n
  *  relic 'random'|id | potion 'random'|id | curse id | upgradeRandom n
  *  removeCurses | then: 'remove' | 'upgrade' | 'cards' | 'rareCards' (a follow-up pick)
- *  fight encId (+ fightType 'elite'|'fight') | shop {discount}
+ *  fight encId (+ fightType 'elite'|'fight'; optional fightByFloor [encId per floor index, 0 = Floor 1], falls back to fight) | shop {discount}
  *  text: what the DM says afterwards.  chance: [{w, ...ops}] picks one branch.
  *  req: {gold n} or {hp n} — choice is greyed out without it.
  * ============================================================ */
@@ -72,6 +72,7 @@
     wyrmling:     { name: 'An Angry Wyrmling', enemies: ['wyrmling'], scene: 'Dragon Hoard', elite: true },
     lesser_mimic: { name: 'It Was a Mimic!', enemies: ['lesser_mimic'], scene: 'Lonely Chest', elite: true },
     altar_dead:   { name: 'Guardians of the Altar', enemies: ['skeleton', 'skeleton', 'ghoul'], scene: 'Cursed Altar' },
+    altar_dead_f1: { name: 'Guardians of the Altar', sameAs: 'altar_dead', enemies: ['skeleton_altar', 'skeleton_altar', 'ghoul_altar'], scene: 'Cursed Altar' },
   });
 
   // Displayed sprite height (px on desktop) — gives the monsters a sense of scale.
@@ -194,7 +195,7 @@
       choices: [
         { label: 'Take the idol.', hint: '', ops: { relic: 'random', curse: 'curse_hex', text: 'You take it. On the way out, you hear bare feet behind you, keeping your pace.' } },
         { label: 'Cut your palm over the altar.', hint: '', req: { hp: 11 }, ops: { hp: -10, upgradeRandom: 2, text: 'The stone drinks. Something answers by sharpening two of your skills.' } },
-        { label: 'Tip the altar over.', hint: '', ops: { fight: 'altar_dead', fightType: 'fight', text: 'It cracks on the floor. The bones around it start to stand.' } },
+        { label: 'Tip the altar over.', hint: '', ops: { fight: 'altar_dead', fightByFloor: ['altar_dead_f1', 'altar_dead'], fightType: 'fight', text: 'It cracks on the floor. The bones around it start to stand.' } },
         { label: 'Leave it be.', hint: '', ops: { text: 'Some things are best left where they are.' } }] },
     yawning_portal: { name: 'The Drowned Taproom', art: 'ev_tavern',
       text: 'A taproom from old Saint Brennick, sunk whole on the night the ground split. Water stands ankle-deep. Three delvers have barricaded themselves in with the last of the ale, and a big half-orc woman watches the door. "Pay or wrestle," she says. "Those are the only games left."',
