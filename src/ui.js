@@ -90,7 +90,7 @@
     const foil = def.rarity === 'legendary';   // every legendary gets Palette's foil (only they carry the blend layers)
     if (foil) foilMask(c.id);
     return `<div class="${cls}${foil ? ' foil' : ''}" data-id="${esc(c.id)}" data-cls="${base.cls}" data-rar="${def.rarity}" data-frame="${fr}" ${opts.attrs || ''}>
-      <div class="cface"><img class="cart" src="${img('card_' + (base.art || c.id)) || img('placeholder_' + c.id)}" alt="" draggable="false"><img class="cframe" src="${img('frame_' + fr)}" alt="" draggable="false">
+      <div class="cface"><img class="cart" src="${img('card_' + (base.art || c.id)) || img('placeholder_' + c.id)}" alt="" draggable="false"><img class="cframe" src="${img(def.type === 'power' ? 'frame_power' : 'frame_' + fr)}" alt="" draggable="false">
       ${foil ? FOIL_LAYERS : ''}${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname${def.name.length > 15 ? ' long' : ''}"><span>${esc(def.name)}</span></div>
       <div class="cclass" title="${esc(base.cls)}">${I(emblem)}</div>
       <div class="ctype">${def.type}${rar}</div>

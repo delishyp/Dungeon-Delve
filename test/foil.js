@@ -39,6 +39,18 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   ok(!L.nrmFoil && L.anyNormalBlend === 0, 'normal cards carry no foil or blend layers');
   const iS = L.kids.findIndex(k => /foil-sweep/.test(k)), iD = L.kids.findIndex(k => /cdesc/.test(k)), iN = L.kids.findIndex(k => /cname/.test(k));
   ok(iS > 0 && iS < iD && iS < iN && L.kids.indexOf('cframe') < L.kids.findIndex(k => /foil-sheen/.test(k)), 'foil layers sit above the frame and under all text: ' + L.kids.join(','));
+  // Power cards use the Moonsilver frame (Anna, Nov 3: art/ui/frames_power/frame_power_A.svg -> assets/frame_power.svg); other types keep theirs
+  const PF = await pg.evaluate(() => {
+    const g = window.__game, p = g.state.players[0], A = window.ASSETS;
+    p.hand.push({ id: 'bear_totem', uid: 'pw1' }); g.render();
+    const src = (uid) => document.querySelector(`.hand .card[data-card="${uid}"] .cframe`).getAttribute('src');
+    const atk = [...document.querySelectorAll('.hand .card')].find(c => c.classList.contains('attack') && c.dataset.frame === 'attack');
+    const r = { has: !!A.frame_power && /^data:image\/svg\+xml/.test(A.frame_power), pw: src('pw1') === A.frame_power, atk: !!atk && atk.querySelector('.cframe').getAttribute('src') === A.frame_attack,
+      notPowerFrame: [...document.querySelectorAll('.hand .card:not(.power) .cframe')].every(f => f.getAttribute('src') !== A.frame_power) };
+    p.hand = p.hand.filter(x => x.uid !== 'pw1'); g.render(); return r;
+  });
+  ok(PF.has && PF.pw, 'Power card (Bearskin) uses frame_power');
+  ok(PF.atk && PF.notPowerFrame, 'Attack and other non-Power cards keep their own frame');
   // per-card mask: a foil_mask_<id> asset wins over the default
   const own = await pg.evaluate(() => {
     const g = window.__game, D = window.GameData, p = g.state.players[0], c = document.createElement('canvas'); c.width = 6; c.height = 8;
