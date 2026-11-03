@@ -777,17 +777,19 @@
   // ----- compendium -----
   function compendiumHTML() {
     const tab = ui.compTab || 'cards';
-    const tabs = [['cards', 'Cards', Object.keys(D.CARDS).length], ['relics', 'Relics', `${ST.seen.count('relics')}/${Object.keys(D.RELICS).length}`],
+    // A card or relic switched out of the pools (inPool: false) is hidden here and in the totals, except in dev mode.
+    const dev = ST.get('devMode'), cardIds = Object.keys(D.CARDS).filter(id => dev || D.CARDS[id].inPool !== false), relicIds = Object.keys(D.RELICS).filter(id => dev || D.RELICS[id].inPool !== false);
+    const tabs = [['cards', 'Cards', cardIds.length], ['relics', 'Relics', `${relicIds.filter(id => ST.seen.has('relics', id)).length}/${relicIds.length}`],
       ['potions', 'Potions', Object.keys(D.POTIONS).length], ['monsters', 'Monsters', `${ST.seen.count('monsters')}/${Object.keys(D.MONSTERS).filter(id => !D.MONSTERS[id].variantOf).length}`]];
     let body = '';
     if (tab === 'cards') {
       const f = ui.compFilter || 'all';
-      const ids = Object.keys(D.CARDS).filter(id => f === 'all' || D.CARDS[id].cls === f);
+      const ids = cardIds.filter(id => f === 'all' || D.CARDS[id].cls === f);
       body = `<div class="cfilters">${['all', 'fighter', 'barbarian', 'wizard', 'curse'].map(k => `<button class="${f === k ? 'on' : ''}" data-act="compfilter" data-f="${k}">${k === 'all' ? 'All' : (k !== 'curse' ? I(k) + ' ' + k[0].toUpperCase() + k.slice(1) : 'Curses &amp; Status')}</button>`).join('')}
         <button class="${ui.compUp ? 'on' : ''}" data-act="compup">Show upgraded</button></div>
         <div class="compcards">${ids.map(id => cardHTML({ id, uid: 'comp_' + id, up: !!ui.compUp && D.CARDS[id].type !== 'curse' && D.CARDS[id].type !== 'status' })).join('')}</div>`;
     } else if (tab === 'relics') {
-      body = `<div class="compgrid">${Object.entries(D.RELICS).map(([id, r]) => ST.seen.has('relics', id)
+      body = `<div class="compgrid">${relicIds.map(id => [id, D.RELICS[id]]).map(([id, r]) => ST.seen.has('relics', id)
         ? `<div class="comptile">${relicMedal(id, 'big')}<b>${esc(r.name)}</b><small>${esc(r.desc)}</small></div>`
         : `<div class="comptile locked">${medal(I(id, 'relic'), 'big')}<b>???</b><small>${I('lock')} Not found yet</small></div>`).join('')}</div>`;
     } else if (tab === 'potions') {

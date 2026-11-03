@@ -46,6 +46,18 @@ ok(!/owlbear: \[[^\]]*(wing|half-bald|rises, huge)/i.test(src), 'no wings, half-
     await pg.close(); return r;
   }
   const on = await look(false), off = await look(true);
+  { // Compendium (Producer 15:09): a card or relic switched out of the pools is hidden, and left out of the totals, unless dev mode is on
+    const pg = await b.newPage(); pg.on('pageerror', e => logs.push('pageerror: ' + e.message)); await pg.setViewport({ width: 1920, height: 1080 });
+    await pg.goto('file://' + path.resolve(__dirname, '../index.html'));
+    await pg.waitForFunction(() => window.__game && window.GameData, { timeout: 60000 });
+    const c = await pg.evaluate(() => { const g = window.__game, D = window.GameData, ST = window.Settings, out = {};
+      const look = () => { g.ui.screen = 'compendium'; g.ui.compTab = 'cards'; g.render(); const cards = document.querySelectorAll('.compcards .card').length, has = !!document.querySelector('.compcards .card[data-card="comp_worn_grip"], .compcards .card[data-id="worn_grip"]');
+        g.ui.compTab = 'relics'; g.render(); return { cards, has, relics: document.querySelectorAll('.compgrid .comptile').length }; };
+      const dev0 = ST.get('devMode'); out.all = look(); D.CARDS.worn_grip.inPool = false; D.RELICS.ash_bracer.inPool = false; out.hidden = look();
+      ST.set('devMode', true); out.dev = look(); ST.set('devMode', dev0); delete D.CARDS.worn_grip.inPool; delete D.RELICS.ash_bracer.inPool; return out; });
+    eq([c.all.has, c.hidden.has, c.dev.has], [true, false, true], 'compendium: a switched-out card is hidden outside dev mode');
+    eq([c.all.cards - c.hidden.cards, c.all.relics - c.hidden.relics, c.dev.cards - c.all.cards, c.dev.relics - c.all.relics], [1, 1, 0, 0], 'compendium totals leave it out too');
+    await pg.close(); }
   eq([on.beholder.src === on.A.nb, on.owlbear.src === on.A.no, on.crier.src === on.A.nc], [true, true, true], 'the new files are drawn');
   for (const id of ['beholder', 'owlbear', 'crier']) {
     ok(Math.abs(on[id].h / 1400 - on.heroScale) < 0.01, `${id}: boss canvas drawn at the hero scale (${(on[id].h / 1400).toFixed(3)} vs ${on.heroScale.toFixed(3)} px per canvas px)`);
