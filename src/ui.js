@@ -83,7 +83,8 @@
     return l.length === 1 ? l[0].uid : null;
   }
   const TPL_RARITIES = ['starter', 'common', 'uncommon', 'rare', 'legendary'];
-  // Rules box: the effect text, then one line per keyword (Spell, Retain; Anna 11:17), each with its kwTips hover tooltip.
+  // Rules box: the effect text, then one line per keyword (Spell, Retain, Vanish, Repeat X, Replay, Eternal; Anna 11:17/11:33),
+  // each with its kwTips hover tooltip.
   function rulesHTML(text, def, base) {
     return withKeywords(text, base.kwTips) + D.keywordLines(def).map(k => '<br>' + withKeywords(k + '.', base.kwTips)).join('');
   }
@@ -594,7 +595,8 @@
       <button class="btn ghost" data-act="${back}">${back === 'evskip' ? 'Skip' : 'Back'}</button></div></div>`;
   }
   const upgradeCards = (p, act) => p.deck.filter(E.canUpgrade).map(c => cardHTML({ id: c.id, up: true }, { attrs: `data-act="${act}" data-card="${c.uid}"` }));
-  const removeCards = (p, act) => p.deck.slice().sort((a, b) => a.id.localeCompare(b.id)).map(c => cardHTML(c, { attrs: `data-act="${act}" data-card="${c.uid}"` }));
+  // Removal grids (shop service, event "remove a card") never offer an Eternal card.
+  const removeCards = (p, act) => p.deck.filter(E.canRemove).sort((a, b) => a.id.localeCompare(b.id)).map(c => cardHTML(c, { attrs: `data-act="${act}" data-card="${c.uid}"` }));
   function flavor(kind) { const k = kind + G.floor + G.pos; if (!ui.flavor[k]) ui.flavor[k] = pickOne(D.STORY.rooms[kind]); return ui.flavor[k]; }
 
   function restHTML() {

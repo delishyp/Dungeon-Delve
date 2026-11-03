@@ -63,6 +63,28 @@
   }
   const cardDef = (c) => (c.up ? upgradeDef(c.id) : D.CARDS[c.id]);
   const canUpgrade = (c) => !c.up && D.CARDS[c.id].type !== 'curse' && D.CARDS[c.id].type !== 'status';
+  // ---------- keywords (Anna 11:33, Producer 11:34/11:35/11:41; wording lore/text/how_to_play_v1.md section 3) ----------
+  // Eternal: the card can never be removed from the deck in any way (shop removal, event removal, "remove all curses",
+  // transforms, Vanish, any remove-a-card effect). It can still be upgraded (canUpgrade does not look at it).
+  const isEternal = (c) => !!(D.CARDS[c.id] && D.CARDS[c.id].eternal);
+  const canRemove = (c) => !isEternal(c);
+  const canTransform = canRemove;
+  // The one path every out-of-combat removal goes through. Returns false (and removes nothing) for an Eternal card.
+  function removeFromDeck(s, p, c) {
+    if (!c || !canRemove(c) || !p.deck.includes(c)) return false;
+    p.deck = p.deck.filter(x => x !== c);
+    return true;
+  }
+  // Transform hook (no card or event transforms yet): swaps a deck card for another id, never an Eternal one.
+  function transformCard(s, p, c, newId) {
+    if (!c || !canTransform(c) || !p.deck.includes(c) || !D.CARDS[newId]) return false;
+    const i = p.deck.indexOf(c); p.deck[i] = { uid: uid(s, 'c'), id: newId };
+    return true;
+  }
+  // Repeat X: the card's effect happens X times in total (Producer 11:35). Replay: the card is played once more (2 plays,
+  // never stacks past one extra, Producer 11:41), so Replay + Repeat X = 2xX.
+  const repeatOf = (def) => Math.max(1, Math.floor(def.repeat || 1));
+  const playsOf = (def) => (def.replay ? 2 : 1);
 
   // ---------- helpers ----------
   const alive = (e) => !!e && e.hp > 0;
@@ -261,9 +283,9 @@
         const x = pick(s, c); x.up = true; out.push('Upgraded: ' + D.CARDS[x.id].name);
       }
     }
-    if (o.removeCurses) {
-      const curses = p.deck.filter(c => D.CARDS[c.id].type === 'curse');
-      if (curses.length) { p.deck = p.deck.filter(c => D.CARDS[c.id].type !== 'curse'); out.push('Removed ' + curses.length + ' curse' + (curses.length > 1 ? 's' : '')); }
+    if (o.removeCurses) {   // Eternal curses stay (Producer 11:34)
+      const curses = p.deck.filter(c => D.CARDS[c.id].type === 'curse' && canRemove(c));
+      if (curses.length) { curses.forEach(c => removeFromDeck(s, p, c)); out.push('Removed ' + curses.length + ' curse' + (curses.length > 1 ? 's' : '')); }
       else ev.next = { then: 'remove' };
     }
     if (o.then) ev.next = { then: o.then };
@@ -298,7 +320,7 @@
       add((o.potion === 'random' ? 'Random potion (1 of ' + Object.keys(D.POTIONS).length + ')' : 'Potion: ' + D.POTIONS[o.potion].name) + (full ? ' (belt full: lost)' : '')); }
     if (o.curse) add('Curse into your deck: ' + D.CARDS[o.curse].name, true);
     if (o.upgradeRandom) { const n = Math.min(o.upgradeRandom, p.deck.filter(canUpgrade).length); add('Upgrade ' + n + ' random card' + (n === 1 ? '' : 's')); }
-    if (o.removeCurses) { const n = p.deck.filter(c => D.CARDS[c.id].type === 'curse').length; add(n ? 'Remove all ' + n + ' curse' + (n > 1 ? 's' : '') : 'No curses: choose a card to remove'); }
+    if (o.removeCurses) { const n = p.deck.filter(c => D.CARDS[c.id].type === 'curse' && canRemove(c)).length; add(n ? 'Remove all ' + n + ' curse' + (n > 1 ? 's' : '') : 'No curses: choose a card to remove'); }
     if (o.then) {
       const n = hasRelic(p, 'luckstone') ? 4 : 3;
       if (o.then === 'remove') add('Choose a card to remove');
@@ -344,7 +366,7 @@
     if (s.phase !== 'event' || !s.event || s.event.stage !== 'result') return err('Nothing to continue');
     const nx = s.event.next;
     if (nx && (nx.then === 'upgrade' || nx.then === 'remove')) {
-      const ok = p.deck.some(c => nx.then === 'remove' || canUpgrade(c));
+      const ok = p.deck.some(c => nx.then === 'remove' ? canRemove(c) : canUpgrade(c));
       if (ok) { s.event.stage = 'pick'; s.event.pick = nx.then; return { ok: true }; }
     } else if (nx && (nx.then === 'cards' || nx.then === 'rareCards')) {
       s.phase = 'reward'; s.node = 'event';
@@ -362,7 +384,7 @@
       const c = p.deck.find(x => x.uid === cardUid);
       if (!c) return err('No such card');
       if (s.event.pick === 'upgrade') { if (!canUpgrade(c)) return err('Cannot upgrade'); c.up = true; log(s, `${p.name} upgrades ${D.CARDS[c.id].name}.`); }
-      else { p.deck = p.deck.filter(x => x !== c); log(s, `${p.name} removes ${D.CARDS[c.id].name}.`); }
+      else { if (!removeFromDeck(s, p, c)) return err('Eternal cards can never be removed'); log(s, `${p.name} removes ${D.CARDS[c.id].name}.`); }
     }
     afterNode(s); return { ok: true };
   }
@@ -406,7 +428,8 @@
     if (s.phase !== 'shop' || !s.shop || s.shop.removed) return err('No removal service');
     if (p.gold < s.shop.removeCost) return err('Not enough gold');
     const c = p.deck.find(x => x.uid === cardUid); if (!c) return err('No such card');
-    p.gold -= s.shop.removeCost; p.deck = p.deck.filter(x => x !== c); p.removes++; s.shop.removed = true;
+    if (!canRemove(c)) return err('Eternal cards can never be removed');
+    p.gold -= s.shop.removeCost; removeFromDeck(s, p, c); p.removes++; s.shop.removed = true;
     log(s, `${p.name} removes ${D.CARDS[c.id].name}.`);
     return { ok: true };
   }
@@ -640,12 +663,23 @@
     if (livingPlayers(s).some(x => !x.endedTurn)) return; // co-op: wait for everyone
     for (const pl of livingPlayers(s)) {
       for (const c of pl.hand) { const d = D.CARDS[c.id]; if (d.endTurnHpLoss) loseHp(s, pl, d.endTurnHpLoss, 'curse'); }
+      vanishAtTurnEnd(s, pl);
       pl.discard.push(...pl.hand); pl.hand = [];
       if (pl.statuses.regen) heal(s, pl, pl.statuses.regen);
       decayStatuses(pl);
     }
     enemyTurn(s);
     if (s.phase === 'combat') startPlayersTurn(s);
+  }
+
+  // Vanish (Anna 11:33, how_to_play_v1): a card still in hand that would be discarded at the end of the turn is removed for
+  // the rest of the fight instead (it goes to the exhaust pile, as a fresh copy is dealt next fight). A played Vanish card
+  // is discarded as normal. Eternal blocks it (the card is discarded as normal).
+  function vanishAtTurnEnd(s, p) {
+    const gone = p.hand.filter(c => cardDef(c).vanish && canRemove(c));
+    if (!gone.length) return;
+    p.hand = p.hand.filter(c => !gone.includes(c)); p.exhaust.push(...gone);
+    for (const c of gone) { emit(s, { kind: 'vanish', source: p.uid, card: c.id }); log(s, `${D.CARDS[c.id].name} vanishes.`); }
   }
 
   function enemyTurn(s) {
@@ -828,7 +862,19 @@
     emit(s, { kind: 'cardPlayed', source: p.uid, card: c.id, target: tgt && tgt.uid });
     log(s, `${p.name} plays ${def.name}.`);
     const shovers = s.enemies.filter(e => alive(e) && D.MONSTERS[e.monsterId].shove).map(e => ({ e, before: e.hp + e.block }));
-    runEffects(s, p, def.effects, tgt, c);
+    // Replay = a second play (Fading hook: notePlay runs once per play); Repeat X = the effect X times inside ONE play.
+    // Replay on an Exhaust/Vanish card plays both times, then the card leaves once (Producer 11:34).
+    const plays = playsOf(def), reps = repeatOf(def);
+    for (let k = 0; k < plays; k++) {
+      if (k > 0) {
+        if (!alive(p) || !livingEnemies(s).length) break;
+        if (def.target === 'enemy' && !isTargetable(s, tgt)) { tgt = targetableEnemies(s)[0] || null; if (!tgt) break; }   // a dead target: the Replay goes to the first enemy left
+        emit(s, { kind: 'cardReplayed', source: p.uid, card: c.id, target: tgt && tgt.uid });
+        log(s, `${def.name} plays again (Replay).`);
+      }
+      for (let r = 0; r < reps; r++) runEffects(s, p, def.effects, tgt, c);
+      notePlay(s, p, c);
+    }
     // Powers (Anna): once played they stay in play for the rest of the fight, in their own list, not in any pile.
     if (def.type === 'power') { (p.powers = p.powers || []).push(c); emit(s, { kind: 'powerPlayed', source: p.uid, card: c.id, up: !!c.up }); }
     else (def.exhaust ? p.exhaust : p.discard).push(c);
@@ -843,6 +889,9 @@
     checkEnd(s);
     return { ok: true };
   }
+
+  // Counts a play of a card copy this fight: a Replay counts twice, Repeat once (Producer 11:56). The Fading hook reads this.
+  function notePlay(s, p, c) { c.fightPlays = (c.fightPlays || 0) + 1; }
 
   /* Live card text: returns the description with {i} replaced by the current value.
    * Changed values are wrapped as «+N» (better than printed) or «-N» (worse). */
@@ -996,7 +1045,7 @@
 
   const Engine = { startEncounter, startFight, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade,
-    weightOdds, choiceWeights, rewardRarityWeights, describeChoice };
+    weightOdds, choiceWeights, rewardRarityWeights, describeChoice, isEternal, canRemove, canTransform, removeFromDeck, transformCard, repeatOf, playsOf };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
 })(typeof window !== 'undefined' ? window : globalThis);

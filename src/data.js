@@ -60,6 +60,10 @@
     // Keyword lines (Anna 11:17), wording from lore/text/how_to_play_v1.md section 3 (Lorekeeper).
     Spell:      "Spell: this card is a spell, so Arcane Focus makes it stronger. Cards without the Spell keyword are cantrips. Cantrips are cheap and quick, and Arcane Focus doesn't affect them.",
     Retain:     "Retain: the card stays in your hand until you play it. It isn't discarded at the end of your turn.",
+    Vanish:     "Vanish: if you don't play the card this turn and it would be discarded at the end of your turn, it's removed for the rest of the fight instead.",
+    Repeat:     'Repeat X: the card\'s effect happens X times. "Deal 4 damage. Repeat 3." deals 12 in total.',
+    Replay:     "Replay: the card is played one more time. A card with Replay and Repeat 3 does its effect 6 times. If it also has Exhaust or Vanish, it's played both times before it's removed.",
+    Eternal:    'Eternal: the card can never be removed from your deck, in any way. Shops, events, the Silver Spring and card effects can\'t take it, though you can still upgrade it.',
   };
   for (const k in STATUSES) KEYWORDS[STATUSES[k].name] = STATUSES[k].tip;
 

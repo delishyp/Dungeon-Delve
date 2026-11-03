@@ -349,10 +349,31 @@
   G.typeWord = function (def, id) { return G.TYPE_WORDS[def.type === 'power' ? 'power' : G.frameOf(def, id)]; };
   // Keyword lines (Anna 11:17): no tag pills. Spell and Retain are written in the rules text, each on its own line after the
   // effect ("Deal 12 damage. / Spell. / Retain."). Cantrip is the default and gets no line.
+  // Base keywords (Anna 11:33) follow in the How to Play order: Spell, Retain, Vanish, Repeat X, Replay, Eternal.
+  // Exhaust stays in the effect text, as on every existing Exhaust card.
   G.keywordLines = function (def) {
     const k = [];
     if (def.kind === 'spell') k.push('Spell');
     if (def.retain) k.push('Retain');
+    if (def.vanish) k.push('Vanish');
+    if (def.repeat > 1) k.push('Repeat ' + Math.floor(def.repeat));
+    if (def.replay) k.push('Replay');
+    if (def.eternal) k.push('Eternal');
     return k;
   };
+  // Keyword data check (Producer 11:34, how_to_play_v1: "A card never has both Retain and Vanish"). Runs on load, so a bad
+  // card fails the build, every test and the game loudly instead of playing wrong.
+  G.checkKeywordData = function (cards) {
+    const bad = [];
+    for (const [id, c] of Object.entries(cards)) {
+      for (const d of [c, c.upgrade].filter(Boolean)) {
+        if ((d.retain || c.retain) && (d.vanish || c.vanish)) bad.push(id + ': has both retain and vanish');
+        if (d.repeat != null && !(Number.isInteger(d.repeat) && d.repeat >= 2)) bad.push(id + ': repeat must be a whole number of 2 or more (got ' + d.repeat + ')');
+        for (const f of ['eternal', 'vanish', 'replay', 'retain', 'exhaust']) if (d[f] != null && typeof d[f] !== 'boolean') bad.push(id + ': ' + f + ' must be true or false');
+      }
+    }
+    if (bad.length) throw new Error('Card keyword data check failed: ' + [...new Set(bad)].join('; '));
+    return true;
+  };
+  G.checkKeywordData(G.CARDS);
 })(typeof GameData !== 'undefined' ? GameData : (typeof window !== 'undefined' ? window.GameData : module.exports));
