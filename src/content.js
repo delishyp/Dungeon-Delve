@@ -75,7 +75,7 @@
   Object.assign(D.ENCOUNTERS, {
     wyrmling:     { name: 'An Angry Wyrmling', enemies: ['wyrmling'], scene: 'Dragon Hoard', elite: true },
     lesser_mimic: { name: 'It Was a Mimic!', enemies: ['lesser_mimic'], scene: 'Lonely Chest', elite: true },
-    altar_dead:   { name: 'Guardians of the Altar', enemies: ['skeleton', 'skeleton', 'ghoul'], scene: 'Cursed Altar' },
+    altar_dead:   { name: 'Guardians of the Altar', enemies: ['skeleton_altar_f2', 'skeleton_altar_f2', 'ghoul'], scene: 'Cursed Altar' },
     altar_dead_f1: { name: 'Guardians of the Altar', sameAs: 'altar_dead', enemies: ['skeleton_altar', 'skeleton_altar', 'ghoul_altar'], scene: 'Cursed Altar' },
   });
 

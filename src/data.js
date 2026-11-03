@@ -264,6 +264,13 @@
         rattle: { name: 'Rattling Guard', intent: 'attack_defend', effects: [{ t: 'block', n: 7 }, { t: 'attack', n: 3 }] },
         bow:    { name: 'Bone Arrows', intent: 'attack', effects: [{ t: 'attack', n: 2, times: 3 }] },
       }, ai: { pattern: ['sword', 'rattle', 'bow'] } },
+    // Guardians of the Altar on Floor 2 (Producer, Nov 3 04:58): its own tougher copies, so the shared skeleton (Floor 1) stays as is.
+    skeleton_altar_f2: { name: 'Skeleton', sprite: 'skeleton', variantOf: 'skeleton', hp: [32, 36],
+      moves: {
+        sword:  { name: 'Shortsword', intent: 'attack', effects: [{ t: 'attack', n: 6 }] },
+        rattle: { name: 'Rattling Guard', intent: 'attack_defend', effects: [{ t: 'block', n: 7 }, { t: 'attack', n: 4 }] },
+        bow:    { name: 'Bone Arrows', intent: 'attack', effects: [{ t: 'attack', n: 3, times: 3 }] },
+      }, ai: { pattern: ['sword', 'rattle', 'bow'] } },
     gnoll: { name: 'Gnoll', hp: [35, 42],
       moves: {
         rampage: { name: 'Rampage', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 2 }] },

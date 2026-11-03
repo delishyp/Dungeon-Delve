@@ -1,4 +1,5 @@
-// Guardians of the Altar: Floor 1 gets its own lighter copies (skeleton_altar / ghoul_altar); Floor 2 keeps the shared skeleton / ghoul.
+// Guardians of the Altar: Floor 1 gets its own lighter copies (skeleton_altar / ghoul_altar); Floor 2 gets its own tougher skeletons
+// (skeleton_altar_f2, Producer Nov 3 04:58) plus the shared Floor 2 ghoul.
 const E = require('../src/engine.js');
 const D = require('../src/data.js'); require('../src/content.js');
 let n = 0; const ok = (c, m) => { n++; if (!c) { console.error('FAIL', m); process.exit(1); } };
@@ -7,17 +8,24 @@ const atk = (id, mv) => D.MONSTERS[id].moves[mv].effects.find(f => f.t === 'atta
 const S = D.MONSTERS.skeleton_altar, G = D.MONSTERS.ghoul_altar;
 ok(S.hp.join() === '16,19' && atk('skeleton_altar', 'sword').n === 6 && atk('skeleton_altar', 'rattle').n === 3 && atk('skeleton_altar', 'bow').n === 2 && atk('skeleton_altar', 'bow').times === 3, 'skeleton_altar HP 16-19, sword 6, rattle 3, bow 2x3');
 ok(G.hp.join() === '12,13' && atk('ghoul_altar', 'claw').n === 6 && atk('ghoul_altar', 'bite').n === 11, 'ghoul_altar HP 12-13, claw 6, bite 11');
-for (const [v, b] of [['skeleton_altar', 'skeleton'], ['ghoul_altar', 'ghoul']]) {
+// the F2 skeleton copy's numbers (base, before depth scaling)
+const S2 = D.MONSTERS.skeleton_altar_f2;
+ok(S2.hp.join() === '32,36' && atk('skeleton_altar_f2', 'sword').n === 6 && atk('skeleton_altar_f2', 'rattle').n === 4 && atk('skeleton_altar_f2', 'bow').n === 3 && atk('skeleton_altar_f2', 'bow').times === 3, 'skeleton_altar_f2 HP 32-36, sword 6, rattle 4, bow 3x3');
+ok(S2.moves.rattle.effects.find(f => f.t === 'block').n === 7, 'skeleton_altar_f2 rattle block 7');
+// the shared skeleton (Floor 1 Restless Dead) is untouched
+const S0 = D.MONSTERS.skeleton;
+ok(S0.hp.join() === '26,30' && atk('skeleton', 'sword').n === 5 && atk('skeleton', 'rattle').n === 3 && atk('skeleton', 'bow').n === 2, 'shared skeleton unchanged');
+for (const [v, b] of [['skeleton_altar', 'skeleton'], ['skeleton_altar_f2', 'skeleton'], ['ghoul_altar', 'ghoul']]) {
   const m = D.MONSTERS[v], o = D.MONSTERS[b];
   ok(m.variantOf === b && m.sprite === b && m.name === o.name, v + ' is a variant of ' + b + ' (same name and art)');
   // the Floor 1 copies keep the original's moves by name; the Floor 2 ghoul has one extra (Grave Hunger) the F1 copy doesn't get
   ok(Object.keys(m.moves).every(k => o.moves[k] && o.moves[k].name === m.moves[k].name), v + ' uses the original moves');
-  if (v === 'skeleton_altar') ok(Object.keys(m.moves).join() === Object.keys(o.moves).join() && JSON.stringify(m.ai) === JSON.stringify(o.ai), v + ' has the same moves and AI');
+  if (v !== 'ghoul_altar') ok(Object.keys(m.moves).join() === Object.keys(o.moves).join() && JSON.stringify(m.ai) === JSON.stringify(o.ai), v + ' has the same moves and AI');
   else ok(!m.moves.hunger && Object.keys(m.ai.weights).join() === 'claw,bite', 'ghoul_altar keeps its Floor 1 moveset (no Grave Hunger)');
 }
 const F1 = D.ENCOUNTERS.altar_dead_f1, F2 = D.ENCOUNTERS.altar_dead;
 ok(F1.enemies.join() === 'skeleton_altar,skeleton_altar,ghoul_altar' && F1.sameAs === 'altar_dead' && F1.name === F2.name && F1.scene === F2.scene, 'altar_dead_f1 encounter');
-ok(F2.enemies.join() === 'skeleton,skeleton,ghoul', 'altar_dead unchanged');
+ok(F2.enemies.join() === 'skeleton_altar_f2,skeleton_altar_f2,ghoul', 'altar_dead (Floor 2) uses its own skeleton copies');
 // the event picks the copy by floor (s.floor is 0-based: 0 = Floor 1, 1 = Floor 2)
 const tip = D.EVENTS.cursed_altar.choices.findIndex(c => c.ops && c.ops.fight);
 for (let seed = 1; seed <= 30; seed++) for (const floor of [0, 1]) {
