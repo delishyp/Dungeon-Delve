@@ -65,7 +65,8 @@
   const I = (n, cls = '', color) => window.Icons.svg(n, 'ico-' + n + ' ' + cls, color);
   const arrow = () => '<svg class="vi arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l12 8-12 8z"/></svg>';
   const medal = (inner, cls = '') => `<span class="medal ${cls}">${inner}</span>`;
-  const relicMedal = (id, cls = '') => medal(I(id, 'relic'), cls);
+  // Painted relic tiles (assets/relic_<id>.webp) already carry their own disc, outline and shadow: drawn as-is, no CSS medal.
+  const relicMedal = (id, cls = '') => A['relic_' + id] ? `<span class="medal painted ${cls}"><img src="${A['relic_' + id]}" alt="" draggable="false"></span>` : medal(I(id, 'relic'), cls);
   const statusIcon = (k) => I(k, 'st', window.Icons.STATUS_COLOR[k]);
 
   // ---------- cards ----------
@@ -681,7 +682,7 @@
     return `<div class="overlay"><div class="panel scene">${win ? `<img class="scene-art" src="${img('ev_treasure')}" alt="">` : `<img class="hero-dead" src="${img(p.heroId)}" alt="">`}
       <h1>${esc(fill(win ? 'You Climbed Out' : 'You Have Fallen'))}</h1>
       <p>${win ? `${esc(fill('{' + p.heroId + '_name}'))} conquered the dungeon with ${p.hp}/${p.maxHp} HP, ${p.gold} gold, ${p.relics.length} relics and a ${p.deck.length}-card deck.`
-               : `Slain on ${esc(D.FLOORS[G.floor].name)} by ${esc(D.ENCOUNTERS[G.encounter].name)}, after ${G.stats.fights} victories and ${G.stats.events} strange encounters.`}</p>
+               : `Slain on ${esc(D.FLOORS[G.floor].name)} by ${esc(D.ENCOUNTERS[G.encounter].name.replace(/^The /, 'the '))}, after ${G.stats.fights} victories and ${G.stats.events} strange encounters.`}</p>
       <div class="row"><button class="btn" data-act="classes">${win ? 'Play Again' : 'Try Again'}</button><button class="btn ghost" data-act="title">Main Menu</button></div></div></div>`;
   }
   function pileHTML() {
