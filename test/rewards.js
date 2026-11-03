@@ -32,8 +32,8 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
   const k = id => D.CARDS[id].kind, c = id => D.CARDS[id].cost;
   ok(num('poison_spray') === 7 && k('poison_spray') === 'cantrip', 'Wizard: Poison Spray cantrip 7 Poisoned');
   ok(num('misty_step') === 3 && c('misty_step') === 0 && k('misty_step') === 'cantrip', 'Wizard: Misty Step cantrip 0 / 3 Block');
-  ok(num('burning_hands') === 12 && c('burning_hands') === 2 && num('chromatic_orb') === 15 && c('chromatic_orb') === 2 && num('thunderwave') === 8 && c('thunderwave') === 2,
-    'Wizard commons: Burning Hands 2/12, Chromatic Orb 2/15, Thunderwave 2/8');
+  ok(num('burning_hands') === 15 && c('burning_hands') === 2 && num('chromatic_orb') === 18 && c('chromatic_orb') === 2 && num('thunderwave') === 8 && c('thunderwave') === 2,
+    'Wizard commons: Burning Hands 2/15, Chromatic Orb 2/18, Thunderwave 2/8');
   ok(num('fire_bolt') === 3 && E.cardDef({ id: 'fire_bolt', up: true }).effects[0].n === 5 && c('fire_bolt') === 0 && k('fire_bolt') === 'cantrip' && num('magic_missile') === 4 && D.CARDS.magic_missile.effects[0].times === 3 && c('magic_missile') === 2
     && num('shield_spell') === 5 && k('shield_spell') === 'spell' && k('magic_missile') === 'spell', 'Wizard starter: Fire Bolt 0/3 cantrip, Magic Missile 2/4x3 spell, Shield 1/5 spell');
   ok(num('fireball') === 20 && c('fireball') === 3 && num('scorching_ray') === 4 && num('mirror_image') === 10 && num('disintegrate') === 28 && num('chain_lightning') === 12 && c('chain_lightning') === 3
