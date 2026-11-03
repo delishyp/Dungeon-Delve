@@ -32,12 +32,12 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
   const k = id => D.CARDS[id].kind, c = id => D.CARDS[id].cost;
   ok(num('poison_spray') === 7 && k('poison_spray') === 'cantrip', 'Wizard: Poison Spray cantrip 7 Poisoned');
   ok(num('misty_step') === 3 && c('misty_step') === 0 && k('misty_step') === 'cantrip', 'Wizard: Misty Step cantrip 0 / 3 Block');
-  ok(num('burning_hands') === 15 && c('burning_hands') === 2 && num('chromatic_orb') === 18 && c('chromatic_orb') === 2 && num('thunderwave') === 8 && c('thunderwave') === 2,
-    'Wizard commons: Burning Hands 2/15, Chromatic Orb 2/18, Thunderwave 2/8');
+  ok(num('burning_hands') === 15 && c('burning_hands') === 2 && num('chromatic_orb') === 18 && c('chromatic_orb') === 2 && num('thunderwave') === 10 && c('thunderwave') === 2,
+    'Wizard commons: Burning Hands 2/15, Chromatic Orb 2/18, Thunderwave 2/10');
   ok(num('fire_bolt') === 3 && E.cardDef({ id: 'fire_bolt', up: true }).effects[0].n === 5 && c('fire_bolt') === 0 && k('fire_bolt') === 'cantrip' && num('magic_missile') === 4 && D.CARDS.magic_missile.effects[0].times === 3 && c('magic_missile') === 2
     && num('shield_spell') === 5 && k('shield_spell') === 'spell' && k('magic_missile') === 'spell', 'Wizard starter: Fire Bolt 0/3 cantrip, Magic Missile 2/4x3 spell, Shield 1/5 spell');
   ok(num('fireball') === 20 && c('fireball') === 3 && num('scorching_ray') === 4 && num('mirror_image') === 10 && num('disintegrate') === 28 && num('chain_lightning') === 12 && c('chain_lightning') === 3
-    && num('arcane_torrent') === 6 && c('arcane_torrent') === 2 && num('mage_armor') === 1 && c('arcane_study') === 2, 'Wizard uncommons/rares: wz9 spell set numbers');
+    && num('arcane_torrent') === 6 && c('arcane_torrent') === 2 && num('mage_armor') === 2 && c('arcane_study') === 2, 'Wizard uncommons/rares: wz9 spell set numbers');
   // Arcane Focus: +2 per stack on a spell's damage (every hit) and Block, nothing on a cantrip.
   { const s = E.newGame({ seed: 5, heroes: ['wizard'] }), p = s.players[0];
     p.statuses.arcane = 1;
@@ -45,7 +45,7 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
     ok(/Gain «\+7» Block/.test(txt('shield_spell')), 'Shield shows 5 + 2 = 7 Block with 1 stack: ' + txt('shield_spell'));
     ok(txt('fire_bolt') === 'Deal 3 damage.', 'Fire Bolt (cantrip) is not boosted: ' + txt('fire_bolt'));
     ok(/«\+6» damage 3 times/.test(txt('magic_missile')), 'Magic Missile gets +2 on every hit: ' + txt('magic_missile'));
-    ok(/«\+3» Armor/.test(txt('mage_armor')), 'Mage Armor 1 + 2 = 3 Armor with 1 stack: ' + txt('mage_armor')); }
+    ok(/«\+4» Armor/.test(txt('mage_armor')), 'Mage Armor 2 + 2 = 4 Armor with 1 stack: ' + txt('mage_armor')); }
   // Starter Fireball and Wildfire (Anna 15:18/15:21): new id fireball_starter, spell, cost 2, 6 to ALL; Fireball+ 10 to ALL at cost 2.
   // The old uncommon Fireball keeps its id `fireball`, numbers and text, and is now named Wildfire.
   { const fb = D.CARDS.fireball_starter, up = E.cardDef({ id: 'fireball_starter', up: true });
