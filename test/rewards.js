@@ -24,7 +24,7 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
   ok(num('ray_of_frost') === 2 && num('ray_of_frost', 1) === 1 && D.CARDS.ray_of_frost.cost === 0, 'Wizard (wz9 spell set): Ray of Frost cantrip 0 / 2 damage, 1 Frightened');
   // Barbarian floor pass (Anna 11:14): Greataxe 7, Hide Armor 4, Reckless Attack 8, Frenzied Strike 6, Reckless Flurry 10x3, Thick Hide 12, Brutal Critical 15, Whirling Axe 13, Relentless Rage heal 10.
   ok(num('parry') === 4 && num('frenzied_strike') === 6 && num('reckless_flurry') === 10 && D.CARDS.reckless_flurry.effects[0].times === 3, 'Barbarian: Hide Armor 4, Frenzied Strike 6, Reckless Flurry 10x3');
-  ok(num('greataxe') === 7 && num('reckless_attack') === 8 && num('thick_hide') === 7 && num('brutal_critical') === 17 && num('whirling_axe') === 15 && num('relentless_rage') === 12, 'Barbarian floor pass: Greataxe 7, Reckless Attack 8, Thick Hide 7 (12 before Designer round 2), Brutal Critical 17, Whirling Axe 15 (Designer round 2), Relentless Rage heal 12 (Designer round 3)');
+  ok(num('greataxe') === 7 && num('reckless_attack') === 8 && num('thick_hide') === 7 && num('brutal_critical') === 17 && num('whirling_axe') === 15 && num('relentless_rage') === 11, 'Barbarian floor pass: Greataxe 7, Reckless Attack 8, Thick Hide 7 (12 before Designer round 2), Brutal Critical 17, Whirling Axe 15 (Designer round 2), Relentless Rage heal 11 (Designer round 5)');
   ok(num('greataxe') === 7 && num('shove') === 9 && num('mindless_rage') === 3 && num('reckless_attack') === 8 && num('rage') === 3, 'Barbarian: Greataxe Chop 7, Shove 9 (Designer round 3), Mindless Rage 3, Reckless Attack 8, Rage 3');
   ok(num('frenzied_strike') < num('greataxe') && num('headbutt') < num('greataxe'), 'Rage attacks hit for less than a normal attack (Anna 04:20)');
   // Wizard spell set (wz9, Arcane Focus rework Anna 10:36): cantrips unboosted, spells +2 per Arcane Focus stack.
@@ -33,11 +33,11 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
   ok(num('poison_spray') === 7 && k('poison_spray') === 'cantrip', 'Wizard: Poison Spray cantrip 7 Poisoned');
   ok(num('misty_step') === 3 && c('misty_step') === 0 && k('misty_step') === 'cantrip', 'Wizard: Misty Step cantrip 0 / 3 Block');
   ok(num('burning_hands') === 12 && c('burning_hands') === 2 && num('chromatic_orb') === 18 && c('chromatic_orb') === 2 && num('thunderwave') === 8 && c('thunderwave') === 2,
-    'Wizard commons: Burning Hands 2/12 (Designer round 3), Chromatic Orb 2/18, Thunderwave 2/8');
+    'Wizard commons: Burning Hands 2/12 (Designer round 7 C), Chromatic Orb 2/18, Thunderwave 2/8');
   ok(num('fire_bolt') === 3 && E.cardDef({ id: 'fire_bolt', up: true }).effects[0].n === 5 && c('fire_bolt') === 0 && k('fire_bolt') === 'cantrip' && num('magic_missile') === 4 && D.CARDS.magic_missile.effects[0].times === 3 && c('magic_missile') === 2
     && num('shield_spell') === 5 && k('shield_spell') === 'spell' && k('magic_missile') === 'spell', 'Wizard starter: Fire Bolt 0/3 cantrip, Magic Missile 2/4x3 spell, Shield 1/5 spell');
   ok(num('fireball') === 17 && c('fireball') === 3 && num('scorching_ray') === 6 && num('mirror_image') === 10 && num('disintegrate') === 24 && num('chain_lightning') === 12 && c('chain_lightning') === 3
-    && num('arcane_torrent') === 6 && c('arcane_torrent') === 2 && num('mage_armor') === 1 && c('arcane_study') === 2, 'Wizard uncommons/rares: wz9 spell set numbers');
+    && num('arcane_torrent') === 6 && c('arcane_torrent') === 2 && num('mage_armor') === 1 && c('arcane_study') === 3, 'Wizard uncommons/rares: wz9 spell set numbers');
   // Arcane Focus: +2 per stack on a spell's damage (every hit) and Block, nothing on a cantrip.
   { const s = E.newGame({ seed: 5, heroes: ['wizard'] }), p = s.players[0];
     p.statuses.arcane = 1;

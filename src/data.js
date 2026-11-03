@@ -203,7 +203,8 @@
     whirling_axe: { cls: 'barbarian', name: 'Whirling Axe', cost: 2, type: 'attack', rarity: 'common', target: 'none',
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 15 }] },   // 13 -> 15, Designer round 2
     relentless_rage: { cls: 'barbarian', name: 'Relentless Rage', cost: 1, type: 'skill', rarity: 'common', target: 'none', exhaust: true,
-      desc: 'Heal {0} HP. Gain {1} Rage. Exhaust.', effects: [{ t: 'heal', n: 12 }, { t: 'status', status: 'rage', n: 2, to: 'self' }] },   // heal 10 -> 12 (upgraded 15), Designer round 3
+      desc: 'Heal {0} HP. Gain {1} Rage. Exhaust.', effects: [{ t: 'heal', n: 11 }, { t: 'status', status: 'rage', n: 2, to: 'self' }],
+      upgrade: { effects: [{ t: 'heal', n: 13 }, { t: 'status', status: 'rage', n: 3, to: 'self' }] } },   // heal 11 (upgraded 13, Rage 3 as before), Designer round 5
     bear_totem: { cls: 'barbarian', name: 'Bearskin', cost: 1, type: 'power', rarity: 'common', target: 'none',
       desc: 'Gain {0} Armor.', effects: [{ t: 'status', status: 'armor', n: 4, to: 'self' }] },
     retaliation: { cls: 'barbarian', name: 'Retaliation', cost: 1, type: 'power', rarity: 'uncommon', target: 'none',
@@ -303,7 +304,8 @@
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 6 }],
       upgrade: { effects: [{ t: 'damageAll', n: 10 }] } },
     burning_hands: { cls: 'wizard', kind: 'spell', name: 'Burning Hands', cost: 2, type: 'attack', rarity: 'common', target: 'none',
-      desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 12 }] },   // 15 -> 12 (upgraded 17), Designer round 3
+      desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 12 }],
+      upgrade: { effects: [{ t: 'damageAll', n: 12 }, { t: 'status', status: 'poisoned', n: 2, to: 'all' }] } },   // Designer round 7 C: 12; pass 3 upgrade: plus 2 Poisoned to ALL
     ray_of_frost: { cls: 'wizard', kind: 'cantrip', name: 'Ray of Frost', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Apply {1} Frightened.', effects: [{ t: 'damage', n: 2 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
     thunderwave: { cls: 'wizard', kind: 'spell', name: 'Thunderwave', cost: 2, type: 'attack', rarity: 'common', target: 'none',
@@ -313,7 +315,8 @@
     misty_step: { cls: 'wizard', kind: 'cantrip', name: 'Misty Step', cost: 0, type: 'skill', rarity: 'common', target: 'none',
       desc: 'Gain {0} Block. Draw {1} card.', effects: [{ t: 'block', n: 3 }, { t: 'draw', n: 1 }] },
     chromatic_orb: { cls: 'wizard', kind: 'spell', name: 'Chromatic Orb', cost: 2, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 18 }] },
+      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 18 }],
+      upgrade: { effects: [{ t: 'status', status: 'prone', n: 1, to: 'target' }, { t: 'damage', n: 18 }] } },   // Designer round 7 C: 18; pass 3 upgrade: 1 Vulnerable then 18
     poison_spray: { cls: 'wizard', kind: 'cantrip', name: 'Poison Spray', cost: 1, type: 'skill', rarity: 'common', target: 'enemy',
       desc: 'Apply {0} Poisoned.', effects: [{ t: 'status', status: 'poisoned', n: 7, to: 'target' }] },
     fireball: { cls: 'wizard', kind: 'spell', name: 'Wildfire', cost: 3, type: 'attack', rarity: 'uncommon', target: 'none',
@@ -322,7 +325,7 @@
       desc: 'Deal {0} damage 3 times.', effects: [{ t: 'damage', n: 6, times: 3 }] },   // 4x3 -> 6x3 (upgraded 7x3), Designer round 3
     arcane_recovery: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Recovery', cost: 0, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
       desc: 'Gain {0} Energy. Draw {1} cards. Exhaust.', effects: [{ t: 'energy', n: 1 }, { t: 'draw', n: 2 }] },
-    arcane_study: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Study', cost: 2, type: 'power', rarity: 'uncommon', target: 'none',
+    arcane_study: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Study', cost: 3, type: 'power', rarity: 'uncommon', target: 'none',
       desc: 'Gain {0} Arcane Focus.', effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }],   // Designer round 3 fallback: back to 2 Arcane Focus (Wizard full run fell to 69.6 at 1); upgraded cost 1
       upgrade: { cost: 1 } },
     mirror_image: { cls: 'wizard', kind: 'spell', name: 'Mirror Image', cost: 2, type: 'skill', rarity: 'uncommon', target: 'none',
@@ -490,7 +493,7 @@
       moves: {
         club:   { name: 'Greatclub', intent: 'attack', effects: [{ t: 'attack', n: 16 }] },
         smash:  { name: 'Ground Smash', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
-        bellow: { name: 'Dim-witted Bellow', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 3, to: 'self' }, { t: 'block', n: 8 }] },
+        bellow: { name: 'Dim-witted Bellow', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }, { t: 'block', n: 8 }] },   // Bellow +3 -> +2 Might, Designer Ogre pass (Greatclub 16)
       }, ai: { pattern: ['smash', 'club', 'bellow'] } },
     // Palette's repainted boss-canvas file (full fur, no cubs; Tester passed md5 9b1bf260 at 15:18). owlbear.webp stays for
     // rollback and is the fallback if the new file is missing.
