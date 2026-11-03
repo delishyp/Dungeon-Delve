@@ -694,4 +694,4 @@ body.is-modal #fx .speech,body.is-modal #fx .dmcaption{display:none}
 .medal.painted{background:none;box-shadow:none;border-radius:50%}
 .medal.painted>img{width:100%;height:100%;display:block;filter:none}
 }
-.topbar.many .title{display:none}
+.topbar .title{display:none}
