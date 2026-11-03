@@ -371,7 +371,7 @@
     owlbear:      { name: 'The Owlbear Den', enemies: ['owlbear'], scene: 'Owlbear Den', boss: true },
     ghouls:       { name: 'Ghoul Pack', enemies: ['ghoul', 'ghoul'], scene: 'Charnel Pit' },
     drow_patrol:  { name: 'Drow Patrol', enemies: ['drow', 'drow_mage'], scene: 'Deep Tunnels' },
-    drow_patrol_early: { name: 'Drow Patrol', enemies: ['drow_early', 'drow_mage_early'], scene: 'Deep Tunnels' },
+    drow_patrol_early: { name: 'Drow Patrol', sameAs: 'drow_patrol', enemies: ['drow_early', 'drow_mage_early'], scene: 'Deep Tunnels' },
     troll:        { name: 'Cave Troll', enemies: ['troll'], scene: 'Troll Bridge' },
     cube:         { name: 'Gelatinous Cube', enemies: ['gelatinous_cube'], scene: 'Suspiciously Clean Hall' },
     mind_flayer:  { name: 'The Surgeon', enemies: ['mind_flayer'], scene: 'The Long Table', elite: true },

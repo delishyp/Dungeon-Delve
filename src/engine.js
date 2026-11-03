@@ -191,7 +191,9 @@
   function startFight(s, row, type) {
     const F = D.FLOORS[s.floor];
     let pool = type === 'boss' ? [F.boss] : type === 'elite' ? F.elites : (row <= 3 ? F.easy : F.hard);
-    if (pool.length > 1) pool = pool.filter(e => e !== s.lastEnc);
+    // Variant copies (sameAs) count as the same fight for the no-repeat rule.
+    const encKey = e => (D.ENCOUNTERS[e] && D.ENCOUNTERS[e].sameAs) || e;
+    if (pool.length > 1 && s.lastEnc) { const f = pool.filter(e => encKey(e) !== encKey(s.lastEnc)); if (f.length) pool = f; }
     const enc = pick(s, pool); s.lastEnc = enc;
     startEncounter(s, enc);
   }
@@ -848,7 +850,7 @@
 
   function takeEvents(s) { const ev = s.events; s.events = []; return ev; }
 
-  const Engine = { startEncounter, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
+  const Engine = { startEncounter, startFight, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
