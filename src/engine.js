@@ -472,9 +472,15 @@
   }
   // Rage (Anna, Nov 3 04:07): adds no damage; any Rage at all cuts the attack damage you take by a flat 25%.
   const RAGE_TAKEN = 0.75;
+  // Arcane Focus (Anna 10:36): each stack adds +2 to the damage (every hit) and Block of SPELL cards (kind 'spell'), and
+  // to a spell's self-Armor once when played. Cantrips, relics and potions get nothing.
+  function spellBonus(p, c) { return c && p && p.statuses && cardDef(c).kind === 'spell' ? 2 * (p.statuses.arcane || 0) : 0; }
   function attackDamage(src, tgt, base) {
     let d = base;
-    if (src) d += (src.statuses.might || 0) + (src.statuses.arcane || 0);
+    // Arcane Focus for the Wizard goes through spellBonus (spells only, Anna 10:36). A non-Wizard can only get Arcane from
+    // the Worm relic; it keeps the old +1 per hit until Anna picks the Worm option (DECISIONS 10:42/11:35), so the
+    // Fighter and Barbarian play exactly as on main.
+    if (src) d += (src.statuses.might || 0) + (src.side === 'player' && src.heroId !== 'wizard' ? (src.statuses.arcane || 0) : 0);
     if (src && src.statuses.frightened) d = Math.floor(d * 0.75);
     if (tgt && tgt.statuses.prone) d = Math.floor(d * 1.5);
     if (tgt && tgt.statuses.rage) d = Math.floor(d * RAGE_TAKEN);
@@ -772,21 +778,21 @@
 
   // ---------- effects (cards and relics) ----------
   function runEffects(s, p, effects, tgt, c) {
-    let blockSoFar = 0;
+    let blockSoFar = 0; const sb = spellBonus(p, c);
     for (const fx of effects) {
       // Enraged: X = your Rage when played (counted once, so its own hits add nothing; Rage is not spent)
       const times = fx.timesFrom ? (p.statuses[fx.timesFrom] || 0) : (fx.times || 1);
       switch (fx.t) {
         case 'damage': for (let i = 0; i < times; i++) if (alive(tgt)) {
-          const lost = dealDamage(s, tgt, attackDamage(p, tgt, attackBase(p, fx)), p, true);
+          const lost = dealDamage(s, tgt, attackDamage(p, tgt, attackBase(p, fx) + sb), p, true);
           if (fx.ragePerUnblocked && lost > 0) addStatus(s, p, 'rage', fx.ragePerUnblocked, true);   // Bloodied Knuckles
         } break;
         case 'loseHp': loseHp(s, p, fx.n, 'self'); break;
         case 'goad': if (tgt) goad(s, p, tgt); break;
-        case 'damageAll': for (let i = 0; i < times; i++) livingEnemies(s).forEach(e => dealDamage(s, e, attackDamage(p, e, attackBase(p, fx)), p, true)); break;
+        case 'damageAll': for (let i = 0; i < times; i++) livingEnemies(s).forEach(e => dealDamage(s, e, attackDamage(p, e, attackBase(p, fx) + sb), p, true)); break;
         case 'damageAllRaw': livingEnemies(s).forEach(e => dealDamage(s, e, fx.n, null, false)); break;
-        case 'damageFromBlock': if (alive(tgt)) dealDamage(s, tgt, attackDamage(p, tgt, p.block), p, true); break;
-        case 'block': gainBlock(s, p, fx.n); blockSoFar += fx.n; break;
+        case 'damageFromBlock': if (alive(tgt)) dealDamage(s, tgt, attackDamage(p, tgt, p.block + sb), p, true); break;
+        case 'block': gainBlock(s, p, fx.n + sb); blockSoFar += fx.n + sb; break;
         case 'heal': heal(s, p, fx.n); break;
         case 'maxHp': p.maxHp += fx.n; heal(s, p, fx.n); break;
         case 'draw': drawCards(s, p, fx.n); break;
@@ -794,7 +800,8 @@
         case 'cleanse': for (const k of Object.keys(p.statuses)) if (D.STATUSES[k].debuff) delete p.statuses[k]; break;
         case 'status': {
           const ts = fx.to === 'self' ? [p] : fx.to === 'all' ? livingEnemies(s) : [tgt];
-          ts.forEach(t => t && addStatus(s, t, fx.status, fx.n, t === p)); break;
+          const nn = fx.n + (fx.status === 'armor' && fx.to === 'self' ? sb : 0);
+          ts.forEach(t => t && addStatus(s, t, fx.status, nn, t === p)); break;
         }
         default: throw new Error('Unknown effect ' + fx.t);
       }
@@ -850,12 +857,13 @@
     const def = cardDef(c), base = D.CARDS[c.id];
     const inCombat = s && s.phase === 'combat' && p;
     const tgt = inCombat && targetUid ? find(s, targetUid) : null;
-    let blockSoFar = 0;
+    let blockSoFar = 0; const sb = inCombat ? spellBonus(p, c) : 0;
     const vals = def.effects.map((fx, i) => {
       let v = fx.n || 0, printed = (base.effects[i] && base.effects[i].n) || 0;
-      if (fx.t === 'block') blockSoFar += fx.n;
+      if (fx.t === 'block') { v = fx.n + sb; blockSoFar += v; }
+      if (fx.t === 'status' && fx.status === 'armor' && fx.to === 'self') v = fx.n + sb;
       if (fx.t === 'damage' || fx.t === 'damageAll') {
-        v = inCombat ? attackDamage(p, tgt, attackBase(p, fx)) : attackBase({ statuses: {} }, fx);
+        v = inCombat ? attackDamage(p, tgt, attackBase(p, fx) + sb) : attackBase({ statuses: {} }, fx);
       } else if (fx.t === 'damageFromBlock') {
         v = inCombat ? attackDamage(p, tgt, p.block + blockSoFar) : blockSoFar; printed = v;
         if (!inCombat) return String(v);
