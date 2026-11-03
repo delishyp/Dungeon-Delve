@@ -1072,10 +1072,11 @@
       p.gold += gold;
       p.discard.push(...p.hand, ...p.draw); p.hand = []; p.draw = []; p.block = 0; p.statuses = {}; p.fresh = {};
       runRelics(s, p, 'combatEnd');
-      let relic = null;
-      if ((type === 'elite' || type === 'boss') && !finalBoss) { relic = randomRelic(s, p); if (relic) gainRelic(s, p, relic); }
-      let bonusRelic = null;
+      // Anna (Nov 4): every elite gives exactly one relic. A fight's trophy relic (e.g. the Wyrmling's Scale) replaces the
+      // random one; if she already owns the trophy, she gets one random relic as normal.
+      let relic = null, bonusRelic = null;
       if (s.pendingRelic && !hasRelic(p, s.pendingRelic)) { bonusRelic = s.pendingRelic; gainRelic(s, p, bonusRelic); }
+      else if ((type === 'elite' || type === 'boss') && !finalBoss) { relic = randomRelic(s, p); if (relic) gainRelic(s, p, relic); }
       let potion = null;
       if (!finalBoss && (type === 'elite' || type === 'boss' || rand(s) < D.POTION_DROP)) { const id = randomPotion(s); potion = { id, taken: gainPotion(s, p, id) }; }
       const n = hasRelic(p, 'luckstone') ? 4 : 3;
