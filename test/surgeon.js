@@ -136,11 +136,11 @@ console.log(`  Sewn deaths checked: ${sewnDeaths} (${enemyTurnDeaths} on the ene
   endTurn(l2); ok(surgeon(l2).intent.move === 'stitch', 'loaded: then Fresh Stitches');
 }
 
-// --- numbers (base, before depth scaling; balance pass Nov 3: damage x1.15, HP unchanged)
+// --- numbers (base, before depth scaling; floor plan Nov 3: HP and damage x1.25 vs 65a53f2)
 {
   const M = D.MONSTERS.mind_flayer.moves, W = D.MONSTERS.sewn.moves, atk = (mv) => mv.effects.find(f => f.t === 'attack');
-  ok(D.MONSTERS.mind_flayer.hp.join() === '66,66' && D.MONSTERS.sewn.hp.join() === '30,30', 'base HP 66 / 30');
-  ok(atk(M.incision).n === 14 && atk(W.heavy).n === 14 && atk(W.lurch).n === 8 && atk(W.lurch).times === 2, 'Incision 14, Heavy Hands 14, Lurch 8x2');
+  ok(D.MONSTERS.mind_flayer.hp.join() === '83,83' && D.MONSTERS.sewn.hp.join() === '38,38', 'base HP 83 / 38');
+  ok(atk(M.incision).n === 18 && atk(W.heavy).n === 18 && atk(W.lurch).n === 10 && atk(W.lurch).times === 2, 'Incision 18, Heavy Hands 18, Lurch 10x2');
   ok(M.steady.effects.find(f => f.t === 'block').n === 10 && M.steady.effects.find(f => f.t === 'healMinions').n === 6 && W.guard.effects[0].n === 6, 'Steady Hands 10 Block + heal 6, Stand Guard 6 (unchanged)');
 }
 

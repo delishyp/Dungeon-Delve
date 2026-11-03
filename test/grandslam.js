@@ -7,11 +7,11 @@ for (const hero of Object.keys(D.HEROES)) {
   let s = E.newGame({ seed: 4242, heroes: [hero], floors: 1 });
   E.startEncounter(s, D.FLOORS[0].boss); E.takeEvents(s);
   let p = s.players[0]; const b = s.enemies[0];
-  ok(b.monsterId === 'owlbear' && b.hp === 180, 'boss is the Beast at 180 HP');
+  ok(b.monsterId === 'owlbear' && b.hp === 162, 'boss is the Beast at 162 HP');
   const seen = [];
   for (let t = 1; t <= 7; t++) {
     const i = E.describeIntent(s, s.enemies[0]); seen.push(s.enemies[0].intent.move);
-    if (seen[t - 1] === 'slam') ok(i.damage === 22 && i.cards === 2 && i.cardName === 'Broken Bone', 'slam intent shows 22 dmg and 2 cards ' + JSON.stringify(i) + JSON.stringify(p.statuses));
+    if (seen[t - 1] === 'slam') ok(i.damage === 20 && i.cards === 2 && i.cardName === 'Broken Bone', 'slam intent shows 20 dmg and 2 cards ' + JSON.stringify(i) + JSON.stringify(p.statuses));
     p.hp = p.maxHp; // keep the hero alive while we only end turns
     const r = E.dispatch(s, { type: 'END_TURN', player: p.uid }); ok(r.ok, 'end turn ' + r.error); E.takeEvents(s);
     if (t === 3) {

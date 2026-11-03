@@ -88,7 +88,7 @@
       hp: h.maxHp, maxHp: h.maxHp, block: 0, statuses: {}, fresh: {},
       energy: 0, maxEnergy: h.energy, handSize: h.handSize, gold: 0, relics: [],
       deck: h.deck.map(id => ({ uid: uid(s, 'c'), id })),
-      draw: [], hand: [], discard: [], exhaust: [],
+      draw: [], hand: [], discard: [], exhaust: [], powers: [],
       endedTurn: false, reward: null, treasure: null, potions: [], removes: 0,
     };
   }
@@ -394,7 +394,7 @@
     s.enemies = enc.enemies.map(id => makeEnemy(s, id));
     for (const p of livingPlayers(s)) {
       p.draw = shuffle(s, p.deck.map(c => ({ ...c })));
-      p.hand = []; p.discard = []; p.exhaust = []; p.block = 0; p.statuses = {}; p.fresh = {}; p.reward = null;
+      p.hand = []; p.discard = []; p.exhaust = []; p.powers = []; p.block = 0; p.statuses = {}; p.fresh = {}; p.reward = null;
     }
     log(s, `— ${enc.name} —`);
     emit(s, { kind: 'encounter', name: enc.name });
@@ -425,14 +425,35 @@
     const loss = amount - blocked;
     tgt.hp = Math.max(0, tgt.hp - loss);
     emit(s, { kind: 'hit', target: tgt.uid, source: src && src.uid, amount: loss, blocked, hp: tgt.hp, block: tgt.block });
-    if (tgt.hp === 0) died(s, tgt);
+    if (tgt.hp === 0) died(s, tgt); else if (loss > 0) checkPhase(s, tgt);
     if (isAttack && src && alive(src) && tgt.statuses.thorns) dealDamage(s, src, tgt.statuses.thorns, null, false);
   }
   function loseHp(s, tgt, n, why) {
     if (!alive(tgt)) return;
     tgt.hp = Math.max(0, tgt.hp - n);
     emit(s, { kind: 'hit', target: tgt.uid, amount: n, blocked: 0, why, hp: tgt.hp, block: tgt.block });
-    if (tgt.hp === 0) died(s, tgt);
+    if (tgt.hp === 0) died(s, tgt); else if (n > 0) checkPhase(s, tgt);
+  }
+  // Below-half phase (monster `phase` data): fires once per fight, the first time the enemy drops to at*maxHp or lower.
+  function checkPhase(s, e) {
+    if (e.side !== 'enemy' || e.phased || !alive(e)) return;
+    const m = D.MONSTERS[e.monsterId], ph = m.phase;
+    if (!ph || e.hp > e.maxHp * (ph.at || 0.5)) return;
+    e.phased = true;
+    log(s, `${e.name} changes tactics!`);
+    emit(s, { kind: 'phase', source: e.uid, monster: e.monsterId });
+    for (const [k, n] of Object.entries(ph.status || {})) addStatus(s, e, k, n, !!s.enemyActing);
+    // a dropped move shown during the hero's turn is replaced at once; during the enemy turn the next intent uses the new pattern
+    if (ph.pattern && e.intent && !ph.pattern.includes(e.intent.move) && !s.enemyActing && !e.intent.exposed)
+      e.intent = { move: patternMove(m, e), target: e.intent.target };
+  }
+  const patternOf = (m, e) => (e.phased && m.phase && m.phase.pattern) || m.ai.pattern;
+  function patternMove(m, e) { const pat = patternOf(m, e); return pat[Math.max(0, e.moveCount - (m.ai.opener ? 1 : 0)) % pat.length]; }
+  // The move as it plays now: phase overrides (e.g. attack times) merged over the base move.
+  function moveOf(e, key) {
+    const m = D.MONSTERS[e.monsterId], mv = m.moves[key], o = e.phased && m.phase && m.phase.moves && m.phase.moves[key];
+    if (!o) return mv;
+    return { ...mv, effects: mv.effects.map(f => f.t === 'attack' && o.attack ? { ...f, ...o.attack } : f) };
   }
   function died(s, tgt, why) {
     emit(s, { kind: 'death', target: tgt.uid, why: why || null }); log(s, `${tgt.name} falls!`);
@@ -558,10 +579,7 @@
       else if (up) { const i = A.whileUp.indexOf(e.lastMove); move = A.whileUp[(i + 1) % A.whileUp.length]; }
       else move = A.summonMove;
     } else if (e.moveCount === 0 && m.ai.opener) move = m.ai.opener;
-    else if (m.ai.pattern) {
-      const idx = (e.moveCount - (m.ai.opener ? 1 : 0)) % m.ai.pattern.length;
-      move = m.ai.pattern[idx];
-    } else {
+    else if (m.ai.pattern) move = patternMove(m, e); else {
       const w = { ...m.ai.weights };
       if (m.ai.noRepeat && e.lastMove && w[e.lastMove] != null && Object.keys(w).length > 1) delete w[e.lastMove];
       move = weightedPick(s, w);
@@ -571,7 +589,7 @@
   }
 
   function runMove(s, e) {
-    const mv = D.MONSTERS[e.monsterId].moves[e.intent.move];
+    const mv = moveOf(e, e.intent.move);
     let tgt = find(s, e.intent.target);
     if (!alive(tgt)) tgt = livingPlayers(s)[0];
     emit(s, { kind: 'enemyAct', source: e.uid, name: mv.name, move: e.intent.move });
@@ -586,13 +604,16 @@
       else if (fx.t === 'healMinions') livingEnemies(s).filter(a => a.monsterId === fx.monster).forEach(a => heal(s, a, fx.n));
       else if (fx.t === 'blockLeader') livingEnemies(s).filter(a => a.monsterId === fx.leader).forEach(a => gainBlock(s, a, fx.n));
       else if (fx.t === 'wait') { /* still being sewn together: does nothing this turn */ }
-      else if (fx.t === 'addCards') {   // combat-only junk: hand up to the cap, the rest to the discard pile; never the deck
+      else if (fx.t === 'stripBlock') {
+        if (alive(tgt) && tgt.block > 0) { const n = tgt.block; tgt.block = 0; emit(s, { kind: 'stripBlock', source: e.uid, target: tgt.uid, amount: n, hp: tgt.hp, block: 0 }); log(s, `${e.name} tears away ${n} Block.`); }
+      }
+      else if (fx.t === 'addCards') {   // combat-only junk: hand up to the cap (or the discard pile with to:'discard'); never the deck
         if (!alive(tgt)) continue;
         for (let i = 0; i < fx.n; i++) {
           const c = { uid: uid(s, 'c'), id: fx.card };
-          if (tgt.hand.length < 10) tgt.hand.push(c); else tgt.discard.push(c);
+          if (fx.to !== 'discard' && tgt.hand.length < 10) tgt.hand.push(c); else tgt.discard.push(c);
         }
-        emit(s, { kind: 'addCards', source: e.uid, target: tgt.uid, card: fx.card, n: fx.n });
+        emit(s, { kind: 'addCards', source: e.uid, target: tgt.uid, card: fx.card, n: fx.n, to: fx.to === 'discard' ? 'discard' : 'hand' });
       }
       else if (fx.t === 'status') {
         const ts = fx.to === 'self' ? [e] : fx.to === 'allies' ? livingEnemies(s) : [tgt];
@@ -620,7 +641,7 @@
   // What the UI shows over an enemy's head.
   function describeIntent(s, e) {
     if (!e.intent) return null;
-    const mv = D.MONSTERS[e.monsterId].moves[e.intent.move];
+    const mv = moveOf(e, e.intent.move);
     let tgt = find(s, e.intent.target);
     // The hero's statuses tick down at the end of their turn, before enemies act: show the hit as it will land.
     if (tgt && tgt.side !== 'enemy' && !tgt.endedTurn) {
@@ -632,13 +653,14 @@
     for (const fx of mv.effects) {
       if (fx.t === 'attack') { out.damage = attackDamage(e, tgt, fx.n); out.times = fx.times || 1; }
       if (fx.t === 'block') out.block += fx.n;
-      if (fx.t === 'status') { if (D.STATUSES[fx.status].debuff) out.debuff = true; else out.buff = true; }
+      if (fx.t === 'status') { if (D.STATUSES[fx.status].debuff) out.debuff = out.statusDebuff = true; else out.buff = true; }
+      if (fx.t === 'stripBlock') { out.debuff = true; out.stripBlock = true; }
       if (fx.t === 'healAllies' || fx.t === 'healSelf' || fx.t === 'healMinions' || fx.t === 'blockLeader') out.buff = true;
       if (fx.t === 'healMinions') out.healMinions = (s.enemies.some(a => alive(a) && a.monsterId === fx.monster)) ? fx.n : 0;
       if (fx.t === 'blockLeader') out.blockLeader = fx.n;
       if (fx.t === 'summon') out.summon = D.MONSTERS[fx.monster].name;
       if (fx.t === 'wait') out.wait = true;
-      if (fx.t === 'addCards') { out.debuff = true; out.cards = (out.cards || 0) + fx.n; out.cardName = D.CARDS[fx.card].name; }
+      if (fx.t === 'addCards') { out.debuff = true; out.cards = (out.cards || 0) + fx.n; out.cardName = D.CARDS[fx.card].name; out.cardsTo = fx.to === 'discard' ? 'discard' : 'hand'; }
     }
     return out;
   }
@@ -696,7 +718,9 @@
     log(s, `${p.name} plays ${def.name}.`);
     const shovers = s.enemies.filter(e => alive(e) && D.MONSTERS[e.monsterId].shove).map(e => ({ e, before: e.hp + e.block }));
     runEffects(s, p, def.effects, tgt, c);
-    (def.exhaust ? p.exhaust : p.discard).push(c);
+    // Powers (Anna): once played they stay in play for the rest of the fight, in their own list, not in any pile.
+    if (def.type === 'power') { (p.powers = p.powers || []).push(c); emit(s, { kind: 'powerPlayed', source: p.uid, card: c.id, up: !!c.up }); }
+    else (def.exhaust ? p.exhaust : p.discard).push(c);
     for (const { e, before } of shovers) {   // one big hit shoves one junk card off (Beast's Grand Slam)
       const sh = D.MONSTERS[e.monsterId].shove, k = p.hand.findIndex(x => x.id === sh.card);
       if (k >= 0 && before - (Math.max(0, e.hp) + e.block) >= sh.at) {
@@ -851,7 +875,7 @@
 
   function takeEvents(s) { const ev = s.events; s.events = []; return ev; }
 
-  const Engine = { startEncounter, startFight, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
+  const Engine = { startEncounter, startFight, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;

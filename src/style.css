@@ -704,3 +704,8 @@ body.is-modal #fx .speech,body.is-modal #fx .dmcaption{display:none}
 .refuse{animation:refuseShake .32s}
 @keyframes refuseShake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}100%{transform:none}}
 @media (prefers-reduced-motion: reduce){.refuse{animation:none}}
+
+/* powers in play this fight: small icon row under the hero's statuses */
+.powers{display:flex;gap:3px;margin-top:3px;justify-content:center;flex-wrap:wrap;max-width:170px}
+.power{background:#1a1208cc;border:1px solid #b89a5a;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;cursor:help;box-shadow:0 0 4px #b89a5a55}
+.power .vi{width:15px;height:15px}

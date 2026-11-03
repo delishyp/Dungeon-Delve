@@ -88,7 +88,7 @@
     const rar = def.rarity !== 'starter' && def.rarity !== 'curse' && def.rarity !== 'junk' ? ' · ' + def.rarity : '';
     const emblem = base.cls === 'curse' ? 'curse' : base.cls;
     return `<div class="${cls}" data-cls="${base.cls}" data-rar="${def.rarity}" data-frame="${fr}" ${opts.attrs || ''}>
-      <div class="cface"><img class="cart" src="${img('card_' + c.id)}" alt="" draggable="false"><img class="cframe" src="${img('frame_' + fr)}" alt="" draggable="false">
+      <div class="cface"><img class="cart" src="${img('card_' + (base.art || c.id))}" alt="" draggable="false"><img class="cframe" src="${img('frame_' + fr)}" alt="" draggable="false">
       ${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname${def.name.length > 15 ? ' long' : ''}"><span>${esc(def.name)}</span></div>
       <div class="cclass" title="${esc(base.cls)}">${I(emblem)}</div>
       <div class="ctype">${def.type}${rar}</div>
@@ -119,8 +119,9 @@
     const parts = [];
     if (i.damage != null) { ic += I('sword', 'in-atk'); text += i.times > 1 ? `${i.damage}×${i.times}` : `${i.damage}`; parts.push(`attack for ${i.damage} damage${i.times > 1 ? ' ' + i.times + ' times' : ''}`); }
     if (i.block) { ic += I('shield', 'in-blk'); parts.push(`gain ${i.block} Block`); }
-    if (i.cards) { ic += I('curse', 'in-deb'); text += ` +${i.cards}`; parts.push(`put ${i.cards} ${esc(i.cardName)} cards in your hand`); }
-    else if (i.debuff) { ic += I('skull', 'in-deb'); parts.push('weaken you'); }
+    if (i.stripBlock) parts.unshift('remove all your Block');
+    if (i.cards) { ic += I('curse', 'in-deb'); text += ` +${i.cards}`; parts.push(`put ${i.cards} ${esc(i.cardName)} card${i.cards > 1 ? 's' : ''} in your ${i.cardsTo === 'discard' ? 'discard pile' : 'hand'}`); }
+    if (i.statusDebuff || (i.debuff && !i.cards)) { ic += I('skull', 'in-deb'); parts.push('weaken you'); }
     if (i.summon) { ic += I('needle', 'in-sum'); text += ' +1'; parts.push(`sew up a new ${esc(i.summon)}`); }
     if (i.wait) { ic += I('hourglass', 'in-wait'); parts.push('do nothing: it is still being sewn together and acts next turn'); }
     if (i.blockLeader) parts.push(`give its maker ${i.blockLeader} Block`);
@@ -223,7 +224,13 @@
       <div class="plate"><div class="uname">${esc(u.name)}${def.elite ? ' <span class="tag">Elite</span>' : ''}${def.boss ? ' <span class="tag">Boss</span>' : ''}</div>
       <div class="hpbar ${u.block ? 'blocked' : ''}">${u.block ? `<div class="blockbadge" data-tip="${esc(D.KEYWORDS.Block)}">${u.block}</div>` : ''}
         <div class="fill" style="width:${pct}%"></div><div class="txt">${u.hp} / ${u.maxHp}</div></div>
-      <div class="statuses">${statusesHTML(u)}</div></div></div>`;
+      <div class="statuses">${statusesHTML(u)}</div>${!isEnemy ? powersHTML(u) : ''}</div></div>`;
+  }
+  // Powers played this fight: a small row of icons under the hero (the card's status icon; tooltip = name + text).
+  function powersHTML(u) {
+    if (!u.powers || !u.powers.length || G.phase !== 'combat') return '';
+    return `<div class="powers">${u.powers.map(c => { const d = E.cardDef(c), st = d.effects.find(f => f.t === 'status');
+      return `<span class="power" data-tip="<b>${esc(d.name)}</b> (power, in play this fight): ${esc(E.cardText(null, null, c, null).replace(/«[+-]?|»/g, ''))}">${st ? statusIcon(st.status) : I('up', 'st')}</span>`; }).join('')}</div>`;
   }
 
   function potionsHTML(p) {
@@ -942,6 +949,8 @@
       anim(spriteOf(ev.target), st.debuff ? 'glow-debuff' : 'glow-buff'); sfx(st.debuff ? 'debuff' : 'buff');
     }
     else if (ev.kind === 'addCards') { floatAt(ev.target, `+${ev.n} ${esc(D.CARDS[ev.card].name)}`, 'st'); anim(spriteOf(ev.target), 'glow-debuff'); sfx('debuff'); }
+    else if (ev.kind === 'stripBlock') { floatAt(ev.target, `-${ev.amount} Block`, 'st'); anim(spriteOf(ev.target), 'glow-debuff'); sfx('debuff'); if (live) updateBar(ev.target, ev.hp, ev.block); }
+    else if (ev.kind === 'phase') { floatAt(ev.source, 'Changes tactics!', 'st'); anim(spriteOf(ev.source), 'glow-buff'); sfx('buff'); }
     else if (ev.kind === 'shove') { floatAt(ev.source, `Shoved off`, 'st'); anim(spriteOf(ev.source), 'glow-buff'); sfx('buff'); }
     else if (ev.kind === 'relic') floatAt(ev.target, relicMedal(ev.relic), 'st');
     else if (ev.kind === 'potion') { sfx('potion'); floatAt(ev.source, esc(D.POTIONS[ev.potion].name), 'st'); anim(spriteOf(ev.source), 'glow-buff'); }
@@ -1048,7 +1057,7 @@
       if (endedFight) ui.holdCombat = true;
       const p = P(), cu = action.card;
       render();
-      if (playedEl) flyCard(playedEl, p.exhaust.some(x => x.uid === cu) ? '.pile[data-pile="exhaust"]' : p.discard.some(x => x.uid === cu) ? '.pile[data-pile="discard"]' : '.energy');
+      if (playedEl) flyCard(playedEl, p.exhaust.some(x => x.uid === cu) ? '.pile[data-pile="exhaust"]' : p.discard.some(x => x.uid === cu) ? '.pile[data-pile="discard"]' : (p.powers || []).some(x => x.uid === cu) ? `.unit[data-uid="${p.uid}"] .powers` : '.energy');
       playEvents(events);
       if (endedFight) { ui.busy = true; await wait(1000); ui.busy = false; ui.holdCombat = false; render(); await afterCombatStory(); }
       return res;

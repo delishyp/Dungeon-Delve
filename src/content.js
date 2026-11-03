@@ -29,6 +29,10 @@
     junk_broken_bone: { cls: 'curse', name: 'Broken Bone', cost: 0, type: 'junk', rarity: 'junk', target: 'none', unplayable: true, combatOnly: true,
       kwTips: { Unplayable: 'Unplayable: this card cannot be played. It is gone when the fight ends.' },
       desc: 'Unplayable. Deal 6 or more damage to her with one card to remove this.', effects: [] },
+    // Combat-only junk from the Gelatinous Cube's Engulf: goes into the discard pile, gone when the fight ends.
+    acid: { cls: 'curse', name: 'Acid', cost: 0, type: 'junk', rarity: 'junk', target: 'none', unplayable: true, combatOnly: true, art: 'curse_rot',
+      kwTips: { Unplayable: 'Unplayable: this card cannot be played. It is gone when the fight ends.' },
+      desc: 'Unplayable. It is gone when the fight ends.', effects: [] },
   });
   D.KEYWORDS.Unplayable = 'Unplayable: this card cannot be played. Remove curses at a shop, the Silver Spring, or some events.';
 
@@ -320,7 +324,7 @@
  * curse   (black)  curses
  * FRAME_OVERRIDE can pin a card to a frame by hand. */
 (function (G) {
-  G.FRAME_OVERRIDE = { junk_broken_bone: 'curse' };
+  G.FRAME_OVERRIDE = { junk_broken_bone: 'curse', acid: 'curse' };
   G.FRAME_COLORS = { attack: 'red', defense: 'blue', buff: 'green', debuff: 'purple', utility: 'gold', curse: 'black' };
   G.frameOf = function (def, id) {
     if (G.FRAME_OVERRIDE[id]) return G.FRAME_OVERRIDE[id];
