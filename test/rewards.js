@@ -17,7 +17,11 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
 }
 // Hero card numbers (Nov 3 hero pass: each hero ~78% with the smart bot on the raised Floor 2).
 { const num = (id, i = 0) => D.CARDS[id].effects[i].n;
-  ok(num('defend') === 6 && num('shield_bash') === 6 && num('trip_attack') === 7 && num('menacing_attack') === 8, 'Fighter: Shield Block 6, Shield Bash 6, Trip 7, Menacing 8');
+  // Fighter number pass (Nov 3, Producer 06:38): random-pick runs were 73.5%; generic commons, starter Block and the two Powers trimmed.
+  ok(num('defend') === 5 && num('shield_bash') === 6 && num('trip_attack') === 7 && num('menacing_attack') === 8, 'Fighter: Shield Block 5, Shield Bash 6, Trip 7, Menacing 8');
+  ok(num('trip_attack', 1) === 1 && num('riposte') === 4 && num('riposte', 1) === 4 && num('rally') === 5 && num('battle_cry') === 1 && num('defense_style') === 2 && num('indomitable') === 11 && num('sundering_blow') === 8,
+    'Fighter: Trip Prone 1, Riposte 4/4, Rally 5, Battle Cry 1, Defense 2, Indomitable 11, Sundering Blow 8');
+  ok(num('ray_of_frost') === 5 && num('ray_of_frost', 1) === 2, 'Wizard: Ray of Frost 5 damage, 2 Frightened');
   // Barbarian number pass after the Rage rework (Nov 3): Greataxe 8, Frenzied Strike 7, Reckless Flurry 8x3, Shove 7, Mindless Rage 3.
   ok(num('parry') === 5 && num('frenzied_strike') === 7 && num('reckless_flurry') === 8 && D.CARDS.reckless_flurry.effects[0].times === 3, 'Barbarian: Hide Armor 5, Frenzied Strike 7, Reckless Flurry 8x3');
   ok(num('greataxe') === 8 && num('shove') === 7 && num('mindless_rage') === 3 && num('reckless_attack') === 12 && num('rage') === 3, 'Barbarian: Greataxe Chop 8, Shove 7, Mindless Rage 3, Reckless Attack 12, Rage 3');
