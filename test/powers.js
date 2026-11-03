@@ -4,7 +4,8 @@ let n = 0; const ok = (c, m) => { n++; if (!c) { console.error('FAIL: ' + m); pr
 const ALL_POWERS = Object.keys(D.CARDS).filter(id => D.CARDS[id].type === 'power');
 // Barbarian deck styles B1-B3 (Nov 3) added blood_up, last_tally, scar_tissue, bear_beneath. The hook-only ones (no status
 // effect of their own) are covered in test/deckstyles.js; this file keeps checking every Power that applies a status.
-ok(ALL_POWERS.sort().join() === ['arcane_focus', 'arcane_study', 'battle_cry', 'bear_beneath', 'bear_totem', 'blood_up', 'defense_style', 'last_tally', 'mage_armor', 'mindless_rage', 'retaliation', 'scar_tissue'].sort().join(), 'power list: ' + ALL_POWERS.join());
+ok(ALL_POWERS.sort().join() === ['arcane_focus', 'arcane_study', 'battle_cry', 'bear_beneath', 'bear_totem', 'blood_up', 'defense_style', 'last_tally', 'mage_armor', 'mindless_rage', 'retaliation', 'scar_tissue',
+  'the_wall_holds', 'read_the_opening', 'ten_thousand_drills', 'no_wasted_motion', 'old_scars'].sort().join(), 'power list: ' + ALL_POWERS.join());
 for (const id of ALL_POWERS) ok(!D.CARDS[id].exhaust && !/exhaust/i.test(D.CARDS[id].desc), id + ' has no Exhaust flag or wording');
 const POWERS = ALL_POWERS.filter(id => D.CARDS[id].effects.some(f => f.t === 'status'));
 ok(D.CARDS.arcane_focus.type === 'power' && D.CARDS.arcane_focus.cost === 0 && D.CARDS.arcane_focus.effects.map(f => f.t + (f.n)).join() === 'status1,draw1', 'Arcane Focus is a power with the same numbers');

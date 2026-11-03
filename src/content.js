@@ -331,7 +331,9 @@
 (function (G) {
   G.FRAME_OVERRIDE = {
     // Powers whose effect is a hook (no effect list to read the frame from): Barbarian deck styles B1-B3
-    blood_up: 'buff', last_tally: 'buff', scar_tissue: 'defense' };
+    blood_up: 'buff', last_tally: 'buff', scar_tissue: 'defense',
+    // Fighter deck styles F1-F5
+    the_wall_holds: 'attack', read_the_opening: 'attack', ten_thousand_drills: 'buff', no_wasted_motion: 'utility', old_scars: 'defense' };
   G.FRAME_COLORS = { attack: 'red', defense: 'blue', buff: 'green', debuff: 'purple', utility: 'gold', curse: 'black', status: 'grey' };
   G.frameOf = function (def, id) {
     if (G.FRAME_OVERRIDE[id]) return G.FRAME_OVERRIDE[id];

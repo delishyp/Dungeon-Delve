@@ -73,6 +73,9 @@ ok(/Arcane Focus makes it stronger/.test(D.KEYWORDS.Spell) && /stays in your han
     if (r.small) ok(Math.abs(r.font / r.cw - 10.2 / 160) < 0.002, `${id}: small font is 10.2 px at 160 px (${r.font} at ${r.cw})`);
     else ok(Math.abs(r.font / r.cw - 12.64 / 160) < 0.002, `${id}: normal font is 12.6 px at 160 px (${r.font} at ${r.cw})`);
   }
+  // every real card with keyword lines (e.g. the Fighter's Retain cards) shows them as their own lines with a tooltip
+  for (const id of Object.keys(R.plain)) { const d = E.cardDef({ id: id.replace('+', ''), up: id.endsWith('+') }), k = D.keywordLines(d);
+    if (k.length) ok(new RegExp(k.map(w => '<br><span class="kw" data-tip="' + w + ': [^"]+">' + w + '</span>\\.').join('') + '$').test(R.plain[id].html), `${id}: keyword lines ${k} after the effect: ${R.plain[id].html.slice(-160)}`); }
   ok(R.plain.strike.cw === 160 && !R.plain.strike.small, 'hand card is 160 px and a short text keeps the normal font');
   for (const id of ['goad', 'blood_up', 'bear_beneath', 'goad+', 'blood_up+', 'bear_beneath+']) {
     const r = R.kwRes[id]; ok(r && r.fits, `${id}: fits with both keyword lines (small=${r && r.small})`);

@@ -104,6 +104,44 @@
     sundering_blow: { cls: 'fighter', name: 'Sundering Blow', cost: 2, type: 'attack', rarity: 'rare', target: 'enemy',
       desc: 'Deal {0} damage. Apply {1} Prone and {2} Frightened.',
       effects: [{ t: 'damage', n: 8 }, { t: 'status', status: 'prone', n: 2, to: 'target' }, { t: 'status', status: 'frightened', n: 2, to: 'target' }] },
+    // ---- Fighter deck styles F1-F5 (lore/text/deck_styles_v1.md, approved by Anna Nov 3 10:41). Retain is a shared keyword (10:42),
+    // a `retain: true` flag that the card face writes as its own 'Retain.' line after the effect (Anna 11:17, no tag pills); the
+    // desc itself never says Retain. ----
+    // F1 Shieldwall
+    the_wall_holds: { cls: 'fighter', name: 'The Wall Holds', cost: 2, type: 'power', rarity: 'legendary', target: 'none',
+      desc: 'At the end of your turn, deal damage equal to half your Block to ALL enemies.',
+      effects: [], power: { endTurnBlockToAll: 0.5 }, upgrade: { cost: 1 } },
+    // F2 Maneuvers
+    // Cost 3 (upgraded 2), not the planned 2/1: it simmed about 8 points above the other styles at cost 2 (Gamedev, Nov 3).
+    read_the_opening: { cls: 'fighter', name: 'Read the Opening', cost: 3, type: 'power', rarity: 'legendary', target: 'none',
+      desc: 'The first hit you land each turn on a Prone or Frightened enemy deals double damage.',
+      effects: [], power: { openingDouble: true }, upgrade: { cost: 2 } },
+    // F3 Drill
+    form_and_repeat: { cls: 'fighter', name: 'Form and Repeat', cost: 0, type: 'skill', rarity: 'rare', target: 'none',
+      desc: 'Gain {0} Block. Draw {1} card.', effects: [{ t: 'block', n: 4 }, { t: 'draw', n: 1 }],
+      upgrade: { effects: [{ t: 'block', n: 6 }, { t: 'draw', n: 1 }] } },
+    // Cost 3 (upgraded 2), not the planned 2/1: about 6 points above the other styles at cost 2.
+    ten_thousand_drills: { cls: 'fighter', name: 'Ten Thousand Drills', cost: 3, type: 'power', rarity: 'legendary', target: 'none',
+      desc: 'Whenever you play your third card in a turn, gain 1 Might (up to 5 a fight).',
+      effects: [], power: { thirdCardMight: 1, thirdCardMightCap: 5 }, upgrade: { cost: 2 } },
+    // F4 Tempo: three 0-cost commons (names and text by Lorekeeper) and the legendary. Hilt and Give Ground 5 (upgraded 7), not the
+    // planned 3/5: at 3 they diluted random-pick decks (random 43.5% -> 32.7%).
+    hilt_to_the_teeth: { cls: 'fighter', name: 'Hilt to the Teeth', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
+      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 5 }], upgrade: { effects: [{ t: 'damage', n: 7 }] } },
+    give_ground: { cls: 'fighter', name: 'Give Ground', cost: 0, type: 'skill', rarity: 'common', target: 'none',
+      desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 5 }], upgrade: { effects: [{ t: 'block', n: 7 }] } },
+    wait_for_it: { cls: 'fighter', name: 'Wait for It', cost: 0, type: 'skill', rarity: 'common', target: 'none', retain: true,
+      desc: 'Draw {0} card.', effects: [{ t: 'draw', n: 1 }],
+      upgrade: { desc: 'Draw {0} cards.', effects: [{ t: 'draw', n: 2 }] } },
+    no_wasted_motion: { cls: 'fighter', name: 'No Wasted Motion', cost: 2, type: 'power', rarity: 'legendary', target: 'none',
+      desc: 'Whenever you play a 0-cost card, draw 1 card (up to 3 a turn).',
+      effects: [], power: { zeroCostDraw: 1, zeroCostDrawPerTurn: 3 }, upgrade: { cost: 1 } },
+    // F5 Old Soldier (healing)
+    field_dressing: { cls: 'fighter', name: 'Field Dressing', cost: 1, type: 'skill', rarity: 'rare', target: 'none', retain: true, exhaust: true,
+      desc: 'Heal {0} HP. Exhaust.', effects: [{ t: 'heal', n: 5 }], upgrade: { effects: [{ t: 'heal', n: 7 }] } },
+    old_scars: { cls: 'fighter', name: 'Old Scars', cost: 2, type: 'power', rarity: 'legendary', target: 'none',
+      desc: 'Whenever you heal, gain that much Block.',
+      effects: [], power: { healToBlock: true }, upgrade: { cost: 1 } },
 
     // ================= BARBARIAN =================
     // Number pass after the Rage rework (Nov 3, Producer): Greataxe Chop 6->8, Frenzied Strike 6->7, Reckless Flurry 5x3->8x3,
