@@ -514,13 +514,12 @@ body.reduced .foil-sweep{animation:none;opacity:0}
 @keyframes mmpan{from{scale:1.02;background-position:26% 48%}to{scale:1.09;background-position:36% 54%}}
 .mm-glow{position:absolute;border-radius:50%;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(circle,#ffb04aaa 0,#ff7a1a44 35%,#0000 70%);animation:flicker 2.3s infinite;
   translate:calc(var(--mx,0) * -16px) calc(var(--my,0) * -9px);transition:translate .6s ease-out}
-.mm-glow.g1{left:-2%;top:22%;width:17%;aspect-ratio:1}
+/* bg_menu = Palette's stairs painting (Nov 3): the glows are only a faint torch flicker on the lit steps; the old .mm-eye is gone (no figures). */
+.mm-glow{filter:opacity(.45)}
+.mm-glow.g1{left:14%;top:58%;width:17%;aspect-ratio:1}
 .mm-glow.g2{left:36%;top:30%;width:15%;aspect-ratio:1;animation-delay:-.9s;animation-duration:1.9s}
 .mm-glow.g3{left:42%;top:40%;width:10%;aspect-ratio:1;animation-delay:-1.4s;background:radial-gradient(circle,#ffd57a99 0,#ffaa3a33 40%,#0000 70%)}
-.mm-eye{position:absolute;left:19.5%;top:31%;width:9%;aspect-ratio:1.6;border-radius:50%;pointer-events:none;mix-blend-mode:screen;
-  background:radial-gradient(ellipse,#ffcf5aaa 0,#ff5a1a55 30%,#0000 70%);animation:eyepulse 5s ease-in-out infinite;translate:calc(var(--mx,0) * -12px) calc(var(--my,0) * -7px)}
 @keyframes flicker{0%,100%{opacity:.85;scale:1}12%{opacity:.6;scale:.96}25%{opacity:1;scale:1.04}41%{opacity:.7}57%{opacity:.95;scale:1.02}73%{opacity:.65;scale:.97}88%{opacity:1}}
-@keyframes eyepulse{0%,100%{opacity:.35}45%{opacity:1}55%{opacity:.9}}
 .mm-fog{position:absolute;left:-20%;right:-20%;bottom:-5%;height:40%;pointer-events:none;opacity:.5;
   background:radial-gradient(ellipse at 30% 80%,#8a7aa055,#0000 60%),radial-gradient(ellipse at 70% 90%,#5a4a7a55,#0000 55%);animation:fogdrift 26s ease-in-out infinite alternate}
 @keyframes fogdrift{to{transform:translateX(9%)}}
@@ -557,7 +556,7 @@ body.reduced .foil-sweep{animation:none;opacity:0}
 .mm-help{font:13px/1.45 Arial,sans-serif;color:#a8988a;background:#0008;border:1px solid #3a2c22;border-radius:8px;padding:10px 12px}
 .mm-help b{color:#e8d6b0}
 .mm-ver{position:absolute;right:14px;bottom:10px;font:12px Arial;color:#6a5a50}
-body.reduced .mm-bg,body.reduced .mm-glow,body.reduced .mm-eye,body.reduced .mm-fog,body.reduced .d20svg{animation:none}
+body.reduced .mm-bg,body.reduced .mm-glow,body.reduced .mm-fog,body.reduced .d20svg{animation:none}
 body.reduced .mm-embers,body.reduced .mm-dust{display:none}
 
 /* ---- dialogs ---- */

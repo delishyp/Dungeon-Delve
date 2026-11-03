@@ -741,7 +741,7 @@
     const cont = sv ? `<button class="menubtn primary" data-act="continue"><span>Continue</span><small>${saveSummary(sv)}</small></button>` : '';
     return `<div class="mainmenu">
       <div class="mm-bg" style="background-image:url(${img('bg_menu')})"></div>
-      <div class="mm-glow g1"></div><div class="mm-glow g2"></div><div class="mm-glow g3"></div><div class="mm-eye"></div>
+      <div class="mm-glow g1"></div><div class="mm-glow g2"></div><div class="mm-glow g3"></div>
       <div class="mm-fog"></div><div class="mm-embers">${particles(40, 1)}</div><div class="mm-dust">${particles(18, 7)}</div><div class="mm-vignette"></div>
       <div class="mm-panel">
         <div class="mm-logo">${D20}<div><h1>Dungeon <span>Delve</span></h1><small>a Dungeons &amp; Dragons deck-builder</small></div></div>
