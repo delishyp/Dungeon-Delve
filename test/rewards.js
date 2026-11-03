@@ -19,6 +19,10 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
 { const num = (id, i = 0) => D.CARDS[id].effects[i].n;
   ok(num('defend') === 6 && num('shield_bash') === 6 && num('trip_attack') === 7 && num('menacing_attack') === 8, 'Fighter: Shield Block 6, Shield Bash 6, Trip 7, Menacing 8');
   ok(num('parry') === 5 && num('frenzied_strike') === 6 && num('reckless_flurry') === 5 && D.CARDS.reckless_flurry.effects[0].times === 3, 'Barbarian: Hide Armor 5, Frenzied Strike 6, Reckless Flurry 5x3');
-  ok(num('misty_step') === 3 && D.CARDS.misty_step.cost === 0, 'Wizard: Misty Step 3 Block, cost 0');
+  // Wizard random-pick pass (Anna via Producer, Nov 3 05:07): commons more forgiving, starter trimmed so a starter-only deck
+  // can't beat the later Floor 2 fights. Misty Step back to 4 Block.
+  ok(num('misty_step') === 4 && D.CARDS.misty_step.cost === 0, 'Wizard: Misty Step 4 Block, cost 0');
+  ok(num('burning_hands') === 10 && num('chromatic_orb') === 12 && num('thunderwave') === 6, 'Wizard commons: Burning Hands 10, Chromatic Orb 12, Thunderwave 6');
+  ok(num('fire_bolt') === 4 && num('magic_missile') === 2 && D.CARDS.magic_missile.effects[0].times === 3 && num('shield_spell') === 6, 'Wizard starter: Fire Bolt 4, Magic Missile 2x3, Shield 6');
 }
 console.log('rewards ok (' + n + ' checks)');
