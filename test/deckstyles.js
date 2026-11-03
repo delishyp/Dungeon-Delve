@@ -122,8 +122,8 @@ for (const up of [false, true]) {
   f = fight('rat_swarm'); const ev = play(f.s, f.p, 'wild_swing', up).ev;
   ok(f.s.enemies.every(x => hits(ev, x.uid)[0].amount === (up ? 6 : 4)) && f.p.statuses.rage === 1, `Wild Swing${up ? '+' : ''}: ${up ? 6 : 4} to ALL, 1 Rage`);
   f = fight(); let hk = hits(play(f.s, f.p, 'bloodied_knuckles', up, f.e).ev, f.e.uid);
-  ok(hk.length === 2 && hk.every(x => x.amount === (up ? 4 : 3)) && f.p.statuses.rage === 2, `Bloodied Knuckles${up ? '+' : ''}: 2 hits, 2 Rage`);
-  f = fight(); f.e.block = up ? 4 : 3; hk = hits(play(f.s, f.p, 'bloodied_knuckles', up, f.e).ev, f.e.uid);
+  ok(hk.length === 2 && hk.every(x => x.amount === (up ? 5 : 4)) && f.p.statuses.rage === 2, `Bloodied Knuckles${up ? '+' : ''}: 2 hits, 2 Rage`);
+  f = fight(); f.e.block = up ? 5 : 4; hk = hits(play(f.s, f.p, 'bloodied_knuckles', up, f.e).ev, f.e.uid);
   ok(hk[0].amount === 0 && hk[1].amount > 0 && f.p.statuses.rage === 1, 'a fully Blocked hit gives no Rage');
   f = fight(); f.e.block = 20; play(f.s, f.p, 'bloodied_knuckles', up, f.e); ok(!f.p.statuses.rage, 'all Blocked: no Rage');
   ok(E.cardDef({ id: 'goad', up }).cost === (up ? 0 : 1), 'Goad cost ' + (up ? 0 : 1));
@@ -131,7 +131,7 @@ for (const up of [false, true]) {
 { // Goad: switches a non-attack intent to an attack, leaves attacks alone
   let f = fight('ogre'); f.e.intent = { move: 'bellow', target: f.p.uid };
   const h = hits(play(f.s, f.p, 'goad', false, f.e).ev, f.e.uid);
-  ok(h[0].amount === 4 && f.p.statuses.rage === 1, 'Goad: 4 damage, 1 Rage');
+  ok(h[0].amount === 6 && f.p.statuses.rage === 1, 'Goad: 6 damage, 1 Rage');
   ok(E.moveOf(f.e, f.e.intent.move).effects.some(x => x.t === 'attack') && f.e.intent.move !== 'bellow' && f.e.intent.target === f.p.uid, 'Goad: Ogre switches from Bellow to ' + f.e.intent.move);
   ok(E.describeIntent(f.s, f.e).damage > 0, 'goaded intent shows its damage');
   f = fight('ogre'); f.e.intent = { move: 'club', target: f.p.uid }; play(f.s, f.p, 'goad', false, f.e); ok(f.e.intent.move === 'club', 'an attack intent stays as it is');
@@ -160,7 +160,7 @@ ok(Object.values(D.CARDS).filter(d => d.rarity === 'legendary').every(d => d.cls
 }
 // ---------- upgraded versions: one change each, as written ----------
 { const u = (id) => E.cardDef({ id, up: true }), b = (id) => D.CARDS[id];
-  ok(u('headbutt').effects[0].n === 7 && u('wild_swing').effects[0].n === 6 && u('bloodied_knuckles').effects[0].n === 4 && u('bloodied_knuckles').effects[0].times === 2, 'upgraded numbers: Headbutt 7, Wild Swing 6, Knuckles 4x2');
+  ok(u('headbutt').effects[0].n === 7 && u('wild_swing').effects[0].n === 6 && u('bloodied_knuckles').effects[0].n === 5 && u('bloodied_knuckles').effects[0].times === 2, 'upgraded numbers: Headbutt 7, Wild Swing 6, Knuckles 5x2');
   ok(u('goad').cost === 0 && u('blood_up').cost === 0 && u('last_tally').cost === 1 && u('enraged').effects[0].n === 8, 'upgraded costs: Goad 0, Blood Up 0, Last Tally 1; Enraged 8 a hit');
   ok(u('scar_tissue').power.onHpLossEnemyTurn.block === 6 && /6 Block/.test(u('scar_tissue').desc) && b('scar_tissue').power.onHpLossEnemyTurn.block === 4, 'Scar Tissue+ 6 Block');
   ok(u('bear_beneath').effects.map(f => f.n).join() === '4,4' && u('bear_beneath').power.onHpLossEnemyTurn.rage === 1, 'Bear Beneath+ 4 Armor 4 Retaliate, still 1 Rage per enemy turn');
