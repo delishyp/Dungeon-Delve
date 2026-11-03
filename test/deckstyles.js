@@ -203,7 +203,7 @@ const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid &&
   ok(['read_the_opening', 'ten_thousand_drills'].every(id => b(id).cost === 3 && u(id).cost === 2), 'Read the Opening, Ten Thousand Drills: cost 3, upgraded 2 (balance nudge)');
   ok(['hilt_to_the_teeth', 'give_ground', 'wait_for_it'].every(id => b(id).rarity === 'common' && b(id).cost === 0), 'three 0-cost Tempo commons');
   ok(['form_and_repeat', 'field_dressing'].every(id => b(id).rarity === 'rare'), 'Form and Repeat and Field Dressing are rare');
-  ok(b('hilt_to_the_teeth').effects[0].n === 6 && u('hilt_to_the_teeth').effects[0].n === 8, 'Hilt to the Teeth 6 (upgraded 8)');
+  ok(b('hilt_to_the_teeth').effects[0].n === 5 && u('hilt_to_the_teeth').effects[0].n === 7, 'Hilt to the Teeth 5 (upgraded 7)');
   ok(b('give_ground').effects[0].n === 6 && u('give_ground').effects[0].n === 8, 'Give Ground 6 Block (upgraded 8)');
   ok(b('wait_for_it').retain && b('wait_for_it').effects[0].n === 2 && u('wait_for_it').effects[0].n === 3 && u('wait_for_it').retain, 'Wait for It: Retain, draw 2 (upgraded 3, still Retain)');
   ok(E.cardText(null, null, { id: 'wait_for_it', up: true }) === 'Draw «+3» cards.', 'Wait for It+ text: ' + E.cardText(null, null, { id: 'wait_for_it', up: true }));

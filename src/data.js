@@ -81,7 +81,7 @@
     second_wind: { cls: 'fighter', name: 'Second Wind', cost: 1, type: 'skill', rarity: 'starter', target: 'none', exhaust: true,
       desc: 'Heal {0} HP. Draw {1} card. Exhaust.', effects: [{ t: 'heal', n: 4 }, { t: 'draw', n: 1 }] },
     cleave: { cls: 'fighter', name: 'Cleave', cost: 1, type: 'attack', rarity: 'common', target: 'none',
-      desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 8 }] },
+      desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 10 }] },
     shield_bash: { cls: 'fighter', name: 'Shield Bash', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Gain {0} Block, then deal damage equal to your Block ({1}).', effects: [{ t: 'block', n: 6 }, { t: 'damageFromBlock' }] },
     trip_attack: { cls: 'fighter', name: 'Trip Attack', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
@@ -91,7 +91,7 @@
     precision_attack: { cls: 'fighter', name: 'Precision Attack', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Draw {1} card.', effects: [{ t: 'damage', n: 4 }, { t: 'draw', n: 1 }] },
     riposte: { cls: 'fighter', name: 'Riposte', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Gain {0} Block. Deal {1} damage.', effects: [{ t: 'block', n: 4 }, { t: 'damage', n: 4 }] },
+      desc: 'Gain {0} Block. Deal {1} damage.', effects: [{ t: 'block', n: 5 }, { t: 'damage', n: 4 }] },
     rally: { cls: 'fighter', name: 'Rally', cost: 1, type: 'skill', rarity: 'common', target: 'none',
       desc: 'Gain {0} Block. Draw {1} card.', effects: [{ t: 'block', n: 5 }, { t: 'draw', n: 1 }] },
     great_weapon: { cls: 'fighter', name: 'Great Weapon Smash', cost: 2, type: 'attack', rarity: 'uncommon', target: 'enemy',
@@ -137,7 +137,7 @@
     // F4 Tempo: three 0-cost commons (names and text by Lorekeeper) and the legendary. Hilt and Give Ground 5 (upgraded 7), not the
     // planned 3/5: at 3 they diluted random-pick decks (random 43.5% -> 32.7%).
     hilt_to_the_teeth: { cls: 'fighter', name: 'Hilt to the Teeth', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 6 }], upgrade: { effects: [{ t: 'damage', n: 8 }] } },
+      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 5 }], upgrade: { effects: [{ t: 'damage', n: 7 }] } },
     give_ground: { cls: 'fighter', name: 'Give Ground', cost: 0, type: 'skill', rarity: 'common', target: 'none',
       desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 6 }], upgrade: { effects: [{ t: 'block', n: 8 }] } },
     wait_for_it: { cls: 'fighter', name: 'Wait for It', cost: 0, type: 'skill', rarity: 'common', target: 'none', retain: true,

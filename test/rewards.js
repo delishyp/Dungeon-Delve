@@ -19,8 +19,8 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
 { const num = (id, i = 0) => D.CARDS[id].effects[i].n;
   // Fighter number pass (Nov 3, Producer 06:38): random-pick runs were 73.5%; generic commons, starter Block and the two Powers trimmed.
   ok(num('defend') === 5 && num('shield_bash') === 6 && num('trip_attack') === 7 && num('menacing_attack') === 8, 'Fighter: Shield Block 5, Shield Bash 6, Trip 7, Menacing 8');
-  ok(num('trip_attack', 1) === 1 && num('riposte') === 4 && num('riposte', 1) === 4 && num('rally') === 5 && num('battle_cry') === 1 && num('defense_style') === 2 && num('indomitable') === 11 && num('sundering_blow') === 8,
-    'Fighter: Trip Prone 1, Riposte 4/4, Rally 5, Battle Cry 1, Defense 2, Indomitable 11, Sundering Blow 8');
+  ok(num('trip_attack', 1) === 1 && num('riposte') === 5 && num('riposte', 1) === 4 && num('rally') === 5 && num('battle_cry') === 1 && num('defense_style') === 2 && num('indomitable') === 11 && num('sundering_blow') === 8,
+    'Fighter: Trip Prone 1, Riposte 5/4, Rally 5, Battle Cry 1, Defense 2, Indomitable 11, Sundering Blow 8');
   ok(num('ray_of_frost') === 2 && num('ray_of_frost', 1) === 1 && D.CARDS.ray_of_frost.cost === 0, 'Wizard (wz9 spell set): Ray of Frost cantrip 0 / 2 damage, 1 Frightened');
   // Barbarian floor pass (Anna 11:14): Greataxe 7, Hide Armor 4, Reckless Attack 8, Frenzied Strike 6, Reckless Flurry 10x3, Thick Hide 12, Brutal Critical 15, Whirling Axe 13, Relentless Rage heal 10.
   ok(num('parry') === 4 && num('frenzied_strike') === 6 && num('reckless_flurry') === 10 && D.CARDS.reckless_flurry.effects[0].times === 3, 'Barbarian: Hide Armor 4, Frenzied Strike 6, Reckless Flurry 10x3');
