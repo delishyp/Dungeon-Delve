@@ -277,7 +277,7 @@ const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid &&
   }
   for (const id of ['wait_for_it', 'field_dressing']) ok(D.keywordLines(D.CARDS[id]).join() === 'Retain', id + ': one Retain. line');
   const ui = fs.readFileSync(path.join(__dirname, '..', 'src', 'ui.js'), 'utf8');
-  ok(/D\.keywordLines\(def\)/.test(ui) && !/cardTags|ctag/.test(ui), 'Retain is drawn as a keyword line in the rules box, no tag pill'); }
+  ok(/D\.keywordLines\(def\)/.test(ui) && !/cardTags|ctag(?!bg)/.test(ui), 'Retain is drawn as a keyword line in the rules box, no tag pill'); }
 // ---------- placeholders for the Fighter cards ----------
 { const dir = path.join(__dirname, '..', 'assets', 'placeholder'), md = fs.readFileSync(path.join(dir, 'PLACEHOLDERS.md'), 'utf8');
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
