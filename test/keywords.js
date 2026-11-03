@@ -278,29 +278,29 @@ ok(!Object.values(D.CARDS).some(c => /\bBloodied\b/.test(c.name)), 'no card name
 const NEW = ['burn_through', 'kindling', 'whats_left', 'worn_grip', 'ember_hide', 'blood_in_mouth', 'last_one_standing'];
 for (const id of NEW) { const c = D.CARDS[id]; ok(c && c.cls === 'barbarian', id + ' is a Barbarian card'); ok(fs.existsSync(path.join(__dirname, '../assets/placeholder/placeholder_' + id + '.webp')), id + ' has placeholder art');
   ok(fs.readFileSync(path.join(__dirname, '../assets/placeholder/PLACEHOLDERS.md'), 'utf8').includes('`placeholder_' + id + '.webp`'), id + ' is listed in PLACEHOLDERS.md'); }
-eq(NEW.map(id => [D.CARDS[id].cost, D.CARDS[id].rarity, D.typeWord(D.CARDS[id], id)]), [[1, 'common', 'Defense'], [1, 'uncommon', 'Power'], [2, 'rare', 'Attack'], [1, 'common', 'Attack'], [1, 'common', 'Defense'], [1, 'common', 'Attack'], [1, 'uncommon', 'Buff']], 'costs and type words as in keyword_use_v2; pool 34 (Producer 21:54): the four former commons are common again, What\'s Left rare');
-// Blood in the Mouth (numbers pass 15:09: 10 / Bloodied 8 more; pool 34 sims: 12 / 8): Bloodied = ONE 20-damage hit, Might counts once
+eq(NEW.map(id => [D.CARDS[id].cost, D.CARDS[id].rarity, D.typeWord(D.CARDS[id], id)]), [[1, 'uncommon', 'Defense'], [1, 'uncommon', 'Power'], [2, 'rare', 'Attack'], [1, 'uncommon', 'Attack'], [1, 'uncommon', 'Defense'], [1, 'uncommon', 'Attack'], [1, 'uncommon', 'Buff']], 'costs and type words as in keyword_use_v2; the four former commons are uncommon (Producer 15:09 option a); What\'s Left rare (pool 34)');
+// Blood in the Mouth (numbers pass 15:09: 10 / Bloodied 8 more): Bloodied = ONE 18-damage hit, Might counts once
 { const { s, p } = fresh(), e = s.enemies[0]; p.hp = Math.floor(p.maxHp / 2); p.statuses.might = 3; const c = give(p, 'blood_in_mouth'); const { ev } = play(s, p, c, e);
-  eq(e.maxHp - e.hp, 20 + 3, 'Bloodied Blood in the Mouth: 20 + Might once'); eq(ev.filter(x => x.kind === 'hit').map(x => x.amount), [23], 'ONE hit of 23'); }
-{ const { s, p } = fresh(), e = s.enemies[0]; e.statuses.prone = 2; p.hp = 10; const c = give(p, 'blood_in_mouth'); play(s, p, c, e); eq(e.maxHp - e.hp, Math.floor(20 * 1.5), 'one hit: Prone applies to 20 once (30)'); }
-{ const { s, p } = fresh(), e = s.enemies[0]; const c = give(p, 'blood_in_mouth'); play(s, p, c, e); eq(e.maxHp - e.hp, 12, 'not Bloodied: 12'); }
-{ const { s, p } = fresh(), e = s.enemies[0]; p.hp = 10; const c = give(p, 'blood_in_mouth', true); const { ev } = play(s, p, c, e); eq(ev.filter(x => x.kind === 'hit').map(x => x.amount), [12 + 11], 'Blood in the Mouth+: Bloodied adds 11, still one combined hit (23)'); }
-eq([E.cardText(null, null, { id: 'blood_in_mouth' }), E.cardLines(null, null, { id: 'blood_in_mouth' }).bloodied], ['Deal 12 damage.', 'Deal 8 more.'], "card text 'Deal 12 damage.' / 'Bloodied: Deal 8 more.'");
+  eq(e.maxHp - e.hp, 18 + 3, 'Bloodied Blood in the Mouth: 18 + Might once'); eq(ev.filter(x => x.kind === 'hit').map(x => x.amount), [21], 'ONE hit of 21'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; e.statuses.prone = 2; p.hp = 10; const c = give(p, 'blood_in_mouth'); play(s, p, c, e); eq(e.maxHp - e.hp, Math.floor(18 * 1.5), 'one hit: Prone applies to 18 once (27)'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; const c = give(p, 'blood_in_mouth'); play(s, p, c, e); eq(e.maxHp - e.hp, 10, 'not Bloodied: 10'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; p.hp = 10; const c = give(p, 'blood_in_mouth', true); const { ev } = play(s, p, c, e); eq(ev.filter(x => x.kind === 'hit').map(x => x.amount), [10 + 11], 'Blood in the Mouth+: Bloodied adds 11, still one combined hit (21)'); }
+eq([E.cardText(null, null, { id: 'blood_in_mouth' }), E.cardLines(null, null, { id: 'blood_in_mouth' }).bloodied], ['Deal 10 damage.', 'Deal 8 more.'], "card text 'Deal 10 damage.' / 'Bloodied: Deal 8 more.'");
 { const { s, p } = fresh(), e = s.enemies[0]; p.statuses.might = 2; eq(E.cardLines(s, p, { id: 'blood_in_mouth', uid: 'b' }, e.uid).bloodied, 'Deal 8 more.', 'the Bloodied 8 is not shown with Might added (Might counts once)'); }
 // Last One Standing
 { const { s, p } = fresh(); p.hp = 10; const before = p.hand.length; const c = give(p, 'last_one_standing'); play(s, p, c, null); eq([p.statuses.might, p.hand.length], [4, before + 1], 'Bloodied Last One Standing: 4 Might, draw 1'); }
 { const { s, p } = fresh(); const c = give(p, 'last_one_standing'); play(s, p, c, null); eq(p.statuses.might, 2, 'not Bloodied: 2 Might'); }
-// Worn Grip: 14, 13, 12 ... then Exhausts at 0 (12 before the pool 34 sims)
-{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'worn_grip'), hits = []; for (let i = 0; i < 14; i++) { if (i) p.hand.push(p.discard.splice(p.discard.indexOf(c), 1)[0]); const h = e.hp; play(s, p, c, e); hits.push(h - e.hp); }
-  eq(hits, [14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1], 'Worn Grip fades 14..1'); eq(where(p, c), ['exhaust'], 'then Exhausts'); }
+// Worn Grip: 12, 11, 10 ... then Exhausts at 0
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'worn_grip'), hits = []; for (let i = 0; i < 12; i++) { if (i) p.hand.push(p.discard.splice(p.discard.indexOf(c), 1)[0]); const h = e.hp; play(s, p, c, e); hits.push(h - e.hp); }
+  eq(hits, [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1], 'Worn Grip fades 12..1'); eq(where(p, c), ['exhaust'], 'then Exhausts'); }
 // Ember Hide, Burn Through
-{ const { s, p } = fresh(), c = give(p, 'ember_hide'); play(s, p, c, null); eq([p.block, p.statuses.rage, where(p, c)[0]], [10, 2, 'exhaust'], 'Ember Hide: 10 Block, Exhaust, Last Word 2 Rage'); }
-{ const { s, p } = fresh(), c = give(p, 'burn_through'); play(s, p, c, null); eq([p.block, where(p, c)[0], p.fightExhausted], [11, 'exhaust', 1], 'Burn Through: 11 Block, Exhaust, counted'); }
+{ const { s, p } = fresh(), c = give(p, 'ember_hide'); play(s, p, c, null); eq([p.block, p.statuses.rage, where(p, c)[0]], [8, 2, 'exhaust'], 'Ember Hide: 8 Block, Exhaust, Last Word 2 Rage'); }
+{ const { s, p } = fresh(), c = give(p, 'burn_through'); play(s, p, c, null); eq([p.block, where(p, c)[0], p.fightExhausted], [9, 'exhaust', 1], 'Burn Through: 9 Block, Exhaust, counted'); }
 // Kindling: every Exhaust gives 1 Rage per copy; not on Vanish; Fading-out and Last Word cards count
 { const { s, p } = fresh(), k = give(p, 'kindling'); play(s, p, k, null); ok(p.powers.includes(k), 'Kindling stays in play');
   play(s, p, give(p, 'burn_through'), null); eq(p.statuses.rage, 1, 'Kindling: an Exhaust gives 1 Rage');
   play(s, p, give(p, 'ember_hide'), null); eq(p.statuses.rage, 1 + 1 + 2, 'Kindling + Ember Hide Last Word: 1 + 2 Rage');
-  const w = give(p, 'worn_grip'); w.fightPlays = 13; play(s, p, w, s.enemies[0]); eq(p.statuses.rage, 5, 'a Fading card at 0 Exhausts and triggers Kindling');
+  const w = give(p, 'worn_grip'); w.fightPlays = 11; play(s, p, w, s.enemies[0]); eq(p.statuses.rage, 5, 'a Fading card at 0 Exhausts and triggers Kindling');
   play(s, p, give(p, 'kindling'), null); play(s, p, give(p, 'burn_through'), null); eq(p.statuses.rage, 7, 'two Kindlings: 2 Rage per Exhaust');
   const r0 = p.statuses.rage; give(p, 'kw_van'); E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); ok(p.exhaust.some(x => x.id === 'kw_van'), 'a card vanished');
   ok((p.statuses.rage || 0) <= r0, 'Vanish is not an Exhaust: no Kindling Rage'); eq(p.fightExhausted, 4, 'Vanish not counted as Exhausted'); }
@@ -340,12 +340,12 @@ NEW.forEach(id => { delete D.CARDS[id].inPool; }); delete D.RELICS.ash_bracer.in
   ok(hit > 0, 'with the switch off the card is in the reward pool (' + hit + '/200)'); }
 // Upgrade lines: Lorekeeper 14:20, numbers moved with the 15:09 pass (Burn Through, Worn Grip, Ember Hide, Blood in the Mouth)
 eq(['burn_through', 'kindling', 'whats_left', 'worn_grip', 'ember_hide', 'blood_in_mouth', 'last_one_standing'].map(id => [E.cardDef({ id, up: true }).cost, E.cardText(null, null, { id, up: true }), E.cardLines(null, null, { id, up: true })]),
-  [[1, 'Gain «+14» Block. Exhaust.', { bloodied: null, lastWord: null }], [0, 'Whenever a card Exhausts, gain 1 Rage.', { bloodied: null, lastWord: null }],
-   [2, 'Deal «+4» damage for each card Exhausted this fight.', { bloodied: null, lastWord: null }], [1, 'Deal «+17» damage.', { bloodied: null, lastWord: null }],
-   [1, 'Gain «+13» Block. Exhaust.', { bloodied: null, lastWord: 'Gain 2 Rage.' }], [1, 'Deal 12 damage.', { bloodied: 'Deal «+11» more.', lastWord: null }],
+  [[1, 'Gain «+12» Block. Exhaust.', { bloodied: null, lastWord: null }], [0, 'Whenever a card Exhausts, gain 1 Rage.', { bloodied: null, lastWord: null }],
+   [2, 'Deal «+4» damage for each card Exhausted this fight.', { bloodied: null, lastWord: null }], [1, 'Deal «+15» damage.', { bloodied: null, lastWord: null }],
+   [1, 'Gain «+11» Block. Exhaust.', { bloodied: null, lastWord: 'Gain 2 Rage.' }], [1, 'Deal 10 damage.', { bloodied: 'Deal «+11» more.', lastWord: null }],
    [1, 'Gain «+3» Might.', { bloodied: 'Gain 2 more Might and draw 1 card.', lastWord: null }]], 'upgraded texts');
 { const { s, p } = fresh(); p.hp = 10; play(s, p, give(p, 'last_one_standing', true), null); eq(p.statuses.might, 5, 'Last One Standing+ Bloodied: 3 + 2 Might'); }
-{ const { s, p } = fresh(); play(s, p, give(p, 'ember_hide', true), null); eq([p.block, p.statuses.rage], [13, 2], 'Ember Hide+: 13 Block, Last Word unchanged'); }
+{ const { s, p } = fresh(); play(s, p, give(p, 'ember_hide', true), null); eq([p.block, p.statuses.rage], [11, 2], 'Ember Hide+: 11 Block, Last Word unchanged'); }
 // damageRandom (for Parting Shot's Last Word): one hit on a random targetable enemy, no target on the card
 Object.assign(D.CARDS, { kwr_parting: blk({ cls: 'fighter', vanish: true, desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 3 }], lastWord: { desc: 'Deal {0} damage to a random enemy.', effects: [{ t: 'damageRandom', n: 8 }] } }) });
 ok(D.checkKeywordData({ kwr_parting: D.CARDS.kwr_parting }) === true, 'a Last Word with damageRandom passes the data check');

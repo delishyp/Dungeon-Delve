@@ -18,13 +18,17 @@ const st = Object.entries(D.CARDS).filter(([, c]) => c.rarity === 'starter');
 eq(crypto.createHash('md5').update(JSON.stringify(st)).digest('hex'), 'd8108b41fc2d1b772f79247b3e59592e', 'starter card definitions are byte-for-byte the 4e6fcb1 ones');
 // ---- re-tiers ----
 const R = (id) => D.CARDS[id].rarity;
-eq(['burn_through', 'worn_grip', 'ember_hide', 'blood_in_mouth'].map(R), ['common', 'common', 'common', 'common'], 'Barbarian: four uncommons back to common');
-// sims (one numbers pass): Burn Through 9->11 (up 14), Worn Grip 12->14 (up 17), Ember Hide 8->10 (up 13), Blood in the Mouth 10->12 (up 12, Bloodied 8 / 11 unchanged)
-eq(['burn_through', 'worn_grip', 'ember_hide', 'blood_in_mouth'].map(id => [D.CARDS[id].effects[0].n, E.cardDef({ id, up: true }).effects[0].n]), [[11, 14], [14, 17], [10, 13], [12, 12]], 'Barbarian re-tiered commons: numbers');
+// Producer 23:02: the Burn It Down cards stay uncommon with their 4e6fcb1 numbers; four plain uncommons drop to common, numbers unchanged
+eq(['burn_through', 'worn_grip', 'ember_hide', 'blood_in_mouth'].map(R), ['uncommon', 'uncommon', 'uncommon', 'uncommon'], 'Barbarian: Burn It Down cards stay uncommon');
+eq(['burn_through', 'worn_grip', 'ember_hide', 'blood_in_mouth'].map(id => [D.CARDS[id].effects[0].n, E.cardDef({ id, up: true }).effects[0].n]), [[9, 12], [12, 15], [8, 11], [10, 10]], 'Burn It Down cards: original numbers');
+eq(['whirling_axe', 'brutal_critical', 'bear_totem', 'relentless_rage'].map(R), ['common', 'common', 'common', 'common'], 'Whirling Axe, Brutal Critical, Bearskin, Relentless Rage uncommon -> common');
+eq(['whirling_axe', 'brutal_critical', 'bear_totem', 'relentless_rage'].map(id => [D.CARDS[id].cost, D.CARDS[id].effects[0].n]), [[2, 13], [2, 15], [1, 4], [1, 10]], 'their numbers unchanged');
 eq(R('whats_left'), 'rare', "What's Left uncommon -> rare");
-eq([R('old_scars'), R('ten_thousand_drills')], ['rare', 'rare'], 'Old Scars and Ten Thousand Drills legendary -> rare');
-eq([D.CARDS.ten_thousand_drills.power.thirdCardMightCap, D.CARDS.ten_thousand_drills.cost, E.cardDef({ id: 'ten_thousand_drills', up: true }).cost], [4, 3, 2], 'Drills: cap 4 (was 5), cost 3 / upgraded 2');
-ok(/up to 4 a fight/.test(D.CARDS.ten_thousand_drills.desc), 'Drills text says up to 4');
+eq([R('old_scars'), R('ten_thousand_drills'), R('the_wall_holds')], ['legendary', 'legendary', 'legendary'], 'Fighter legendaries: The Wall Holds, Old Scars, Ten Thousand Drills');
+eq([R('read_the_opening'), R('no_wasted_motion')], ['rare', 'rare'], 'Read the Opening and No Wasted Motion legendary -> rare');
+eq([D.CARDS.read_the_opening.cost, E.cardDef({ id: 'read_the_opening', up: true }).cost, D.CARDS.no_wasted_motion.cost, E.cardDef({ id: 'no_wasted_motion', up: true }).cost], [3, 2, 2, 1], 'their costs unchanged');
+eq([D.CARDS.ten_thousand_drills.power.thirdCardMightCap, D.CARDS.ten_thousand_drills.cost, E.cardDef({ id: 'ten_thousand_drills', up: true }).cost], [5, 3, 2], 'Drills: cap 5 again, cost 3 / upgraded 2');
+ok(/up to 5 a fight/.test(D.CARDS.ten_thousand_drills.desc), 'Drills text says up to 5');
 // ---- new cards: id, cost/upgraded cost, rarity, kind, base text, upgraded text ----
 const NEW = {
   sweeping_attack: [1, 1, 'common', '', 'Deal 6 damage. Deal 4 damage to a random enemy.', 'Deal 9 damage. Deal 4 damage to a random enemy.'],
@@ -46,7 +50,7 @@ const NEW = {
   wall_of_force: [2, 2, 'rare', 'spell', 'Gain 20 Block. Exhaust.', 'Gain 23 Block. Exhaust.'],
   blight: [2, 2, 'rare', 'spell', 'Deal 8 damage. Apply 8 Poisoned.', 'Deal 11 damage. Apply 9 Poisoned.'],
   meteor_swarm: [3, 3, 'legendary', 'spell', 'Deal 10 damage to ALL enemies 3 times. Exhaust.', 'Deal 11 damage to ALL enemies 3 times. Exhaust.'],
-  time_stop: [1, 0, 'legendary', 'spell', 'Gain 2 Energy. Draw 2 cards. Exhaust.', 'Gain 2 Energy. Draw 2 cards. Exhaust.'],   // 3 -> 2 Energy after the sims
+  time_stop: [1, 0, 'legendary', 'spell', 'Gain 2 Energy. Draw 2 cards. Exhaust.', 'Gain 2 Energy. Draw 2 cards. Exhaust.'],   // 3 -> 2 Energy + Retain (Designer 23:18)
   wish: [3, 3, 'legendary', 'spell', 'At the start of each of your turns, gain 1 Energy.', 'At the start of each of your turns, gain 1 Energy.'],
 };
 const plain = (t) => t.replace(/«[+-]?(\d+)»/g, '$1');
@@ -75,6 +79,7 @@ const play = (s, p, c, t) => { const r = E.dispatch(s, { type: 'PLAY_CARD', play
   eq(ev.filter(x => x.kind === 'hit').length, 2, 'Lightning Bolt: two hits'); eq(L.reduce((a, e, i) => a + hp[i] - e.hp, 0), 18, 'Lightning Bolt: 9 + 9'); }
 { const { s, p } = fight('wizard'); const h0 = p.hand.length; p.draw.push({ uid: 'd1', id: 'fire_bolt' }, { uid: 'd2', id: 'fire_bolt' }); p.energy = 1;
   const c = give(p, 'time_stop'); play(s, p, c, null); eq([p.energy, p.hand.length, (p.exhaust || []).includes(c)], [2, h0 + 2, true], 'Time Stop: 1 - 1 + 2 Energy, draw 2, Exhaust'); }
+eq([D.CARDS.time_stop.retain, E.cardDef({ id: 'time_stop', up: true }).retain, D.keywordLines(D.CARDS.time_stop).join()], [true, true, 'Spell,Retain'], 'Time Stop: Retain (base and upgraded)');
 { const { s, p } = fight('wizard'); play(s, p, give(p, 'wish'), null); ok((p.powers || []).some(c => c.id === 'wish'), 'Wish stays in play');
   E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); ok(s.phase === 'combat', 'still in combat'); eq(p.energy, p.maxEnergy + 1, 'Wish: +1 Energy at the start of the next turn'); }
 // ---- boss rewards: the Wizard now has legendaries, so her boss pick is legendary-only like the other two ----

@@ -123,7 +123,7 @@
       effects: [], power: { endTurnBlockToAll: 0.5 }, upgrade: { cost: 1 } },
     // F2 Maneuvers
     // Cost 3 (upgraded 2), not the planned 2/1: it simmed about 8 points above the other styles at cost 2 (Gamedev, Nov 3).
-    read_the_opening: { cls: 'fighter', name: 'Read the Opening', cost: 3, type: 'power', rarity: 'legendary', target: 'none',
+    read_the_opening: { cls: 'fighter', name: 'Read the Opening', cost: 3, type: 'power', rarity: 'rare', target: 'none',
       desc: 'The first hit you land each turn on a Prone or Frightened enemy deals double damage.',
       effects: [], power: { openingDouble: true }, upgrade: { cost: 2 } },
     // F3 Drill
@@ -131,9 +131,9 @@
       desc: 'Gain {0} Block. Draw {1} card.', effects: [{ t: 'block', n: 4 }, { t: 'draw', n: 1 }],
       upgrade: { effects: [{ t: 'block', n: 6 }, { t: 'draw', n: 1 }] } },
     // Cost 3 (upgraded 2), not the planned 2/1: about 6 points above the other styles at cost 2.
-    ten_thousand_drills: { cls: 'fighter', name: 'Ten Thousand Drills', cost: 3, type: 'power', rarity: 'rare', target: 'none',
-      desc: 'Whenever you play your third card in a turn, gain 1 Might (up to 4 a fight).',
-      effects: [], power: { thirdCardMight: 1, thirdCardMightCap: 4 }, upgrade: { cost: 2 } },
+    ten_thousand_drills: { cls: 'fighter', name: 'Ten Thousand Drills', cost: 3, type: 'power', rarity: 'legendary', target: 'none',
+      desc: 'Whenever you play your third card in a turn, gain 1 Might (up to 5 a fight).',
+      effects: [], power: { thirdCardMight: 1, thirdCardMightCap: 5 }, upgrade: { cost: 2 } },
     // F4 Tempo: three 0-cost commons (names and text by Lorekeeper) and the legendary. Hilt and Give Ground 5 (upgraded 7), not the
     // planned 3/5: at 3 they diluted random-pick decks (random 43.5% -> 32.7%).
     hilt_to_the_teeth: { cls: 'fighter', name: 'Hilt to the Teeth', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
@@ -143,19 +143,20 @@
     wait_for_it: { cls: 'fighter', name: 'Wait for It', cost: 0, type: 'skill', rarity: 'common', target: 'none', retain: true,
       desc: 'Draw {0} cards.', effects: [{ t: 'draw', n: 2 }],
       upgrade: { effects: [{ t: 'draw', n: 3 }] } },
-    no_wasted_motion: { cls: 'fighter', name: 'No Wasted Motion', cost: 2, type: 'power', rarity: 'legendary', target: 'none',
+    no_wasted_motion: { cls: 'fighter', name: 'No Wasted Motion', cost: 2, type: 'power', rarity: 'rare', target: 'none',
       desc: 'Whenever you play a 0-cost card, draw 1 card (up to 3 a turn).',
       effects: [], power: { zeroCostDraw: 1, zeroCostDrawPerTurn: 3 }, upgrade: { cost: 1 } },
     // F5 Old Soldier (healing)
     field_dressing: { cls: 'fighter', name: 'Field Dressing', cost: 1, type: 'skill', rarity: 'rare', target: 'none', retain: true, exhaust: true,
       desc: 'Heal {0} HP. Exhaust.', effects: [{ t: 'heal', n: 8 }], upgrade: { effects: [{ t: 'heal', n: 11 }] } },
-    old_scars: { cls: 'fighter', name: 'Old Scars', cost: 2, type: 'power', rarity: 'rare', target: 'none',
+    old_scars: { cls: 'fighter', name: 'Old Scars', cost: 2, type: 'power', rarity: 'legendary', target: 'none',
       desc: 'Whenever you heal, gain that much Block.',
       effects: [], power: { healToBlock: true }, upgrade: { cost: 1 } },
 
-    // ---- Pool 34 (card_pool_draft.md, Producer approved Nov 3 21:54; sims: Barbarian Burn Through 11, Worn Grip 14, Ember Hide 10,
-    // Blood in the Mouth 12 back as commons; Wizard Wish stays cost 3 upgraded, Time Stop 2 Energy): rarity pyramid 12 common / 9 uncommon / 6 rare /
-    // 3 legendary per hero. Old Scars and Ten Thousand Drills (cap 5 -> 4) moved legendary -> rare. Six new Fighter cards: ----
+    // ---- Pool 34 (card_pool_draft.md, Producer approved Nov 3 21:54, Producer calls 23:02): rarity pyramid 12 common /
+    // 9 uncommon / 6 rare / 3 legendary per hero. Barbarian: Whirling Axe, Brutal Critical, Bearskin, Relentless Rage down
+    // to common (Burn It Down cards stay uncommon, What's Left rare). Fighter: Read the Opening and No Wasted Motion down to
+    // rare (weakest legendaries in random-pick decks). Wizard: Wish cost 3 both ways, Time Stop 2 Energy + Retain (Designer 23:18). Six new Fighter cards: ----
     sweeping_attack: { cls: 'fighter', name: 'Sweeping Attack', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Deal {1} damage to a random enemy.', effects: [{ t: 'damage', n: 6 }, { t: 'damageRandom', n: 4 }] },
     evasive_footwork: { cls: 'fighter', name: 'Evasive Footwork', cost: 1, type: 'skill', rarity: 'common', target: 'none', retain: true,
@@ -196,13 +197,13 @@
       desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 12 }] },
     shove: { cls: 'barbarian', name: 'Shove', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Apply {1} Prone.', effects: [{ t: 'damage', n: 7 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
-    brutal_critical: { cls: 'barbarian', name: 'Brutal Critical', cost: 2, type: 'attack', rarity: 'uncommon', target: 'enemy',
+    brutal_critical: { cls: 'barbarian', name: 'Brutal Critical', cost: 2, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Deals 8 more while you have Rage.', effects: [{ t: 'damage', n: 15, rageBonus: 8 }] },
-    whirling_axe: { cls: 'barbarian', name: 'Whirling Axe', cost: 2, type: 'attack', rarity: 'uncommon', target: 'none',
+    whirling_axe: { cls: 'barbarian', name: 'Whirling Axe', cost: 2, type: 'attack', rarity: 'common', target: 'none',
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 13 }] },
-    relentless_rage: { cls: 'barbarian', name: 'Relentless Rage', cost: 1, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
+    relentless_rage: { cls: 'barbarian', name: 'Relentless Rage', cost: 1, type: 'skill', rarity: 'common', target: 'none', exhaust: true,
       desc: 'Heal {0} HP. Gain {1} Rage. Exhaust.', effects: [{ t: 'heal', n: 10 }, { t: 'status', status: 'rage', n: 2, to: 'self' }] },
-    bear_totem: { cls: 'barbarian', name: 'Bearskin', cost: 1, type: 'power', rarity: 'uncommon', target: 'none',
+    bear_totem: { cls: 'barbarian', name: 'Bearskin', cost: 1, type: 'power', rarity: 'common', target: 'none',
       desc: 'Gain {0} Armor.', effects: [{ t: 'status', status: 'armor', n: 4, to: 'self' }] },
     retaliation: { cls: 'barbarian', name: 'Retaliation', cost: 1, type: 'power', rarity: 'uncommon', target: 'none',
       desc: 'Gain {0} Retaliate.', effects: [{ t: 'status', status: 'thorns', n: 3, to: 'self' }] },
@@ -259,9 +260,9 @@
     // written lines (keyword_use_v2, 14:20). Back in the pools (Producer 15:09, option a): the four former commons are
     // uncommon (they only pay off inside their deck styles) with a numbers pass (Barbarian sims, Tester's qa_bv2).
     // A card or relic can still be switched out of every pool with inPool: false (cardInPool / relicInPool).
-    burn_through: { cls: 'barbarian', name: 'Burn Through', cost: 1, type: 'skill', rarity: 'common', target: 'none', exhaust: true,
-      desc: 'Gain {0} Block. Exhaust.', effects: [{ t: 'block', n: 11 }],
-      upgrade: { effects: [{ t: 'block', n: 14 }] } },
+    burn_through: { cls: 'barbarian', name: 'Burn Through', cost: 1, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
+      desc: 'Gain {0} Block. Exhaust.', effects: [{ t: 'block', n: 9 }],
+      upgrade: { effects: [{ t: 'block', n: 12 }] } },
     kindling: { cls: 'barbarian', name: 'Kindling', cost: 1, type: 'power', rarity: 'uncommon', target: 'none',
       desc: 'Whenever a card Exhausts, gain 1 Rage.', effects: [], power: { onExhaust: [{ t: 'status', status: 'rage', n: 1, to: 'self' }] },
       upgrade: { cost: 0 } },
@@ -269,19 +270,19 @@
       desc: 'Deal {0} damage for each card Exhausted this fight.', effects: [{ t: 'damagePerExhausted', n: 3 }],
       upgrade: { effects: [{ t: 'damagePerExhausted', n: 4 }] } },
     // New keyword cards (keyword_use_v2 part 3): Fading, Last Word, Bloodied.
-    worn_grip: { cls: 'barbarian', name: 'Worn Grip', cost: 1, type: 'attack', rarity: 'common', target: 'enemy', fading: true,
-      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 14 }],
-      upgrade: { effects: [{ t: 'damage', n: 17 }] } },
-    ember_hide: { cls: 'barbarian', name: 'Ember Hide', cost: 1, type: 'skill', rarity: 'common', target: 'none', exhaust: true,
-      desc: 'Gain {0} Block. Exhaust.', effects: [{ t: 'block', n: 10 }],
+    worn_grip: { cls: 'barbarian', name: 'Worn Grip', cost: 1, type: 'attack', rarity: 'uncommon', target: 'enemy', fading: true,
+      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 12 }],
+      upgrade: { effects: [{ t: 'damage', n: 15 }] } },
+    ember_hide: { cls: 'barbarian', name: 'Ember Hide', cost: 1, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
+      desc: 'Gain {0} Block. Exhaust.', effects: [{ t: 'block', n: 8 }],
       lastWord: { desc: 'Gain {0} Rage.', effects: [{ t: 'status', status: 'rage', n: 2, to: 'self' }] },
-      upgrade: { effects: [{ t: 'block', n: 13 }] } },
+      upgrade: { effects: [{ t: 'block', n: 11 }] } },
     // Blood in the Mouth when Bloodied is ONE hit, Might counts once (Lorekeeper 13:25): addTo joins the first hit.
     // Upgraded: the Bloodied part goes 8 -> 11 (still one combined 21 hit).
-    blood_in_mouth: { cls: 'barbarian', name: 'Blood in the Mouth', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 12 }],
+    blood_in_mouth: { cls: 'barbarian', name: 'Blood in the Mouth', cost: 1, type: 'attack', rarity: 'uncommon', target: 'enemy',
+      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 10 }],
       bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 8, addTo: 0 }] },
-      upgrade: { effects: [{ t: 'damage', n: 12 }], bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 11, addTo: 0 }] } } },
+      upgrade: { effects: [{ t: 'damage', n: 10 }], bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 11, addTo: 0 }] } } },
     last_one_standing: { cls: 'barbarian', name: 'Last One Standing', cost: 1, type: 'skill', rarity: 'uncommon', target: 'none',
       desc: 'Gain {0} Might.', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }],
       bloodied: { desc: 'Gain {0} more Might and draw {1} card.', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }, { t: 'draw', n: 1 }] },
@@ -363,7 +364,7 @@
       desc: 'Deal {0} damage. Apply {1} Poisoned.', effects: [{ t: 'damage', n: 8 }, { t: 'status', status: 'poisoned', n: 8, to: 'target' }] },
     meteor_swarm: { cls: 'wizard', kind: 'spell', name: 'Meteor Swarm', cost: 3, type: 'attack', rarity: 'legendary', target: 'none', exhaust: true,
       desc: 'Deal {0} damage to ALL enemies 3 times. Exhaust.', effects: [{ t: 'damageAll', n: 10, times: 3 }] },
-    time_stop: { cls: 'wizard', kind: 'spell', name: 'Time Stop', cost: 1, type: 'skill', rarity: 'legendary', target: 'none', exhaust: true,
+    time_stop: { cls: 'wizard', kind: 'spell', name: 'Time Stop', cost: 1, type: 'skill', rarity: 'legendary', target: 'none', retain: true, exhaust: true,
       desc: 'Gain {0} Energy. Draw {1} cards. Exhaust.', effects: [{ t: 'energy', n: 2 }, { t: 'draw', n: 2 }], upgrade: { cost: 0 } },
     wish: { cls: 'wizard', kind: 'spell', name: 'Wish', cost: 3, type: 'power', rarity: 'legendary', target: 'none', art: 'arcane_focus',
       desc: 'At the start of each of your turns, gain 1 Energy.',
