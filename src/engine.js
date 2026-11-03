@@ -1002,7 +1002,25 @@
 
   function takeEvents(s) { const ev = s.events; s.events = []; return ev; }
 
-  const Engine = { startEncounter, startFight, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
+  // Old saves (Tester, wz9): drop card and relic ids that are no longer in the data (e.g. the removed arcane_focus card),
+  // so a loaded run never looks up an undefined card or relic. Returns the dropped ids; the save version is unchanged.
+  function sanitizeState(s) {
+    const gone = [], okCard = id => !!D.CARDS[id], okRelic = id => !!D.RELICS[id];
+    const keep = (arr, ok, key) => Array.isArray(arr) ? arr.filter(x => { const id = key ? x && x[key] : x; if (ok(id)) return true; gone.push(id); return false; }) : arr;
+    for (const p of s.players || []) {
+      for (const k of ['deck', 'hand', 'draw', 'discard', 'exhaust', 'powers']) p[k] = keep(p[k], okCard, 'id');
+      p.relics = keep(p.relics, okRelic);
+      if (p.reward) {
+        p.reward.cards = keep(p.reward.cards, okCard);
+        for (const k of ['relic', 'bonusRelic']) if (p.reward[k] && !okRelic(p.reward[k])) { gone.push(p.reward[k]); p.reward[k] = null; }
+      }
+    }
+    if (s.shop) { s.shop.cards = keep(s.shop.cards, okCard, 'id'); s.shop.relics = keep(s.shop.relics, okRelic, 'id'); }
+    if (s.pendingRelic && !okRelic(s.pendingRelic)) { gone.push(s.pendingRelic); s.pendingRelic = null; }
+    return gone;
+  }
+
+  const Engine = { sanitizeState, startEncounter, startFight, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade,
     weightOdds, choiceWeights, rewardRarityWeights, describeChoice };
   root.Engine = Engine;

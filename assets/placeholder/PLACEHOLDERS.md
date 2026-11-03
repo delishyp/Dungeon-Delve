@@ -17,3 +17,4 @@ To swap one out: add the real `assets/card_<card id>.webp` (it wins automaticall
 | `placeholder_scar_tissue.webp` | `scar_tissue` | Scar Tissue: barbarian rare power card illustration (defense frame) |
 | `placeholder_bear_beneath.webp` | `bear_beneath` | The Bear Beneath: barbarian legendary power card illustration (defense frame) |
 | `placeholder_acid.webp` | `acid` | Acid: curse status card illustration (status frame) |
+| `placeholder_fireball_starter.webp` | `fireball_starter` | Fireball: wizard starter attack card illustration (attack frame) |

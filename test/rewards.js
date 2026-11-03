@@ -46,5 +46,29 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
     ok(txt('fire_bolt') === 'Deal 3 damage.', 'Fire Bolt (cantrip) is not boosted: ' + txt('fire_bolt'));
     ok(/«\+6» damage 3 times/.test(txt('magic_missile')), 'Magic Missile gets +2 on every hit: ' + txt('magic_missile'));
     ok(/«\+3» Armor/.test(txt('mage_armor')), 'Mage Armor 1 + 2 = 3 Armor with 1 stack: ' + txt('mage_armor')); }
+  // Starter Fireball and Wildfire (Anna 15:18/15:21): new id fireball_starter, spell, cost 2, 6 to ALL; Fireball+ 10 to ALL at cost 2.
+  // The old uncommon Fireball keeps its id `fireball`, numbers and text, and is now named Wildfire.
+  { const fb = D.CARDS.fireball_starter, up = E.cardDef({ id: 'fireball_starter', up: true });
+    ok(fb && fb.name === 'Fireball' && fb.cls === 'wizard' && fb.kind === 'spell' && fb.rarity === 'starter' && fb.cost === 2 && fb.target === 'none'
+      && fb.effects.length === 1 && fb.effects[0].t === 'damageAll' && fb.effects[0].n === 6 && fb.desc === 'Deal {0} damage to ALL enemies.', 'Fireball: starter spell, cost 2, 6 to ALL');
+    ok(up.cost === 2 && up.effects[0].t === 'damageAll' && up.effects[0].n === 10 && up.name === 'Fireball+', 'Fireball+: 10 to ALL, cost 2');
+    ok(D.CARDS.fireball.name === 'Wildfire' && D.CARDS.fireball.cost === 3 && D.CARDS.fireball.rarity === 'uncommon' && D.CARDS.fireball.effects[0].n === 20, 'old Fireball renamed Wildfire, numbers unchanged');
+    ok(!Object.values(D.CARDS).some(c => c !== D.CARDS.fireball_starter && c.name === 'Fireball'), 'only one card is named Fireball');
+    ok(/«\+8» damage to ALL/.test(E.cardText({ phase: 'combat' }, Object.assign(E.newGame({ seed: 5, heroes: ['wizard'] }).players[0], { statuses: { arcane: 1 } }), { id: 'fireball_starter' }, null)), 'Fireball gets Arcane Focus (6 + 2)');
+    // starter only: never offered in rewards or the shop
+    for (let seed = 1; seed <= 300; seed++) { const s = E.newGame({ seed, heroes: ['wizard'] }), p = s.players[0];
+      for (const k of ['fight', 'elite', 'boss']) ok(!E.rollCardRewards(s, p, 3, k).includes('fireball_starter'), 'Fireball not in ' + k + ' rewards'); }
+    // hits every enemy
+    { const s = E.newGame({ seed: 7, heroes: ['wizard'] }), p = s.players[0]; E.startEncounter(s, 'goblin_pack'); E.takeEvents(s);
+      const c = { uid: 'fbx', id: 'fireball_starter' }; p.hand.push(c); p.energy = 3; p.statuses.arcane = 0;
+      const hp0 = s.enemies.map(e => e.hp); const r = E.dispatch(s, { type: 'PLAY_CARD', player: p.uid, card: c.uid });
+      ok(r.ok && s.enemies.length >= 2 && s.enemies.every((e, i) => hp0[i] - e.hp + 0 >= 1), 'Fireball hits every enemy'); } }
+  // Starting decks (Anna 15:19): 10 cards = 8 starter basics (4 attack, 4 block) + 2 unique cards. Fighter left out (main is changing his deck).
+  const DECKS = { wizard: ['fire_bolt', 'shield_spell', ['magic_missile', 'fireball_starter']], barbarian: ['greataxe', 'parry', ['rage', 'reckless_attack']] };
+  for (const [h, [atk, blk, uniq]] of Object.entries(DECKS)) { const d = D.HEROES[h].deck;
+    ok(d.length === 10 && d.filter(x => x === atk).length === 4 && d.filter(x => x === blk).length === 4, h + ': 10 cards, 4 ' + atk + ' + 4 ' + blk);
+    ok(D.CARDS[atk].type === 'attack' && D.CARDS[blk].effects.some(f => f.t === 'block'), h + ': basics are an attack and a block card');
+    ok(d.filter(x => x !== atk && x !== blk).sort().join() === uniq.slice().sort().join() && new Set(uniq).size === 2, h + ': 2 unique cards ' + uniq.join(', '));
+    ok(d.every(x => D.CARDS[x].rarity === 'starter' || uniq.includes(x)), h + ': basics are starter cards'); }
 }
 console.log('rewards ok (' + n + ' checks)');

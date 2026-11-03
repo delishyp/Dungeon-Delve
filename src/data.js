@@ -196,6 +196,11 @@
       desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 5 }] },
     magic_missile: { cls: 'wizard', kind: 'spell', name: 'Magic Missile', cost: 2, type: 'attack', rarity: 'starter', target: 'enemy',
       desc: 'Deal {0} damage 3 times.', effects: [{ t: 'damage', n: 4, times: 3 }] },
+    // Starter Fireball (Anna 15:18/15:21): spell, cost 2, 6 to ALL; Fireball+ 10 to ALL, same cost.
+    // The old uncommon Fireball (id `fireball`) is now named Wildfire.
+    fireball_starter: { cls: 'wizard', kind: 'spell', name: 'Fireball', cost: 2, type: 'attack', rarity: 'starter', target: 'none',
+      desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 6 }],
+      upgrade: { effects: [{ t: 'damageAll', n: 10 }] } },
     burning_hands: { cls: 'wizard', kind: 'spell', name: 'Burning Hands', cost: 2, type: 'attack', rarity: 'common', target: 'none',
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 12 }] },
     ray_of_frost: { cls: 'wizard', kind: 'cantrip', name: 'Ray of Frost', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
@@ -210,7 +215,7 @@
       desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 15 }] },
     poison_spray: { cls: 'wizard', kind: 'cantrip', name: 'Poison Spray', cost: 1, type: 'skill', rarity: 'common', target: 'enemy',
       desc: 'Apply {0} Poisoned.', effects: [{ t: 'status', status: 'poisoned', n: 7, to: 'target' }] },
-    fireball: { cls: 'wizard', kind: 'spell', name: 'Fireball', cost: 3, type: 'attack', rarity: 'uncommon', target: 'none',
+    fireball: { cls: 'wizard', kind: 'spell', name: 'Wildfire', cost: 3, type: 'attack', rarity: 'uncommon', target: 'none',
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 20 }] },
     scorching_ray: { cls: 'wizard', kind: 'spell', name: 'Scorching Ray', cost: 2, type: 'attack', rarity: 'uncommon', target: 'enemy',
       desc: 'Deal {0} damage 3 times.', effects: [{ t: 'damage', n: 4, times: 3 }] },
@@ -248,7 +253,7 @@
       name: 'Wizard', maxHp: 72, energy: 3, handSize: 5,
       blurb: 'A frail scholar who came down for the books. Cheap cantrips buy time while Arcane Focus builds, then the spells take whole rooms apart.',
       mechanic: "Arcane Focus: each stack adds 2 to every spell's damage and Block, on every hit. Cantrips don't get it.",
-      deck: ['fire_bolt', 'fire_bolt', 'fire_bolt', 'fire_bolt', 'shield_spell', 'shield_spell', 'shield_spell', 'shield_spell', 'magic_missile', 'fire_bolt'],
+      deck: ['fire_bolt', 'fire_bolt', 'fire_bolt', 'fire_bolt', 'shield_spell', 'shield_spell', 'shield_spell', 'shield_spell', 'magic_missile', 'fireball_starter'],
     },
   };
 

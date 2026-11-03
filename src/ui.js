@@ -42,6 +42,8 @@
       const raw = localStorage.getItem(SAVE_KEY); if (!raw) return null;
       const d = JSON.parse(raw);
       if (!d || !d.G || d.G.version !== 3 || !d.G.players || !D.HEROES[d.G.players[0].heroId]) return null;
+      const gone = E.sanitizeState(d.G);   // old saves: drop card/relic ids no longer in the data (Tester, wz9)
+      if (gone.length) console.warn('Save loaded without removed cards/relics: ' + gone.join(', '));
       return d;
     } catch (e) { return null; }
   }

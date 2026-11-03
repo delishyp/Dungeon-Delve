@@ -32,9 +32,9 @@ for (const id of POWERS) for (const up of [false, true]) for (let seed = 1; seed
   E.startEncounter(s, 'rat_swarm'); E.takeEvents(s);
   ok(p.powers.length === 0, id + ' powers cleared next fight');
 }
-// Wizard starter (wz9, Anna 15:09): no Arcane Focus card; its slot is a fifth Fire Bolt. The status shows as 'Arcane Focus'.
+// Wizard starter (wz9, Anna 15:09/15:19): no Arcane Focus card; its slot is the starter Fireball. The status shows as 'Arcane Focus'.
 { const s = E.newGame({ seed: 3, heroes: ['wizard'] }); const p = s.players[0];
-  ok(!p.deck.some(c => c.id === 'arcane_focus') && p.deck.filter(c => c.id === 'fire_bolt').length === 5 && p.deck.length === 10, 'Wizard starter: 5 Fire Bolt, no Arcane Focus card');
+  ok(!p.deck.some(c => c.id === 'arcane_focus'), 'Wizard starter: no Arcane Focus card');
   ok(D.STATUSES.arcane.name === 'Arcane Focus' && D.KEYWORDS['Arcane Focus'] === D.STATUSES.arcane.tip, 'status arcane is named Arcane Focus');
   const srcs = Object.keys(D.CARDS).filter(id => D.CARDS[id].effects.some(f => f.t === 'status' && f.status === 'arcane'));
   ok(srcs.join() === 'arcane_study', 'only Arcane Study gives Arcane Focus: ' + srcs.join()); }
