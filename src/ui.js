@@ -1400,12 +1400,22 @@
     const hand = $app.querySelector('.hand'); if (!hand) return innerHeight * 0.6;
     return hand.getBoundingClientRect().top - 20;
   }
+  // Which monster a dragged card is over. The drawn body counts as well as the unit's box: a body in the middle of a lunge, hit
+  // shake or boss-canvas overhang can sit outside its own box, and players aim at what they see. A body under the pointer beats
+  // a box, the nearest centre wins between two, and a monster that is already dead in the game state (its death not shown yet)
+  // is never a target. (Tester, demo.1 selftest: "drag did not play hilt_to_the_teeth" when the drop missed every box.)
   function enemyAt(x, y) {
+    let best = null, bestD = Infinity;
     for (const el of $app.querySelectorAll('.unit.enemy:not(.dead)')) {
-      const r = el.getBoundingClientRect();
-      if (x >= r.left - 6 && x <= r.right + 6 && y >= r.top - 40 && y <= r.bottom + 10) return el;
+      const u = G && E.find(G, el.dataset.uid); if (!u || u.hp <= 0) continue;
+      const r = el.getBoundingClientRect(), sp = el.querySelector('.sprite'), b = sp ? bodyRect(sp) : r;
+      const inBody = b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+      const inBox = x >= r.left - 6 && x <= r.right + 6 && y >= r.top - 40 && y <= r.bottom + 10;
+      if (!inBody && !inBox) continue;
+      const c = inBody ? b : r, d = (inBody ? 0 : 1e6) + Math.hypot(x - (c.left + c.width / 2), y - (c.top + c.height / 2));
+      if (d < bestD) { bestD = d; best = el; }
     }
-    return null;
+    return best;
   }
   function onDragStart(e) {
     if (ui.busy || ui.story || !G || ui.screen !== 'game' || G.phase !== 'combat') return;
@@ -1799,19 +1809,23 @@
         const el = [...$app.querySelectorAll('.hand .card:not(.unplayable)')][0];
         if (!el) break;
         const c = P().hand.find(x => x.uid === el.dataset.card), e0 = P().energy, h0 = P().hand.length;
+        // plays this turn, from the engine: a card that draws (Wait for It, or a 0-cost card under No Wasted Motion) can reshuffle
+        // itself and draw itself straight back, so "still in hand" doesn't mean "not played" (Tester: demo.1 hilt_to_the_teeth)
+        const plays = () => (P().turnFx && P().turnFx.played) || 0;
         const mode = (guard + turnNo) % 3;     // 0: drag to play, 1: click/tap flow, 2: drag back into the hand (cancel), then drag to play
         if (mode !== 1) {
           if (mode === 2) {
-            const r = el.getBoundingClientRect(); await dragCard(el, r.left + r.width / 2 + 20, r.top + r.height / 2 - 4);
-            if (!P().hand.some(x => x.uid === c.uid) || P().energy !== e0) throw new Error('drag released in the hand still played the card');
+            const r = el.getBoundingClientRect(), p0 = plays(); await dragCard(el, r.left + r.width / 2 + 20, r.top + r.height / 2 - 4);
+            if (!P().hand.some(x => x.uid === c.uid) || P().energy !== e0 || plays() !== p0) throw new Error('drag released in the hand still played the card');
             seen.dragCancel++;
           }
-          const foe = q('.unit.enemy:not(.dead):not(.untargetable) .sprite'), fr = foe && foe.getBoundingClientRect();
+          const tf = E.targetableEnemies(G)[0], foe = tf && q(`.unit[data-uid="${tf.uid}"] .sprite`), fr = foe && foe.getBoundingClientRect();   // a monster alive in the state
           const to = E.needsTarget(c) && fr ? [fr.left + fr.width / 2, fr.top + fr.height / 2] : [innerWidth / 2, playLine() - 120];
+          const p1 = plays(), t1 = G.turn;
           await dragCard(cardEl(c.uid) || el, to[0], to[1]);
           seen.drag++;
           await settle();
-          if (G.phase === 'combat' && P().hand.some(x => x.uid === c.uid)) throw new Error('drag did not play ' + c.id);
+          if (G.phase === 'combat' && G.turn === t1 && plays() <= p1) throw new Error('drag did not play ' + c.id);
           continue;
         }
         seen.tap++;
@@ -1892,8 +1906,11 @@
         // general sounds (Nov 3): the UI hooks fired during these runs (audio itself is off in selftest; Sfx.asked counts the requests)
         await new Promise(r => setTimeout(r, 1200));   // cues play 150 ms apart after an action
         const SA = (window.Sfx && window.Sfx.asked) || {};
-        for (const k of ['gold_pickup', 'gold_spend', 'card_gain', 'card_remove', 'card_upgrade', 'floor_arrive', 'defeat_stinger', 'amb:floor0', 'amb:floor1', 'amb:rest', 'amb:null', 'music:rest', 'music:boss:owlbear', 'music:boss:beholder'])
+        for (const k of ['gold_pickup', 'gold_spend', 'card_gain', 'card_remove', 'card_upgrade', 'floor_arrive', 'defeat_stinger', 'amb:floor0', 'amb:floor1', 'amb:rest', 'amb:null', 'music:rest'])
           if (!SA[k]) throw new Error('sound hook never fired: ' + k + ' ' + JSON.stringify(SA));
+        // boss music: each floor's boss comes from its pool (demo.2), so any boss of that floor counts
+        D.FLOORS.forEach((F, i) => { const ids = Object.keys(F.bossPool || { [F.boss]: 1 });
+          if (!ids.some(id => SA['music:boss:' + id])) throw new Error(`boss music never fired on floor ${i + 1} (${ids.join('/')}) ` + JSON.stringify(SA)); });
         if (SA.rest_heal) throw new Error('rest_heal must not play (retired 11:59)');
       } catch (ex) { errors.push(String(ex && ex.stack || ex)); }
       delete seen.guardThisTurn;
