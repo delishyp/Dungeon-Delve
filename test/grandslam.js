@@ -7,7 +7,7 @@ for (const hero of Object.keys(D.HEROES)) {
   let s = E.newGame({ seed: 4242, heroes: [hero], floors: 1 });
   E.startEncounter(s, D.FLOORS[0].boss); E.takeEvents(s);
   let p = s.players[0]; const b = s.enemies[0];
-  ok(b.monsterId === 'owlbear' && b.hp === 267, 'boss is the Beast at 267 HP (floor pass Nov 3)');
+  ok(b.monsterId === 'owlbear' && b.hp === 245, 'boss is the Beast at 245 HP (boss round Nov 3)');
   const seen = [];
   for (let t = 1; t <= 7; t++) {
     const i = E.describeIntent(s, s.enemies[0]); seen.push(s.enemies[0].intent.move);

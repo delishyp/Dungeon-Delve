@@ -12,9 +12,9 @@ ok(G.hp.join() === '12,13' && atk('ghoul_altar', 'claw').n === 6 && atk('ghoul_a
 const S2 = D.MONSTERS.skeleton_altar_f2;
 ok(S2.hp.join() === '42,47' && atk('skeleton_altar_f2', 'sword').n === 10 && atk('skeleton_altar_f2', 'rattle').n === 7 && atk('skeleton_altar_f2', 'bow').n === 5 && atk('skeleton_altar_f2', 'bow').times === 3, 'skeleton_altar_f2 HP 42-47, sword 10, rattle 7, bow 5x3');
 ok(S2.moves.rattle.effects.find(f => f.t === 'block').n === 7, 'skeleton_altar_f2 rattle block 7');
-// the shared skeleton (Floor 1 Restless Dead) is untouched
+// the shared skeleton (Floor 1 Restless Dead) is not an altar copy; its hits went up in the boss round (Producer 11:46), HP unchanged
 const S0 = D.MONSTERS.skeleton;
-ok(S0.hp.join() === '26,30' && atk('skeleton', 'sword').n === 5 && atk('skeleton', 'rattle').n === 3 && atk('skeleton', 'bow').n === 2, 'shared skeleton unchanged');
+ok(S0.hp.join() === '26,30' && atk('skeleton', 'sword').n === 8 && atk('skeleton', 'rattle').n === 4 && atk('skeleton', 'bow').n === 3, 'shared skeleton: 26-30, sword 8, rattle 4, bow 3x3 (boss round Nov 3)');
 for (const [v, b] of [['skeleton_altar', 'skeleton'], ['skeleton_altar_f2', 'skeleton'], ['ghoul_altar', 'ghoul']]) {
   const m = D.MONSTERS[v], o = D.MONSTERS[b];
   ok(m.variantOf === b && m.sprite === b && m.name === o.name, v + ' is a variant of ' + b + ' (same name and art)');

@@ -1,5 +1,5 @@
 // Floor plan (Nov 3): below-half phases (Surgeon, Mimic, Watcher), Floor 2 moves (Grave Hunger, Poisoned Bolt,
-// Rip Apart, Cube's Acid), and Floor 1 skeleton/ghoul stats left alone.
+// Rip Apart, Cube's Acid). Floor 1 altar copies left alone; the shared skeleton's hits went up in the boss round (Nov 3).
 const D = require('../src/data.js'); require('../src/content.js'); const E = require('../src/engine.js');
 let n = 0, chops = 0; const ok = (c, m) => { n++; if (!c) { console.error('FAIL: ' + m); process.exit(1); } };
 const atk = (id, mv) => D.MONSTERS[id].moves[mv].effects.find(f => f.t === 'attack');
@@ -100,22 +100,23 @@ for (let seed = 1; seed <= 30; seed++) {
     ok(ev.some(x => x.kind === 'status' && x.target === p.uid && x.status === 'poisoned' && x.amount === 5), 'Poisoned Bolt: 5 Poisoned'); }
 }
 ok(atk('ghoul', 'hunger').n === 10 && D.MONSTERS.ghoul.moves.hunger.effects[0].drain === true && !D.MONSTERS.ghoul.moves.chill, 'Grave Hunger 10 (floor pass Nov 3), drains; Grave Chill gone');
-ok(atk('troll', 'rip').n === 14 && D.MONSTERS.troll.moves.rip.effects[0].t === 'stripBlock', 'Rip Apart: strip Block, then 14 (floor pass Nov 3)');
+ok(atk('troll', 'rip').n === 13 && D.MONSTERS.troll.moves.rip.effects[0].t === 'stripBlock', 'Rip Apart: strip Block, then 13 (boss round Nov 3)');
 const poisons = id => Object.values(D.MONSTERS[id].moves).some(mv => mv.name === 'Poisoned Bolt' || mv.effects.some(f => f.status === 'poisoned'));
 ok(poisons('drow') && !poisons('drow_early'), 'Poisoned Bolt on the later Drow only');
 ok(D.FLOORS[1].hard.includes('drow_patrol') && !D.FLOORS[1].easy.includes('drow_patrol') && !D.FLOORS[0].easy.concat(D.FLOORS[0].hard).some(x => D.ENCOUNTERS[x].enemies.includes('drow')), 'the poisoning Drow is Floor 2 later rows only');
 
-// ---------- Floor 1 stats unchanged vs 65a53f2 ----------
+// ---------- Floor 1 stats (altar copies unchanged vs 65a53f2) ----------
 const stat = id => { const m = D.MONSTERS[id]; return m.hp.join('-') + ' ' + Object.entries(m.moves).map(([k, mv]) => k + ':' + mv.effects.filter(f => f.t === 'attack').map(f => f.n + (f.times ? 'x' + f.times : '')).join('+')).join(' '); };
-ok(stat('skeleton') === '26-30 sword:5 rattle:3 bow:2x3', 'skeleton unchanged: ' + stat('skeleton'));
+ok(stat('skeleton') === '26-30 sword:8 rattle:4 bow:3x3', 'skeleton (boss round Nov 3: F1 normal hits up): ' + stat('skeleton'));
 ok(stat('skeleton_altar') === '16-19 sword:6 rattle:3 bow:2x3', 'skeleton_altar unchanged: ' + stat('skeleton_altar'));
 ok(stat('ghoul_altar') === '12-13 claw:6 bite:11', 'ghoul_altar unchanged: ' + stat('ghoul_altar'));
 ok(D.ENCOUNTERS.altar_dead_f1.enemies.join() === 'skeleton_altar,skeleton_altar,ghoul_altar', 'F1 altar uses its own copies');
-// ---------- Floor 2 numbers (Nov 3: F2 normal fights raised to ~12-16% HP cost; Surgeon/Sewn and Watcher eased; enemy pass Nov 3: Mimic HP/Chomp and Watcher HP/phase Rays trimmed; floor pass Anna 11:14: F2 normal hits up, Watcher HP 403) ----------
-{ const want = { ghoul: '22-25 claw:11 bite:18 hunger:10', drow_early: '28-33 crossbow:10 blades:10x2 darkness:9', drow_mage_early: '24-28 bolt:21 fear: ward:',
-    drow: '30-36 crossbow:11 blades:11x2 darkness:11', drow_mage: '26-30 bolt:22 fear: ward:', troll: '72-75 claws:9x2 bite:18 hunch: rip:14',
-    gelatinous_cube: '78-82 engulf:14 pseudo:16 quiver:', mind_flayer: '66-66 stitch: incision:15 steady:', sewn: '30-30 wait: heavy:15 guard: lurch:9x2',
-    beholder: '403-403 fear:6 rays:4x4 paralyze:5 disint:18 antimagic:', mimic: '101-106 adhesive:13 chomp:27 disguise:' };
+// ---------- Floor 2 numbers (Nov 3: F2 normal fights raised to ~12-16% HP cost; Surgeon/Sewn and Watcher eased; enemy pass Nov 3: Mimic HP/Chomp and Watcher HP/phase Rays trimmed; floor pass Anna 11:14: F2 normal hits up, Watcher HP 403;
+// boss round Producer 11:46: Watcher 330 HP with harder hits so the F2 boss costs at least as much as the F1 boss, F2 normal hits trimmed to hold the F2 clear) ----------
+{ const want = { ghoul: '22-25 claw:11 bite:17 hunger:10', drow_early: '28-33 crossbow:10 blades:9x2 darkness:9', drow_mage_early: '24-28 bolt:17 fear: ward:',
+    drow: '30-36 crossbow:10 blades:9x2 darkness:10', drow_mage: '26-30 bolt:18 fear: ward:', troll: '72-75 claws:8x2 bite:16 hunch: rip:13',
+    gelatinous_cube: '78-82 engulf:13 pseudo:13 quiver:', mind_flayer: '66-66 stitch: incision:15 steady:', sewn: '30-30 wait: heavy:15 guard: lurch:9x2',
+    beholder: '330-330 fear:9 rays:4x4 paralyze:5 disint:30 antimagic:', mimic: '101-106 adhesive:13 chomp:27 disguise:' };
   for (const [id, w] of Object.entries(want)) ok(stat(id) === w, id + ' numbers: ' + stat(id)); }
 for (const enc of D.FLOORS[0].easy.concat(D.FLOORS[0].hard, D.FLOORS[0].elites, [D.FLOORS[0].boss, 'altar_dead_f1'])) for (const id of D.ENCOUNTERS[enc].enemies)
   ok(!D.MONSTERS[id].phase && !Object.values(D.MONSTERS[id].moves).some(mv => mv.effects.some(f => f.t === 'stripBlock' || f.card === 'acid')), 'no Floor 2 mechanics on Floor 1: ' + id);
