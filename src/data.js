@@ -300,8 +300,8 @@
       moves: {
         claw:  { name: 'Paralyzing Claw', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
         bite:  { name: 'Ravenous Bite', intent: 'attack', effects: [{ t: 'attack', n: 12 }] },
-        chill: { name: 'Grave Chill', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
-      }, ai: { weights: { claw: 35, bite: 40, chill: 25 }, noRepeat: true } },
+        hunger: { name: 'Grave Hunger', intent: 'attack', effects: [{ t: 'attack', n: 6, drain: true }] },
+      }, ai: { weights: { claw: 35, bite: 40, hunger: 25 }, noRepeat: true } },
     // Floor 1 Altar copy of the ghoul (see skeleton_altar).
     ghoul_altar: { name: 'Ghoul', sprite: 'ghoul', variantOf: 'ghoul', hp: [12, 13],
       moves: {

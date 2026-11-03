@@ -427,6 +427,7 @@
     emit(s, { kind: 'hit', target: tgt.uid, source: src && src.uid, amount: loss, blocked, hp: tgt.hp, block: tgt.block });
     if (tgt.hp === 0) died(s, tgt); else if (loss > 0) checkPhase(s, tgt);
     if (isAttack && src && alive(src) && tgt.statuses.thorns) dealDamage(s, src, tgt.statuses.thorns, null, false);
+    return loss;
   }
   function loseHp(s, tgt, n, why) {
     if (!alive(tgt)) return;
@@ -596,7 +597,7 @@
     log(s, `${e.name} uses ${mv.name}.`);
     for (const fx of mv.effects) {
       if (fx.t === 'attack') {
-        for (let i = 0; i < (fx.times || 1); i++) if (alive(tgt) && alive(e)) dealDamage(s, tgt, attackDamage(e, tgt, fx.n), e, true);
+        for (let i = 0; i < (fx.times || 1); i++) if (alive(tgt) && alive(e)) { const lost = dealDamage(s, tgt, attackDamage(e, tgt, fx.n), e, true); if (fx.drain && lost > 0 && alive(e)) heal(s, e, lost); }
       } else if (fx.t === 'block') gainBlock(s, e, fx.n);
       else if (fx.t === 'healAllies') livingEnemies(s).forEach(a => heal(s, a, fx.n));
       else if (fx.t === 'healSelf') heal(s, e, fx.n);
@@ -651,7 +652,7 @@
     }
     const out = { kind: mv.intent, name: mv.name, damage: null, times: 1, block: 0, debuff: false, buff: false };
     for (const fx of mv.effects) {
-      if (fx.t === 'attack') { out.damage = attackDamage(e, tgt, fx.n); out.times = fx.times || 1; }
+      if (fx.t === 'attack') { out.damage = attackDamage(e, tgt, fx.n); out.times = fx.times || 1; if (fx.drain) out.drain = true; }
       if (fx.t === 'block') out.block += fx.n;
       if (fx.t === 'status') { if (D.STATUSES[fx.status].debuff) out.debuff = out.statusDebuff = true; else out.buff = true; }
       if (fx.t === 'stripBlock') { out.debuff = true; out.stripBlock = true; }

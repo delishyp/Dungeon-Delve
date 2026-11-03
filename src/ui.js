@@ -118,6 +118,7 @@
     let ic = '', text = '';
     const parts = [];
     if (i.damage != null) { ic += I('sword', 'in-atk'); text += i.times > 1 ? `${i.damage}×${i.times}` : `${i.damage}`; parts.push(`attack for ${i.damage} damage${i.times > 1 ? ' ' + i.times + ' times' : ''}`); }
+    if (i.drain) parts.push('heal itself for any damage you don\'t block');
     if (i.block) { ic += I('shield', 'in-blk'); parts.push(`gain ${i.block} Block`); }
     if (i.stripBlock) parts.unshift('remove all your Block');
     if (i.cards) { ic += I('curse', 'in-deb'); text += ` +${i.cards}`; parts.push(`put ${i.cards} ${esc(i.cardName)} card${i.cards > 1 ? 's' : ''} in your ${i.cardsTo === 'discard' ? 'discard pile' : 'hand'}`); }

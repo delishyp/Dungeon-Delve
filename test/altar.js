@@ -10,10 +10,10 @@ ok(G.hp.join() === '12,13' && atk('ghoul_altar', 'claw').n === 6 && atk('ghoul_a
 for (const [v, b] of [['skeleton_altar', 'skeleton'], ['ghoul_altar', 'ghoul']]) {
   const m = D.MONSTERS[v], o = D.MONSTERS[b];
   ok(m.variantOf === b && m.sprite === b && m.name === o.name, v + ' is a variant of ' + b + ' (same name and art)');
-  // the Floor 1 copies keep the original's moves by name; the Floor 2 ghoul has one extra (Grave Chill) the F1 copy doesn't get
+  // the Floor 1 copies keep the original's moves by name; the Floor 2 ghoul has one extra (Grave Hunger) the F1 copy doesn't get
   ok(Object.keys(m.moves).every(k => o.moves[k] && o.moves[k].name === m.moves[k].name), v + ' uses the original moves');
   if (v === 'skeleton_altar') ok(Object.keys(m.moves).join() === Object.keys(o.moves).join() && JSON.stringify(m.ai) === JSON.stringify(o.ai), v + ' has the same moves and AI');
-  else ok(!m.moves.chill && Object.keys(m.ai.weights).join() === 'claw,bite', 'ghoul_altar keeps its Floor 1 moveset (no Grave Chill)');
+  else ok(!m.moves.hunger && Object.keys(m.ai.weights).join() === 'claw,bite', 'ghoul_altar keeps its Floor 1 moveset (no Grave Hunger)');
 }
 const F1 = D.ENCOUNTERS.altar_dead_f1, F2 = D.ENCOUNTERS.altar_dead;
 ok(F1.enemies.join() === 'skeleton_altar,skeleton_altar,ghoul_altar' && F1.sameAs === 'altar_dead' && F1.name === F2.name && F1.scene === F2.scene, 'altar_dead_f1 encounter');

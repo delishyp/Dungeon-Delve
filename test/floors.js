@@ -1,4 +1,4 @@
-// Floor plan (Nov 3): below-half phases (Surgeon, Mimic, Watcher), Floor 2 moves (Grave Chill, Poisoned Bolt,
+// Floor plan (Nov 3): below-half phases (Surgeon, Mimic, Watcher), Floor 2 moves (Grave Hunger, Poisoned Bolt,
 // Rip Apart, Cube's Acid), and Floor 1 skeleton/ghoul stats left alone.
 const D = require('../src/data.js'); require('../src/content.js'); const E = require('../src/engine.js');
 let n = 0, chops = 0; const ok = (c, m) => { n++; if (!c) { console.error('FAIL: ' + m); process.exit(1); } };
@@ -85,12 +85,13 @@ for (let seed = 1; seed <= 30; seed++) {
     ok(!E.canPlay(s, p, all[0]) && D.CARDS.acid.combatOnly && D.CARDS.acid.name === 'Acid', 'Acid is unplayable combat-only junk');
     e.hp = 1; e.block = 0; chop(s, e); ok(s.phase !== 'combat', 'cube dies');
     ok(!p.deck.some(c => c.id === 'acid'), 'Acid never enters the deck'); }
-  // Grave Chill: damage + 1 Frightened
-  { const s = fight('ghouls', seed, 1), p = s.players[0], e = s.enemies[0]; s.enemies[1].intent = { move: 'bite', target: p.uid };
-    e.intent = { move: 'chill', target: p.uid }; p.hp = p.maxHp; p.block = 0; delete p.statuses.frightened;
-    E.dispatch(s, { type: 'END_TURN', player: p.uid }); const ev = E.takeEvents(s);
-    ok(ev.some(x => x.kind === 'enemyAct' && x.source === e.uid && x.name === 'Grave Chill'), 'Grave Chill used');
-    ok(ev.some(x => x.kind === 'status' && x.target === p.uid && x.status === 'frightened'), 'Grave Chill Frightens'); }
+  // Grave Hunger: 6 damage, Ghoul heals for the unblocked part
+  { const s = fight('ghouls', seed, 1), p = s.players[0], e = s.enemies[0]; s.enemies[1].intent = { move: 'claw', target: p.uid };
+    s.enemies[1].hp = 0; e.intent = { move: 'hunger', target: p.uid }; p.hp = p.maxHp; p.block = 2; e.hp = 5; delete p.statuses.frightened; delete e.statuses.might;
+    const hp0 = p.hp; E.dispatch(s, { type: 'END_TURN', player: p.uid }); const ev = E.takeEvents(s);
+    const hit = ev.find(x => x.kind === 'hit' && x.target === p.uid && x.source === e.uid);
+    ok(ev.some(x => x.kind === 'enemyAct' && x.source === e.uid && x.name === 'Grave Hunger'), 'Grave Hunger used');
+    ok(hit && ev.some(x => x.kind === 'heal' && x.target === e.uid && x.amount === Math.min(hit.amount, e.maxHp - 5)), 'Grave Hunger heals for unblocked damage'); }
   // Poisoned Bolt: later-row drow only
   { const s = fight('drow_patrol', seed, 1), p = s.players[0], e = s.enemies.find(x => x.monsterId === 'drow');
     s.enemies.forEach(x => { if (x !== e) x.intent = { move: 'ward', target: p.uid }; });
@@ -98,7 +99,7 @@ for (let seed = 1; seed <= 30; seed++) {
     E.dispatch(s, { type: 'END_TURN', player: p.uid }); const ev = E.takeEvents(s);
     ok(ev.some(x => x.kind === 'status' && x.target === p.uid && x.status === 'poisoned' && x.amount === 3), 'Poisoned Bolt: 3 Poisoned'); }
 }
-ok(atk('ghoul', 'chill').n === 7 && D.MONSTERS.ghoul.moves.chill.effects.some(f => f.status === 'frightened' && f.n === 1), 'Grave Chill 7 + Frightened 1');
+ok(atk('ghoul', 'hunger').n === 6 && D.MONSTERS.ghoul.moves.hunger.effects[0].drain === true && !D.MONSTERS.ghoul.moves.chill, 'Grave Hunger 6, drains; Grave Chill gone');
 ok(atk('troll', 'rip').n === 8 && D.MONSTERS.troll.moves.rip.effects[0].t === 'stripBlock', 'Rip Apart: strip Block, then 8');
 const poisons = id => Object.values(D.MONSTERS[id].moves).some(mv => mv.name === 'Poisoned Bolt' || mv.effects.some(f => f.status === 'poisoned'));
 ok(poisons('drow') && !poisons('drow_early'), 'Poisoned Bolt on the later Drow only');
