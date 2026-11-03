@@ -66,12 +66,20 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; const x = cv.getContext('2d'); x.drawImage(img, 0, 0);
     const d = x.getImageData(0, 0, img.width, img.height).data, cs = getComputedStyle(el.querySelector('.cdesc'));
     // the rules box in card fractions (style.css .cdesc: left 8.5%, right 8.5%, top 60%, bottom 6.4%), shrunk 1 % for the box edge
+    // The notch at the bottom centre (MANIFEST: 15 units up from the panel's bottom edge, y ~.912) is the socket's frame-metal rim,
+    // which keeps frame foil; below it sits the gem socket, which must have none (Palette fix 12:05, mask md5 15425104).
     let max = 0; for (let yy = Math.ceil(img.height * .61); yy < img.height * .925; yy++) for (let xx = Math.ceil(img.width * .095); xx < img.width * .905; xx++) {
-      if (yy >= img.height * .9 && xx >= img.width * .44 && xx <= img.width * .56) continue;   // the gem-socket notch rim is frame metal (templates MANIFEST: notch at the bottom centre)
+      if (yy >= img.height * .905 && Math.abs(xx / img.width - .5) <= .06) continue;   // the notch: the socket rim is frame metal and keeps frame foil; the socket itself is checked just below
       max = Math.max(max, d[(yy * img.width + xx) * 4 + 3]); }
-    return { max, top: cs.top };
+    // the gem socket: every pixel the legendary gem covers (its opaque core, drawn at mask size) has mask alpha 0
+    const gi = new Image(); gi.src = window.ASSETS.gem_legendary; await gi.decode();
+    const gc = document.createElement('canvas'); gc.width = img.width; gc.height = img.height; const gx = gc.getContext('2d'); gx.drawImage(gi, 0, 0, img.width, img.height);
+    const gd = gx.getImageData(0, 0, img.width, img.height).data; let gem = 0, gemMax = 0;
+    for (let i = 3; i < gd.length; i += 4) if (gd[i] >= 128) { gem++; gemMax = Math.max(gemMax, d[i]); }
+    return { max, top: cs.top, gem, gemMax };
   });
   ok(alpha.max === 0, 'foil mask is fully transparent over the rules box (max alpha ' + alpha.max + ')');
+  ok(alpha.gem > 300 && alpha.gemMax === 0, 'the gem socket gets no foil (' + alpha.gem + ' gem pixels, max mask alpha ' + alpha.gemMax + ')');
 
   // ---- 3) hand tilt: mouse over the legendary tilts it up to 6 deg; the hover lift stays ----
   let c = await q('.hand .card[data-card="tl1"]');
