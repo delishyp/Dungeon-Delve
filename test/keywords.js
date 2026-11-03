@@ -197,6 +197,13 @@ const fresh = (enc) => { const f = fight(enc); f.p.hp = f.p.maxHp; return f; };
 { const { s, p } = fresh(), c = give(p, 'kw_van_lw'); E.dispatch(s, { type: 'END_TURN', player: p.uid }); const ev = E.takeEvents(s);
   eq(where(p, c), ['exhaust'], 'unplayed Vanish card vanished'); eq(p.statuses.might, 1, 'its Last Word happened'); ok(ev.findIndex(x => x.kind === 'vanish') < ev.findIndex(x => x.kind === 'lastWord'), 'vanish, then Last Word'); }
 { const { s, p } = fresh(), c = give(p, 'kw_van_lw'); const { ev } = play(s, p, c, null); ok(!p.statuses.might && !ev.some(x => x.kind === 'lastWord'), 'a played Vanish card does not trigger its Last Word (Parting Shot rule)'); }
+// Merge of fighter-styles-r2 (Retain) with Vanish at turn end: retained cards stay, unplayed Vanish cards go to the exhaust
+// pile with their Last Word, everything else is discarded. Kindling doesn't fire on a Vanish (Anna 11:33: Vanish isn't Exhaust).
+{ const { s, p } = fresh(); p.powers = [{ uid: 'kwk', id: 'kindling' }]; const keep = give(p, 'wait_for_it'), van = give(p, 'kw_van_lw'), plain = give(p, 'kw_plain');
+  E.dispatch(s, { type: 'END_TURN', player: p.uid }); const ev = E.takeEvents(s);
+  eq([where(p, keep), where(p, van), where(p, plain)], [['hand'], ['exhaust'], ['discard']], 'end of turn: Retain stays, Vanish exhausts, the rest discards');
+  eq([p.statuses.might, ev.filter(x => x.kind === 'lastWord').length, p.statuses.rage || 0, p.fightExhausted], [1, 1, 0, 0], 'the Vanish Last Word fires once; no Kindling Rage, What\'s Left count unchanged'); }
+ok(/Retain and Vanish|retain/i.test(throws(() => D.checkKeywordData({ wait_for_it: Object.assign({}, D.CARDS.wait_for_it, { vanish: true }) })) || ''), 'a Retain card from fighter-styles-r2 with Vanish fails the data check');
 { const { s, p } = fresh(), c = give(p, 'kw_van_lw_eternal'); E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); ok(!p.statuses.might, 'Eternal blocks the Vanish, so no Last Word'); }
 { const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kw_fade_lw'); c.fightPlays = 1; p.statuses.frightened = 2; const { ev } = play(s, p, c, e);
   eq(where(p, c), ['exhaust'], 'Fading card at 0 exhausts'); ok(!p.statuses.frightened && ev.some(x => x.kind === 'lastWord'), 'and its Last Word happens (debuffs removed)'); }

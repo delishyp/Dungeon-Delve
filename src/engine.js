@@ -488,7 +488,7 @@
     s.enemies = enc.enemies.map(id => makeEnemy(s, id));
     for (const p of livingPlayers(s)) {
       p.draw = shuffle(s, p.deck.map(c => ({ ...c })));
-      p.hand = []; p.discard = []; p.exhaust = []; p.powers = []; p.fightExhausted = 0; p.block = 0; p.statuses = {}; p.fresh = {}; p.reward = null; p.turnFx = {}; p.enemyTurnFx = {};
+      p.hand = []; p.discard = []; p.exhaust = []; p.powers = []; p.fightExhausted = 0; p.block = 0; p.statuses = {}; p.fresh = {}; p.reward = null; p.turnFx = {}; p.enemyTurnFx = {}; p.fightFx = {};
     }
     log(s, `— ${enc.name} —`);
     emit(s, { kind: 'encounter', name: enc.name });
@@ -616,6 +616,8 @@
   function heal(s, t, n) {
     const amt = Math.max(0, Math.min(n, t.maxHp - t.hp)); t.hp += amt;
     if (amt) emit(s, { kind: 'heal', target: t.uid, amount: amt, hp: t.hp, block: t.block });
+    // Old Scars (F5): in a fight, every heal also gives that much Block (the HP actually healed), per Power in play.
+    if (amt && s.phase === 'combat') for (const d of powerDefs(t)) if (d.power.healToBlock) { emit(s, { kind: 'powerTrigger', source: t.uid, card: d.id }); gainBlock(s, t, amt); }
   }
   // `self` = applied by its owner during its own turn: skip the next decay so it lasts through the enemy turn.
   function addStatus(s, t, status, n, self) {
@@ -672,10 +674,21 @@
   function endPlayerTurn(s, p) {
     p.endedTurn = true;
     if (livingPlayers(s).some(x => !x.endedTurn)) return; // co-op: wait for everyone
+    // The Wall Holds (F1): at the end of the hero's turn, half their Block (rounded down) to ALL enemies. Not an attack (no Might).
+    for (const pl of livingPlayers(s)) for (const d of powerDefs(pl)) {
+      const k = d.power.endTurnBlockToAll, n = k ? Math.floor(pl.block * k) : 0;
+      if (n > 0 && livingEnemies(s).length) { emit(s, { kind: 'powerTrigger', source: pl.uid, card: d.id }); livingEnemies(s).forEach(e => dealDamage(s, e, n, pl, false)); }
+    }
+    if (checkEnd(s)) return;
     for (const pl of livingPlayers(s)) {
       for (const c of pl.hand) { const d = D.CARDS[c.id]; if (d.endTurnHpLoss) loseHp(s, pl, d.endTurnHpLoss, 'curse'); }
+      // End of turn: first, unplayed Vanish cards leave the hand (to the exhaust pile, Last Word fires; vanishAtTurnEnd).
+      // Then Retain (shared keyword, Anna 10:41/10:42): a card with `retain` stays in hand; the rest is discarded.
+      // A card can't be both Retain and Vanish (checkKeywordData fails loudly), so the order never decides a card's fate.
+      // Fight end still clears the hand.
       vanishAtTurnEnd(s, pl);
-      pl.discard.push(...pl.hand); pl.hand = [];
+      const kept = pl.hand.filter(c => cardDef(c).retain);
+      pl.discard.push(...pl.hand.filter(c => !cardDef(c).retain)); pl.hand = kept;
       if (pl.statuses.regen) heal(s, pl, pl.statuses.regen);
       decayStatuses(pl);
     }
@@ -815,6 +828,15 @@
     return out;
   }
 
+  // Read the Opening (F2): the first hit a hero lands each turn on a Prone or Frightened enemy deals double (that hit only).
+  function openingHit(s, p, tgt, d) {
+    if (!p || p.side !== 'player' || !tgt || tgt.side !== 'enemy' || !(tgt.statuses.prone || tgt.statuses.frightened)) return d;
+    p.turnFx = p.turnFx || {};
+    if (p.turnFx.opening || !powerDefs(p).some(x => x.power.openingDouble)) return d;
+    p.turnFx.opening = true; emit(s, { kind: 'powerTrigger', source: p.uid, card: 'read_the_opening' });
+    return d * 2;
+  }
+
   // ---------- effects (cards and relics) ----------
   function runEffects(s, p, effects, tgt, c) {
     let blockSoFar = 0;
@@ -823,18 +845,18 @@
       const times = fx.timesFrom ? (p.statuses[fx.timesFrom] || 0) : (fx.times || 1);
       switch (fx.t) {
         case 'damage': for (let i = 0; i < times; i++) if (alive(tgt)) {
-          const lost = dealDamage(s, tgt, attackDamage(p, tgt, attackBase(p, fx)), p, true);
+          const lost = dealDamage(s, tgt, openingHit(s, p, tgt, attackDamage(p, tgt, attackBase(p, fx))), p, true);
           if (fx.ragePerUnblocked && lost > 0) addStatus(s, p, 'rage', fx.ragePerUnblocked, true);   // Bloodied Knuckles
         } break;
         case 'loseHp': loseHp(s, p, fx.n, 'self'); break;
         case 'goad': if (tgt) goad(s, p, tgt); break;
-        case 'damageAll': for (let i = 0; i < times; i++) livingEnemies(s).forEach(e => dealDamage(s, e, attackDamage(p, e, attackBase(p, fx)), p, true)); break;
+        case 'damageAll': for (let i = 0; i < times; i++) livingEnemies(s).forEach(e => dealDamage(s, e, openingHit(s, p, e, attackDamage(p, e, attackBase(p, fx))), p, true)); break;
         case 'damageAllRaw': livingEnemies(s).forEach(e => dealDamage(s, e, fx.n, null, false)); break;
-        case 'damageFromBlock': if (alive(tgt)) dealDamage(s, tgt, attackDamage(p, tgt, p.block), p, true); break;
+        case 'damageFromBlock': if (alive(tgt)) dealDamage(s, tgt, openingHit(s, p, tgt, attackDamage(p, tgt, p.block)), p, true); break;
         // What's Left: one hit of n for each card Exhausted this fight ("X times" is the multi-hit wording, Producer 11:35)
-        case 'damagePerExhausted': if (alive(tgt)) dealDamage(s, tgt, attackDamage(p, tgt, attackBase(p, { ...fx, n: fx.n * (p.fightExhausted || 0) })), p, true); break;
+        case 'damagePerExhausted': if (alive(tgt)) dealDamage(s, tgt, openingHit(s, p, tgt, attackDamage(p, tgt, attackBase(p, { ...fx, n: fx.n * (p.fightExhausted || 0) }))), p, true); break;
         // Parting Shot's Last Word: one attack hit on a random enemy that can be targeted (no target needed on the card)
-        case 'damageRandom': for (let i = 0; i < times; i++) { const l = targetableEnemies(s); if (!l.length) break; const e = pick(s, l); dealDamage(s, e, attackDamage(p, e, attackBase(p, fx)), p, true); } break;
+        case 'damageRandom': for (let i = 0; i < times; i++) { const l = targetableEnemies(s); if (!l.length) break; const e = pick(s, l); dealDamage(s, e, openingHit(s, p, e, attackDamage(p, e, attackBase(p, fx))), p, true); } break;
         case 'block': gainBlock(s, p, fx.n); blockSoFar += fx.n; break;
         case 'heal': heal(s, p, fx.n); break;
         case 'maxHp': p.maxHp += fx.n; heal(s, p, fx.n); break;
@@ -901,6 +923,7 @@
     if (def.type === 'power') { (p.powers = p.powers || []).push(c); emit(s, { kind: 'powerPlayed', source: p.uid, card: c.id, up: !!c.up }); }
     else if (def.exhaust || fadedOut) exhaustCard(s, p, c);
     else p.discard.push(c);
+    afterCardPlayed(s, p, def);   // once per card played, after any Repeat/Replay plays (Fighter F3 Drill, F4 Tempo)
     for (const { e, before } of shovers) {   // one big hit shoves one status card off (Beast's Grand Slam)
       const sh = D.MONSTERS[e.monsterId].shove, k = p.hand.findIndex(x => x.id === sh.card);
       if (k >= 0 && before - (Math.max(0, e.hp) + e.block) >= sh.at) {
@@ -941,6 +964,23 @@
 
   // Counts a play of a card copy this fight: a Replay counts twice, Repeat once (Producer 11:56). The Fading hook reads this.
   function notePlay(s, p, c) { c.fightPlays = (c.fightPlays || 0) + 1; }
+
+  // Per-turn card hooks (Fighter F3 Drill, F4 Tempo): one cards-played-this-turn counter (turnFx, reset each turn).
+  function afterCardPlayed(s, p, def) {
+    if (s.phase !== 'combat' || !alive(p)) return;
+    p.turnFx = p.turnFx || {}; p.fightFx = p.fightFx || {};
+    const played = p.turnFx.played = (p.turnFx.played || 0) + 1;
+    for (const d of powerDefs(p)) {
+      const P = d.power;
+      if (P.thirdCardMight && played === 3) {   // Ten Thousand Drills: the third card each turn, capped per fight
+        const n = Math.min(P.thirdCardMight, (P.thirdCardMightCap || Infinity) - (p.fightFx.drillMight || 0));
+        if (n > 0) { p.fightFx.drillMight = (p.fightFx.drillMight || 0) + n; emit(s, { kind: 'powerTrigger', source: p.uid, card: d.id }); addStatus(s, p, 'might', n, true); }
+      }
+      if (P.zeroCostDraw && def.cost === 0 && (p.turnFx.zeroDraw || 0) < (P.zeroCostDrawPerTurn || Infinity)) {   // No Wasted Motion
+        p.turnFx.zeroDraw = (p.turnFx.zeroDraw || 0) + 1; emit(s, { kind: 'powerTrigger', source: p.uid, card: d.id }); drawCards(s, p, P.zeroCostDraw);
+      }
+    }
+  }
 
   /* Live card text: returns the description with {i} replaced by the current value.
    * Changed values are wrapped as «+N» (better than printed) or «-N» (worse). */

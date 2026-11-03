@@ -147,7 +147,7 @@ for (const id of ['blood_up', 'last_tally', 'scar_tissue', 'bear_beneath']) {
   ok(p.powers.some(x => x.uid === c.uid) && ![p.hand, p.draw, p.discard, p.exhaust].some(x => x.some(y => y.uid === c.uid)), id + ' stays in play, out of the piles');
 }
 ok(['enraged', 'last_tally', 'bear_beneath'].every(id => D.CARDS[id].rarity === 'legendary'), 'Enraged, The Last Tally, The Bear Beneath are legendary');
-ok(Object.values(D.CARDS).filter(d => d.rarity === 'legendary').every(d => d.cls === 'barbarian'), 'only the Barbarian has legendaries so far');
+ok(Object.values(D.CARDS).filter(d => d.rarity === 'legendary').every(d => d.cls === 'barbarian' || d.cls === 'fighter'), 'only the Barbarian and the Fighter have legendaries so far');
 { const bar = { legendary: 0, other: 0 };
   for (let seed = 1; seed <= 300; seed++) {
     const s = E.newGame({ seed, heroes: ['barbarian'] }), p = s.players[0];
@@ -185,5 +185,104 @@ ok(Object.values(D.CARDS).filter(d => d.rarity === 'legendary').every(d => d.cls
   for (const f of fs.readdirSync(dir)) if (f !== 'PLACEHOLDERS.md') ok(/^placeholder_[a-z0-9_]+\.webp$/.test(f) && D.CARDS[f.slice(12, -5)], 'placeholder named placeholder_<card id>.webp: ' + f);
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   for (const id of NEW) ok(html.includes('"placeholder_' + id + '":"data:image/webp;base64,'), 'built index.html carries placeholder_' + id);
+}
+// =================== Fighter deck styles F1-F5 (Anna 10:41) and the shared Retain keyword (10:42) ===================
+const FNEW = ['the_wall_holds', 'read_the_opening', 'form_and_repeat', 'ten_thousand_drills', 'hilt_to_the_teeth', 'give_ground', 'wait_for_it', 'no_wasted_motion', 'field_dressing', 'old_scars'];
+function ffight(enc = 'lone_goblin', seed = 5, hero = 'fighter') {
+  const s = E.newGame({ seed, heroes: [hero] }); E.startEncounter(s, enc); E.takeEvents(s);
+  const p = s.players[0]; p.maxHp = p.hp = 9999; p.hand = []; p.statuses = {}; p.fresh = {}; p.block = 0;
+  for (const e of s.enemies) { e.maxHp = e.hp = 9999; e.block = 0; e.statuses = {}; }
+  return { s, p, e: s.enemies[0] };
+}
+const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid && !x.why);
+// ---------- card data as written ----------
+{ const b = (id) => D.CARDS[id], u = (id) => E.cardDef({ id, up: true });
+  ok(FNEW.every(id => b(id) && b(id).cls === 'fighter'), 'all ten new Fighter cards exist');
+  ok(['the_wall_holds', 'read_the_opening', 'ten_thousand_drills', 'no_wasted_motion', 'old_scars'].every(id => b(id).type === 'power' && b(id).rarity === 'legendary'), 'five legendary Powers');
+  ok(['the_wall_holds', 'no_wasted_motion', 'old_scars'].every(id => b(id).cost === 2 && u(id).cost === 1), 'The Wall Holds, No Wasted Motion, Old Scars: cost 2, upgraded 1');
+  ok(['read_the_opening', 'ten_thousand_drills'].every(id => b(id).cost === 3 && u(id).cost === 2), 'Read the Opening, Ten Thousand Drills: cost 3, upgraded 2 (balance nudge)');
+  ok(['hilt_to_the_teeth', 'give_ground', 'wait_for_it'].every(id => b(id).rarity === 'common' && b(id).cost === 0), 'three 0-cost Tempo commons');
+  ok(['form_and_repeat', 'field_dressing'].every(id => b(id).rarity === 'rare'), 'Form and Repeat and Field Dressing are rare');
+  ok(b('hilt_to_the_teeth').effects[0].n === 6 && u('hilt_to_the_teeth').effects[0].n === 8, 'Hilt to the Teeth 6 (upgraded 8)');
+  ok(b('give_ground').effects[0].n === 6 && u('give_ground').effects[0].n === 8, 'Give Ground 6 Block (upgraded 8)');
+  ok(b('wait_for_it').retain && b('wait_for_it').effects[0].n === 2 && u('wait_for_it').effects[0].n === 3 && u('wait_for_it').retain, 'Wait for It: Retain, draw 2 (upgraded 3, still Retain)');
+  ok(E.cardText(null, null, { id: 'wait_for_it', up: true }) === 'Draw «+3» cards.', 'Wait for It+ text: ' + E.cardText(null, null, { id: 'wait_for_it', up: true }));
+  ok(b('form_and_repeat').cost === 0 && b('form_and_repeat').effects.map(f => f.n).join() === '4,1' && u('form_and_repeat').effects.map(f => f.n).join() === '6,1', 'Form and Repeat 0: 4 Block draw 1 (upgraded 6)');
+  ok(b('field_dressing').cost === 1 && b('field_dressing').retain && b('field_dressing').exhaust && b('field_dressing').effects[0].n === 8 && u('field_dressing').effects[0].n === 11, 'Field Dressing 1: heal 8, Retain, Exhaust (upgraded 11)');
+  ok(b('ten_thousand_drills').power.thirdCardMightCap === 5 && u('ten_thousand_drills').power.thirdCardMightCap === 5 && u('no_wasted_motion').power.zeroCostDrawPerTurn === 3, 'caps never change on upgrade (Drills 5, No Wasted Motion 3 a turn)');
+  for (const id of FNEW) { ok(!/\{\d\}/.test(E.cardText(null, null, { id })) && !/\{\d\}/.test(E.cardText(null, null, { id, up: true })), id + ' text fills in'); ok(u(id).name === b(id).name + '+', id + '+ named'); }
+  for (let seed = 1; seed <= 300; seed++) { const f = E.newGame({ seed, heroes: ['fighter'] }); ok(E.rollCardRewards(f, f.players[0], 3, 'boss').every(id => D.CARDS[id].rarity === 'legendary'), 'Fighter boss rewards are legendary now'); }
+  for (let seed = 1; seed <= 300; seed++) { const f = E.newGame({ seed, heroes: ['fighter'] }); ok(E.rollCardRewards(f, f.players[0], 3, 'fight').every(id => D.CARDS[id].rarity !== 'legendary'), 'no legendaries outside boss rewards'); }
+}
+// ---------- F1 The Wall Holds: half your Block (rounded down) to ALL enemies at the end of your turn, not an attack ----------
+{ const { s, p } = ffight('kobolds'); play(s, p, 'the_wall_holds', false); p.statuses.might = 3; p.block = 21;
+  s.enemies.forEach(e => enemyHits(s, e, 0, 1)); const ev = endTurn(s, p);
+  const h = mine(ev, p); ok(h.length === s.enemies.length && h.every(x => x.amount + x.blocked === 10), 'The Wall Holds: 21 Block -> 10 to each enemy, Might not added: ' + h.map(x => x.amount + x.blocked));
+  const i = ev.findIndex(x => x.kind === 'enemyTurn'); ok(ev.findIndex(x => x === h[0]) < i, 'it fires before the enemies act');
+  const { s: s2, p: p2 } = ffight(); play(s2, p2, 'the_wall_holds', false); p2.block = 1; enemyHits(s2, s2.enemies[0], 0, 1); ok(mine(endTurn(s2, p2), p2).length === 0, 'Block 1 -> 0 damage, no hit'); }
+{ const { s, p, e } = ffight(); e.hp = 5; play(s, p, 'the_wall_holds', false); p.block = 12; enemyHits(s, e, 50, 1);
+  endTurn(s, p); ok(s.phase === 'reward' && p.hp === 9999, 'The Wall Holds can win the fight at end of turn (enemy never acts)'); }
+// ---------- F2 Read the Opening: the first hit each turn on a Prone or Frightened enemy is doubled (that hit only) ----------
+{ const { s, p, e } = ffight(); play(s, p, 'read_the_opening', false);
+  let h = mine(play(s, p, 'strike', false, e).ev, p); ok(h[0].amount === 6, 'no Prone/Frightened: normal 6');
+  e.statuses.prone = 2; h = mine(play(s, p, 'strike', false, e).ev, p); ok(h[0].amount === 18, 'first hit on Prone: 6 x1.5 x2 = 18 (x3 as Tester checked): ' + h[0].amount);
+  h = mine(play(s, p, 'strike', false, e).ev, p); ok(h[0].amount === 9, 'second hit that turn: Prone only, 9');
+  e.statuses.prone = 2; enemyHits(s, e, 0, 1); endTurn(s, p); e.statuses = { frightened: 2 };
+  h = mine(play(s, p, 'strike', false, e).ev, p); ok(h[0].amount === 12, 'next turn, first hit on Frightened: 12');
+  e.statuses = { prone: 2 }; h = mine(play(s, p, 'whirlwind', false).ev, p); ok(h.map(x => x.amount).join() === '7,7', 'multi-hit card: only the first hit of the turn is doubled, and it was used this turn already'); }
+{ const { s, p, e } = ffight(); play(s, p, 'read_the_opening', false); e.statuses.prone = 2;
+  const h = mine(play(s, p, 'whirlwind', false).ev, p); ok(h.map(x => x.amount).join() === '14,7', 'Whirlwind 5x2 on Prone: 7 -> 14 first hit only, then 7'); }
+{ const { s, p, e } = ffight(); e.statuses.prone = 2; ok(mine(play(s, p, 'strike', false, e).ev, p)[0].amount === 9, 'without the Power, Prone is the usual x1.5'); }
+// ---------- F3 Ten Thousand Drills: the third card each turn gives 1 Might, up to 5 a fight ----------
+{ const { s, p, e } = ffight(); play(s, p, 'ten_thousand_drills', false); play(s, p, 'defend', false);
+  ok(!p.statuses.might, 'two cards played: no Might yet'); play(s, p, 'defend', false); ok(p.statuses.might === 1, 'third card (the Power counts as the first): 1 Might');
+  play(s, p, 'defend', false); play(s, p, 'defend', false); play(s, p, 'defend', false); ok(p.statuses.might === 1, 'only the third card each turn');
+  for (let t = 0; t < 7; t++) { enemyHits(s, e, 0, 1); endTurn(s, p); p.hand = []; for (let i = 0; i < 3; i++) play(s, p, 'defend', false); }
+  ok(p.statuses.might === 5, 'capped at 5 Might from Drills in a fight: ' + p.statuses.might);
+  E.startEncounter(s, 'rat_swarm'); E.takeEvents(s); ok(!p.fightFx.drillMight, 'the cap resets next fight'); }
+// ---------- F4 No Wasted Motion: draw 1 on each 0-cost card, up to 3 a turn ----------
+{ const { s, p, e } = ffight(); play(s, p, 'no_wasted_motion', false); const d0 = p.draw.length;
+  let h0 = p.hand.length; play(s, p, 'hilt_to_the_teeth', false, e); ok(p.hand.length === h0 + 1 && p.draw.length === d0 - 1, '0-cost card draws 1');
+  play(s, p, 'strike', false, e); ok(p.draw.length === d0 - 1, '1-cost card draws nothing');
+  play(s, p, 'give_ground', false); play(s, p, 'wait_for_it', false); ok(p.draw.length === d0 - 3 - 2, 'Wait for It draws its own 2 plus 1 from the Power');
+  play(s, p, 'hilt_to_the_teeth', false, e); ok(p.draw.length === d0 - 5, 'fourth 0-cost card in a turn: no extra draw (max 3)');
+  enemyHits(s, e, 0, 1); endTurn(s, p); p.hand = []; play(s, p, 'precision_attack', false, e);
+  ok(p.hand.length === 2, 'the 3-a-turn limit resets next turn (Precision Attack draws 1 + 1)'); }
+{ const { s, p, e } = ffight(); play(s, p, 'no_wasted_motion', true); const d0 = p.draw.length; p.hand = [];
+  play(s, p, 'strike', true, e); ok(p.draw.length === d0, 'an upgraded 1-cost card still costs 1: no draw'); }
+// ---------- F5 Old Scars: whenever you heal in a fight, gain that much Block ----------
+{ const { s, p } = ffight(); play(s, p, 'old_scars', false); p.hp = p.maxHp - 20; p.block = 0;
+  play(s, p, 'field_dressing', false); ok(p.block === 8 && p.hp === p.maxHp - 12, 'Field Dressing heal 8 -> 8 Block');
+  p.hp = p.maxHp - 2; play(s, p, 'second_wind', false); ok(p.block === 10, 'only the HP actually healed counts (2 of 4)');
+  p.hp = p.maxHp; play(s, p, 'healing_potion', false); ok(p.block === 10, 'full HP: no heal, no Block'); }
+{ const { s, p } = ffight(); p.hp = p.maxHp - 20; play(s, p, 'field_dressing', false); ok(p.block === 0, 'without Old Scars, healing gives no Block'); }
+// ---------- Retain (shared keyword) ----------
+{ const { s, p, e } = ffight(); const keep = { uid: 'rt1', id: 'wait_for_it' }, fd = { uid: 'rt2', id: 'field_dressing', up: true }, sb = { uid: 'rt3', id: 'defend' };
+  p.hand.push(keep, fd, sb); enemyHits(s, e, 0, 1); endTurn(s, p);
+  ok(p.hand.some(c => c.uid === 'rt1') && p.hand.some(c => c.uid === 'rt2'), 'Retain cards stay in hand at the end of the turn');
+  ok(!p.hand.some(c => c.uid === 'rt3') && p.discard.some(c => c.uid === 'rt3'), 'a normal card is discarded as usual');
+  let t = JSON.parse(JSON.stringify(s)); ok(t.players[0].hand.some(c => c.uid === 'rt1'), 'retained card survives save/reload');
+  p.energy = 3; const hp0 = (p.hp = p.maxHp - 15); E.dispatch(s, { type: 'PLAY_CARD', player: p.uid, card: 'rt2' }); E.takeEvents(s);
+  ok(p.exhaust.some(c => c.uid === 'rt2') && p.hp === hp0 + 11, 'a retained card still plays normally (Field Dressing+ heals 11, then Exhausts)');
+  e.hp = 1; play(s, p, 'strike', false, e); ok(s.phase === 'reward', 'fight won');
+  ok(p.hand.length === 0 && p.discard.some(c => c.uid === 'rt1'), 'fight end clears retained cards from the hand'); }
+{ const { s, p, e } = ffight('lone_goblin', 7, 'barbarian'); p.hand.push({ uid: 'rb1', id: 'wait_for_it' }); enemyHits(s, e, 0, 1); endTurn(s, p);
+  ok(p.hand.some(c => c.uid === 'rb1'), 'Retain is shared: it works for any hero (Anna 10:42)'); }
+{ ok(/stays in your hand/.test(D.KEYWORDS.Retain), 'Retain keyword tooltip');
+  // Retain is a keyword line (Anna 11:17): never in the desc itself, written once as its own 'Retain.' line after the effect.
+  for (const id in D.CARDS) for (const up of [false, true]) {
+    const d = E.cardDef({ id, up });
+    ok(!/\bRetain\b/i.test(d.desc || ''), id + ': Retain is not part of the desc (the card face adds the keyword line)');
+    ok(D.keywordLines(d).includes('Retain') === !!d.retain, id + (up ? '+' : '') + ': Retain keyword line iff the card has retain');
+  }
+  for (const id of ['wait_for_it', 'field_dressing']) ok(D.keywordLines(D.CARDS[id]).join() === 'Retain', id + ': one Retain. line');
+  const ui = fs.readFileSync(path.join(__dirname, '..', 'src', 'ui.js'), 'utf8');
+  ok(/D\.keywordLines\(def\)/.test(ui) && !/cardTags|ctag(?!bg)/.test(ui), 'Retain is drawn as a keyword line in the rules box, no tag pill'); }
+// ---------- placeholders for the Fighter cards ----------
+{ const dir = path.join(__dirname, '..', 'assets', 'placeholder'), md = fs.readFileSync(path.join(dir, 'PLACEHOLDERS.md'), 'utf8');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  for (const id of FNEW) { const f = 'placeholder_' + id + '.webp', has = fs.existsSync(path.join(__dirname, '..', 'assets', 'card_' + (D.CARDS[id].art || id) + '.webp'));
+    ok(has || (fs.existsSync(path.join(dir, f)) && md.includes('`' + f + '`')), id + ' has art or a listed placeholder');
+    if (!has) ok(html.includes('"placeholder_' + id + '":"data:image/webp;base64,'), 'built index.html carries placeholder_' + id); }
 }
 console.log('deckstyles ok (' + n + ' checks)');
