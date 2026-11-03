@@ -1,5 +1,5 @@
 // demo.2 text (Lorekeeper, lore/text/demo_text_v1.md sections 1-4, Tester passed 1-3; section 4 v1.1 wired Nov 3): pinned word
-// for word, ids unchanged, and no placeholder / retired text left in the built page.
+// for word (re-checked against Lorekeeper's 18:4x update), ids unchanged, and no placeholder / retired text left in the built page.
 const fs = require('fs'), path = require('path');
 global.window = global; const D = require('../src/data.js'); require('../src/content.js');
 let n = 0; const ok = (c, m) => { n++; if (!c) { console.error('FAIL', m); process.exit(1); } };
@@ -46,5 +46,6 @@ for (const f of ['src/data.js', 'src/content.js', 'index.html']) {
   const p = path.join(__dirname, '..', f); if (!fs.existsSync(p)) continue;
   const t = fs.readFileSync(p, 'utf8');
   for (const r of RETIRED) ok(!t.includes(r), `"${r}" left in ${f}`);
+  ok(!/none reach the end/i.test(t), `"none reach the end" left in ${f}`);
 }
 console.log(`demotext ok (${n} checks)`);
