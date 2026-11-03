@@ -382,7 +382,7 @@ body.touch .card.selected{transform:translateY(-48px) scale(1.45)!important;z-in
 .card[data-rar="curse"],.card[data-rar="status"]{--g1:#b3c48a;--g2:#3e4a2a;--g3:#0a0d06}
 .cface{position:absolute;inset:0;border-radius:inherit;overflow:hidden;background:#120c10}
 .cart{position:absolute;left:3%;top:2.2%;width:94%;height:95.6%;object-fit:cover;object-position:50% 26%;pointer-events:none}
-.cframe{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.cframe,.clayer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}   /* template layers: frame, banner, tag, gem */
 .uptrim{position:absolute;inset:2.4% 3.4%;border-radius:calc(var(--cw) * .04);box-shadow:inset 0 0 0 2px #8dffb4,inset 0 0 calc(var(--cw) * .09) #4dff8a99;pointer-events:none}
 .card .cname{position:absolute;left:19%;right:19%;top:3.9%;height:9%;display:flex;align-items:center;justify-content:center;text-align:center;
   font-weight:bold;font-size:calc(var(--cw) * .073);line-height:1;color:#fff4dc;text-shadow:0 1px 2px #000,0 0 5px #000;letter-spacing:.01em;pointer-events:none}

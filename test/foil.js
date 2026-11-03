@@ -1,7 +1,7 @@
 // Legendary foil + card inspect (ROADMAP row 8): a legendary gets the foil layers and its mask (default Enraged, or its own
 // foil_mask_<id>), a normal card doesn't, the foil never shows on the rules box, the inspect view opens / tilts / closes
 // (right-click in combat, left-click in the deck view and compendium) without playing the card, and nothing is logged.
-// No legendary exists in data.js yet: the test injects one (a copy of Frenzied Strike) into the page only.
+// The test injects a legendary (a copy of Frenzied Strike) into the page only.
 const path = require('path');
 let n = 0; const ok = (c, m) => { n++; if (!c) { console.error('FAIL', m); process.exit(1); } };
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -30,46 +30,45 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const face = el.querySelector('.cface'), kids = [...face.children].map(c => c.className);
     const mask = getComputedStyle(el.querySelector('.foil-sheen')).webkitMaskImage || getComputedStyle(el.querySelector('.foil-sheen')).maskImage;
     return { foil: el.classList.contains('foil'), layers: el.querySelectorAll('.foil-l').length, kids, mask: mask.slice(0, 60), maskLen: mask.length,
-      def: (window.ASSETS.foil_mask_enraged || '').slice(0, 40), defLen: (window.ASSETS.foil_mask_enraged || '').length,
+      def: (window.ASSETS.foil_mask_frame_attack_legendary || '').slice(0, 40), defLen: (window.ASSETS.foil_mask_frame_attack_legendary || '').length, tpl: el.dataset.tpl,
       nrmFoil: nrm.classList.contains('foil') || !!nrm.querySelector('.foil-l,.insp-sheen'), anyNormalBlend: [...document.querySelectorAll('.card:not([data-rar="legendary"]) .foil-l')].length };
   });
   ok(L.foil && L.layers === 3, 'legendary in hand has the foil class and 3 foil layers');
-  ok(/^data:image\/webp;base64,/.test(L.def) && L.defLen > 1000, 'default mask (foil_mask_enraged) is built in as a data URI');
-  ok(L.mask.includes('data:image/webp;base64,') && L.maskLen >= L.defLen, 'legendary uses the default Enraged mask: ' + L.mask);
+  ok(/^data:image\/webp;base64,/.test(L.def) && L.defLen > 1000, 'legendary attack frame mask (foil_mask_frame_attack_legendary) is built in as a data URI');
+  ok(L.tpl === 'attack_legendary' && L.mask.includes('data:image/webp;base64,') && L.maskLen >= L.defLen, 'legendary attack uses its frame\'s own mask: ' + L.tpl + ' ' + L.mask);
   ok(!L.nrmFoil && L.anyNormalBlend === 0, 'normal cards carry no foil or blend layers');
   const iS = L.kids.findIndex(k => /foil-sweep/.test(k)), iD = L.kids.findIndex(k => /cdesc/.test(k)), iN = L.kids.findIndex(k => /cname/.test(k));
   ok(iS > 0 && iS < iD && iS < iN && L.kids.indexOf('cframe') < L.kids.findIndex(k => /foil-sheen/.test(k)), 'foil layers sit above the frame and under all text: ' + L.kids.join(','));
-  // Power cards use the Moonsilver frame (Anna, Nov 3: art/ui/frames_power/frame_power_A.svg -> assets/frame_power.svg); other types keep theirs
+  // Card templates (Palette rev 4 + cut gems): frame_/banner_/tag_<type>_<rarity> + gem_<rarity>; powers use the Moonsilver power_*;
+  // curse and status have single frames and no gem; each legendary frame has its own foil mask.
   const PF = await pg.evaluate(() => {
-    const g = window.__game, p = g.state.players[0], A = window.ASSETS;
-    p.hand.push({ id: 'bear_totem', uid: 'pw1' }); g.render();
-    const src = (uid) => document.querySelector(`.hand .card[data-card="${uid}"] .cframe`).getAttribute('src');
-    const atk = [...document.querySelectorAll('.hand .card')].find(c => c.classList.contains('attack') && c.dataset.frame === 'attack');
-    const r = { has: !!A.frame_power && /^data:image\/svg\+xml/.test(A.frame_power), pw: src('pw1') === A.frame_power, atk: !!atk && atk.querySelector('.cframe').getAttribute('src') === A.frame_attack,
-      notPowerFrame: [...document.querySelectorAll('.hand .card:not(.power) .cframe')].every(f => f.getAttribute('src') !== A.frame_power) };
-    p.hand = p.hand.filter(x => x.uid !== 'pw1'); g.render(); return r;
+    const g = window.__game, D = window.GameData, p = g.state.players[0], A = window.ASSETS;
+    D.CARDS.test_legendary_pw = Object.assign({}, D.CARDS.bear_totem, { name: 'Test Legend Power', rarity: 'legendary' });
+    p.hand.push({ id: 'bear_totem', uid: 'pw1' }, { id: 'test_legendary_pw', uid: 'pw2' }, { id: 'curse_regret', uid: 'cu1' }, { id: 'acid', uid: 'st1' }); g.render();
+    const el = (uid) => document.querySelector(`.hand .card[data-card="${uid}"]`);
+    const srcs = (uid) => [...el(uid).querySelectorAll('.cframe,.clayer')].map(x => x.getAttribute('src'));
+    const rar = D.CARDS.bear_totem.rarity;
+    const r = { pw: srcs('pw1').join() === [A['frame_power_' + rar], A['banner_power_' + rar], A['tag_power_' + rar], A['gem_' + rar]].join(),
+      cu: srcs('cu1').join() === [A.frame_curse, A.banner_curse, A.tag_curse].join(), st: srcs('st1').join() === [A.frame_status, A.banner_status, A.tag_status].join(),
+      all: [...document.querySelectorAll('.hand .card .cframe,.hand .card .clayer')].every(x => /^data:image\/svg\+xml/.test(x.getAttribute('src') || '')),
+      pwMask: getComputedStyle(el('pw2').querySelector('.foil-sheen')).webkitMaskImage.length, pwMaskWant: A.foil_mask_frame_power_legendary.length,
+      rule: document.getElementById('foil-masks').textContent.includes('.card.foil[data-tpl="power_legendary"]{--foil-mask:url("' + A.foil_mask_frame_power_legendary + '")}'), tpl: el('pw2').dataset.tpl };
+    p.hand = p.hand.filter(x => !['pw1', 'pw2', 'cu1', 'st1'].includes(x.uid)); g.render(); delete D.CARDS.test_legendary_pw; return r;
   });
-  ok(PF.has && PF.pw, 'Power card (Bearskin) uses frame_power');
-  ok(PF.atk && PF.notPowerFrame, 'Attack and other non-Power cards keep their own frame');
-  // per-card mask: a foil_mask_<id> asset wins over the default
-  const own = await pg.evaluate(() => {
-    const g = window.__game, D = window.GameData, p = g.state.players[0], c = document.createElement('canvas'); c.width = 6; c.height = 8;
-    window.ASSETS.foil_mask_test_legendary2 = c.toDataURL('image/png');
-    D.CARDS.test_legendary2 = Object.assign({}, D.CARDS.test_legendary, { name: 'Test Legend Two' });
-    p.hand.push({ id: 'test_legendary2', uid: 'tl2' }); g.render();
-    const m = (uid) => getComputedStyle(document.querySelector(`.hand .card[data-card="${uid}"] .foil-sheen`)).webkitMaskImage;
-    const r = { a: m('tl1').slice(0, 40), b: m('tl2').slice(0, 40), png: m('tl2').includes('data:image/png') };
-    p.hand = p.hand.filter(x => x.uid !== 'tl2'); g.render(); return r;
-  });
-  ok(own.png && own.a !== own.b, 'a card with its own foil_mask_<id> uses it, others keep the default');
+  ok(PF.pw, 'Power card (Bearskin) uses frame_/banner_/tag_power_<rarity> and its gem');
+  ok(PF.cu && PF.st, 'curse and status cards use their single frames, no gem');
+  ok(PF.all, 'every template layer is a built-in SVG');
+  ok(PF.pwMask >= PF.pwMaskWant && PF.rule && PF.tpl === 'power_legendary', 'a legendary power uses foil_mask_frame_power_legendary (its own frame\'s mask)');
 
   // ---- 2) the rules box never gets foil: mask alpha there is 0, and the box looks the same with and without the layers ----
   const alpha = await pg.evaluate(async () => {
-    const el = document.querySelector('.hand .card[data-card="tl1"]'), img = new Image(); img.src = window.ASSETS.foil_mask_enraged; await img.decode();
+    const el = document.querySelector('.hand .card[data-card="tl1"]'), img = new Image(); img.src = window.ASSETS.foil_mask_frame_attack_legendary; await img.decode();
     const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; const x = cv.getContext('2d'); x.drawImage(img, 0, 0);
     const d = x.getImageData(0, 0, img.width, img.height).data, cs = getComputedStyle(el.querySelector('.cdesc'));
     // the rules box in card fractions (style.css .cdesc: left 8.5%, right 8.5%, top 60%, bottom 6.4%), shrunk 1 % for the box edge
-    let max = 0; for (let yy = Math.ceil(img.height * .61); yy < img.height * .925; yy++) for (let xx = Math.ceil(img.width * .095); xx < img.width * .905; xx++) max = Math.max(max, d[(yy * img.width + xx) * 4 + 3]);
+    let max = 0; for (let yy = Math.ceil(img.height * .61); yy < img.height * .925; yy++) for (let xx = Math.ceil(img.width * .095); xx < img.width * .905; xx++) {
+      if (yy >= img.height * .9 && xx >= img.width * .44 && xx <= img.width * .56) continue;   // the gem-socket notch rim is frame metal (templates MANIFEST: notch at the bottom centre)
+      max = Math.max(max, d[(yy * img.width + xx) * 4 + 3]); }
     return { max, top: cs.top };
   });
   ok(alpha.max === 0, 'foil mask is fully transparent over the rules box (max alpha ' + alpha.max + ')');

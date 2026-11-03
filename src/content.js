@@ -326,8 +326,7 @@
  * buff    (green)  otherwise: buffs yourself (Might, Rage, Arcane, Retaliate)
  * utility (gold)   otherwise: healing, energy, card draw
  * curse   (black)  curses (stay in the deck between fights)
- * status  (grey)   status cards (combat-only clutter, gone when the fight ends; Anna 11:28). Until Palette's status frame
- *                  lands as assets/frame_status.*, cardHTML draws them with frame_curse.
+ * status  (grey)   status cards (combat-only clutter, gone when the fight ends; Anna 11:28); Palette's frame_status template.
  * FRAME_OVERRIDE can pin a card to a frame by hand. */
 (function (G) {
   G.FRAME_OVERRIDE = {

@@ -81,6 +81,7 @@
     const l = G && G.phase === 'combat' ? E.targetableEnemies(G) : [];
     return l.length === 1 ? l[0].uid : null;
   }
+  const TPL_RARITIES = ['starter', 'common', 'uncommon', 'rare', 'legendary'];
   // Rules box: the effect text, then one line per keyword (Spell, Retain; Anna 11:17), each with its kwTips hover tooltip.
   function rulesHTML(text, def, base) {
     return withKeywords(text, base.kwTips) + D.keywordLines(def).map(k => '<br>' + withKeywords(k + '.', base.kwTips)).join('');
@@ -91,13 +92,19 @@
     const cls = ['card', def.type, 'fr-' + fr, c.up ? 'upg' : '', opts.cls || ''].join(' ');
     // Type word = the frame type (Producer/Anna 11:23), no rarity word: rarity shows in the border and gem.
     const tword = D.typeWord(base, c.id);
-    // Status cards use frame_curse until Palette's status frame lands as assets/frame_status (Anna approved it in rev 4).
-    const frameImg = def.type === 'power' ? 'frame_power' : (A['frame_' + fr] ? 'frame_' + fr : 'frame_curse');
+    // Card templates (Palette, rarity rev 4 + cut gems, Anna 11:40/11:45; art/ui/rarity_frames/templates/MANIFEST.md):
+    // frame_/banner_/tag_<type>_<rarity> plus gem_<rarity>; frame colour = type, border design = rarity. Curse and Status
+    // have one frame each and no gem. Stacking: art, frame, banner, tag, gem, foil (legendary), then the live text and cost.
+    const tk = def.type === 'power' ? 'power' : fr, single = tk === 'curse' || tk === 'status';
+    const tr = single ? '' : (TPL_RARITIES.includes(def.rarity) ? def.rarity : 'common');
+    const tpl = single ? tk : tk + '_' + tr;
+    const layer = (k, cl) => `<img class="clayer ${cl}" src="${img(k)}" alt="" draggable="false">`;
     const emblem = base.cls === 'curse' ? 'curse' : base.cls;
     const foil = def.rarity === 'legendary';   // every legendary gets Palette's foil (only they carry the blend layers)
-    if (foil) foilMask(c.id);
-    return `<div class="${cls}${foil ? ' foil' : ''}" data-id="${esc(c.id)}" data-cls="${base.cls}" data-rar="${def.rarity}" data-frame="${fr}" ${opts.attrs || ''}>
-      <div class="cface"><img class="cart" src="${img('card_' + (base.art || c.id)) || img('placeholder_' + c.id)}" alt="" draggable="false"><img class="cframe" src="${img(frameImg)}" alt="" draggable="false">
+    if (foil) foilMask('frame_' + tpl);
+    return `<div class="${cls}${foil ? ' foil' : ''}" data-id="${esc(c.id)}" data-cls="${base.cls}" data-rar="${def.rarity}" data-frame="${fr}" data-tpl="${tpl}" ${opts.attrs || ''}>
+      <div class="cface"><img class="cart" src="${img('card_' + (base.art || c.id)) || img('placeholder_' + c.id)}" alt="" draggable="false"><img class="cframe" src="${img('frame_' + tpl)}" alt="" draggable="false">
+      ${layer('banner_' + tpl, 'cbanner')}${layer('tag_' + tpl, 'ctagbg')}${single ? '' : layer('gem_' + tr, 'cgem')}
       ${foil ? FOIL_LAYERS : ''}${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname${def.name.length > 15 ? ' long' : ''}"><span>${esc(def.name)}</span></div>
       <div class="cclass" title="${esc(base.cls)}">${I(emblem)}</div>
       <div class="ctype">${tword}</div>
@@ -136,17 +143,16 @@
 
   // ---------- legendary foil + card inspect (Anna approved test/foil/inspect.html, ROADMAP row 8, DECISIONS 04:55) ----------
   // Foil: Palette's art/cards/foil_sample (colours in style.css). Masks are game art, so build.js inlines them like any other:
-  // assets/foil_mask_<card id>.webp if the card has its own, else assets/foil_mask_enraged.webp. Alpha masks (white = foil).
+  // one mask per legendary frame (assets/foil_mask_frame_<type>_legendary.webp, Palette's templates), since each legendary
+  // frame has its own shape. Alpha masks (white = foil); 0 over the banner, tag, rules box, cost orb and gem socket.
   const FOIL_LAYERS = '<div class="foil-l foil-sheen"></div><div class="foil-l foil-glitter"></div><div class="foil-l foil-sweep"></div>';
   const foilCss = document.createElement('style'); foilCss.id = 'foil-masks'; document.head.appendChild(foilCss);
   const foilDone = new Set();
   const cssUrl = (u) => 'url("' + String(u).replace(/["\\\n]/g, '') + '")';
-  function foilMask(id) {
-    if (foilDone.has(id)) return; foilDone.add(id);
-    let rules = '';
-    if (foilDone.size === 1 && A.foil_mask_enraged) rules += '.card.foil{--foil-mask:' + cssUrl(A.foil_mask_enraged) + '}\n';
-    if (A['foil_mask_' + id] && id !== 'enraged') rules += '.card.foil[data-id="' + String(id).replace(/[^\w-]/g, '') + '"]{--foil-mask:' + cssUrl(A['foil_mask_' + id]) + '}\n';
-    if (rules) foilCss.appendChild(document.createTextNode(rules));
+  function foilMask(frameKey) {
+    if (foilDone.has(frameKey)) return; foilDone.add(frameKey);
+    const m = A['foil_mask_' + frameKey];
+    if (m) foilCss.appendChild(document.createTextNode('.card.foil[data-tpl="' + frameKey.replace(/^frame_/, '').replace(/[^\w-]/g, '') + '"]{--foil-mask:' + cssUrl(m) + '}\n'));
   }
 
   // Tilt: target + smoothed current per card, written to CSS vars from one requestAnimationFrame loop that only runs while
