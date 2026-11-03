@@ -22,9 +22,10 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
   ok(num('trip_attack', 1) === 1 && num('riposte') === 4 && num('riposte', 1) === 4 && num('rally') === 5 && num('battle_cry') === 1 && num('defense_style') === 2 && num('indomitable') === 11 && num('sundering_blow') === 8,
     'Fighter: Trip Prone 1, Riposte 4/4, Rally 5, Battle Cry 1, Defense 2, Indomitable 11, Sundering Blow 8');
   ok(num('ray_of_frost') === 5 && num('ray_of_frost', 1) === 2, 'Wizard: Ray of Frost 5 damage, 2 Frightened');
-  // Barbarian number pass after the Rage rework (Nov 3): Greataxe 8, Frenzied Strike 7, Reckless Flurry 8x3, Shove 7, Mindless Rage 3.
-  ok(num('parry') === 5 && num('frenzied_strike') === 7 && num('reckless_flurry') === 8 && D.CARDS.reckless_flurry.effects[0].times === 3, 'Barbarian: Hide Armor 5, Frenzied Strike 7, Reckless Flurry 8x3');
-  ok(num('greataxe') === 8 && num('shove') === 7 && num('mindless_rage') === 3 && num('reckless_attack') === 12 && num('rage') === 3, 'Barbarian: Greataxe Chop 8, Shove 7, Mindless Rage 3, Reckless Attack 12, Rage 3');
+  // Barbarian floor pass (Anna 11:14): Greataxe 7, Hide Armor 4, Reckless Attack 8, Frenzied Strike 6, Reckless Flurry 10x3, Thick Hide 12, Brutal Critical 15, Whirling Axe 13, Relentless Rage heal 10.
+  ok(num('parry') === 4 && num('frenzied_strike') === 6 && num('reckless_flurry') === 10 && D.CARDS.reckless_flurry.effects[0].times === 3, 'Barbarian: Hide Armor 4, Frenzied Strike 6, Reckless Flurry 10x3');
+  ok(num('greataxe') === 7 && num('reckless_attack') === 8 && num('thick_hide') === 12 && num('brutal_critical') === 15 && num('whirling_axe') === 13 && num('relentless_rage') === 10, 'Barbarian floor pass: Greataxe 7, Reckless Attack 8, Thick Hide 12, Brutal Critical 15, Whirling Axe 13, Relentless Rage heal 10');
+  ok(num('greataxe') === 7 && num('shove') === 7 && num('mindless_rage') === 3 && num('reckless_attack') === 8 && num('rage') === 3, 'Barbarian: Greataxe Chop 7, Shove 7, Mindless Rage 3, Reckless Attack 8, Rage 3');
   ok(num('frenzied_strike') < num('greataxe') && num('headbutt') < num('greataxe'), 'Rage attacks hit for less than a normal attack (Anna 04:20)');
   // Wizard random-pick pass (Anna via Producer, Nov 3 05:07): commons more forgiving, starter trimmed so a starter-only deck
   // can't beat the later Floor 2 fights. Misty Step back to 4 Block.

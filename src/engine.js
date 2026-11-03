@@ -155,6 +155,7 @@
     for (let r = 0; r < R; r++) for (const n of byRow[r].sort((a, b) => a.col - b.col)) {
       if (r === 0) { n.type = 'fight'; continue; }
       if (r === M.treasureRow) { n.type = 'treasure'; continue; }
+      if ((M.eventRows || []).includes(r)) { n.type = 'event'; continue; }   // full '?' rows (Producer 10:56, event plan option D)
       if (r === R - 1) { n.type = 'rest'; continue; }
       const w = { ...M.weights };
       for (const t in M.minRow) if (r < M.minRow[t]) w[t] = 0;

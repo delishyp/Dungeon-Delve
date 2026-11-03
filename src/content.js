@@ -86,12 +86,13 @@
     mind_flayer: 230, sewn: 255, mimic: 190, lesser_mimic: 150, beholder: 290, wyrmling: 200 };
 
   // ---------- map ----------
-  D.MAP = { rows: 13, cols: 7, paths: 6, depthHp: 0.25, floorHp: 0.1,
+  // 16 rows with 3 full '?' rows (Producer 10:56, design/event_variety_plan.md option D): ~7.8 fights + elites per path as before.
+  D.MAP = { rows: 16, cols: 7, paths: 6, depthHp: 0.25, floorHp: 0.1, eventRows: [3, 6, 11],
     weights: { fight: 45, event: 22, elite: 8, rest: 12, shop: 5 },
     minRow: { elite: 4, rest: 5, shop: 3 },
-    treasureRow: 6,
+    treasureRow: 8,
     // what a '?' room secretly turns out to be
-    unknown: { event: 70, fight: 15, treasure: 8, shop: 7 } };
+    unknown: { event: 85, fight: 6, treasure: 5, shop: 4 } };   // was 70/15/8/7 (Producer 10:59, event plan option D)
   D.NODE_TYPES = {
     fight:    { name: 'Monsters', tip: 'A fight. Win for gold and a card (sometimes a potion).' },
     elite:    { name: 'Elite', tip: 'A dangerous elite monster. Win for more gold, a card, a potion, and a relic.' },
