@@ -203,12 +203,12 @@ const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid &&
   ok(['read_the_opening', 'ten_thousand_drills'].every(id => b(id).cost === 3 && u(id).cost === 2), 'Read the Opening, Ten Thousand Drills: cost 3, upgraded 2 (balance nudge)');
   ok(['hilt_to_the_teeth', 'give_ground', 'wait_for_it'].every(id => b(id).rarity === 'common' && b(id).cost === 0), 'three 0-cost Tempo commons');
   ok(['form_and_repeat', 'field_dressing'].every(id => b(id).rarity === 'rare'), 'Form and Repeat and Field Dressing are rare');
-  ok(b('hilt_to_the_teeth').effects[0].n === 5 && u('hilt_to_the_teeth').effects[0].n === 7, 'Hilt to the Teeth 5 (upgraded 7)');
-  ok(b('give_ground').effects[0].n === 5 && u('give_ground').effects[0].n === 7, 'Give Ground 5 Block (upgraded 7)');
-  ok(b('wait_for_it').retain && b('wait_for_it').effects[0].n === 1 && u('wait_for_it').effects[0].n === 2 && u('wait_for_it').retain, 'Wait for It: Retain, draw 1 (upgraded 2, still Retain)');
-  ok(E.cardText(null, null, { id: 'wait_for_it', up: true }) === 'Draw «+2» cards.', 'Wait for It+ text: ' + E.cardText(null, null, { id: 'wait_for_it', up: true }));
+  ok(b('hilt_to_the_teeth').effects[0].n === 6 && u('hilt_to_the_teeth').effects[0].n === 8, 'Hilt to the Teeth 6 (upgraded 8)');
+  ok(b('give_ground').effects[0].n === 6 && u('give_ground').effects[0].n === 8, 'Give Ground 6 Block (upgraded 8)');
+  ok(b('wait_for_it').retain && b('wait_for_it').effects[0].n === 2 && u('wait_for_it').effects[0].n === 3 && u('wait_for_it').retain, 'Wait for It: Retain, draw 2 (upgraded 3, still Retain)');
+  ok(E.cardText(null, null, { id: 'wait_for_it', up: true }) === 'Draw «+3» cards.', 'Wait for It+ text: ' + E.cardText(null, null, { id: 'wait_for_it', up: true }));
   ok(b('form_and_repeat').cost === 0 && b('form_and_repeat').effects.map(f => f.n).join() === '4,1' && u('form_and_repeat').effects.map(f => f.n).join() === '6,1', 'Form and Repeat 0: 4 Block draw 1 (upgraded 6)');
-  ok(b('field_dressing').cost === 1 && b('field_dressing').retain && b('field_dressing').exhaust && b('field_dressing').effects[0].n === 5 && u('field_dressing').effects[0].n === 7, 'Field Dressing 1: heal 5, Retain, Exhaust (upgraded 7)');
+  ok(b('field_dressing').cost === 1 && b('field_dressing').retain && b('field_dressing').exhaust && b('field_dressing').effects[0].n === 8 && u('field_dressing').effects[0].n === 11, 'Field Dressing 1: heal 8, Retain, Exhaust (upgraded 11)');
   ok(b('ten_thousand_drills').power.thirdCardMightCap === 5 && u('ten_thousand_drills').power.thirdCardMightCap === 5 && u('no_wasted_motion').power.zeroCostDrawPerTurn === 3, 'caps never change on upgrade (Drills 5, No Wasted Motion 3 a turn)');
   for (const id of FNEW) { ok(!/\{\d\}/.test(E.cardText(null, null, { id })) && !/\{\d\}/.test(E.cardText(null, null, { id, up: true })), id + ' text fills in'); ok(u(id).name === b(id).name + '+', id + '+ named'); }
   for (let seed = 1; seed <= 300; seed++) { const f = E.newGame({ seed, heroes: ['fighter'] }); ok(E.rollCardRewards(f, f.players[0], 3, 'boss').every(id => D.CARDS[id].rarity === 'legendary'), 'Fighter boss rewards are legendary now'); }
@@ -244,17 +244,17 @@ const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid &&
 { const { s, p, e } = ffight(); play(s, p, 'no_wasted_motion', false); const d0 = p.draw.length;
   let h0 = p.hand.length; play(s, p, 'hilt_to_the_teeth', false, e); ok(p.hand.length === h0 + 1 && p.draw.length === d0 - 1, '0-cost card draws 1');
   play(s, p, 'strike', false, e); ok(p.draw.length === d0 - 1, '1-cost card draws nothing');
-  play(s, p, 'give_ground', false); play(s, p, 'wait_for_it', false); ok(p.draw.length === d0 - 3 - 1, 'Wait for It draws its own 1 plus 1 from the Power');
-  play(s, p, 'hilt_to_the_teeth', false, e); ok(p.draw.length === d0 - 4, 'fourth 0-cost card in a turn: no extra draw (max 3)');
+  play(s, p, 'give_ground', false); play(s, p, 'wait_for_it', false); ok(p.draw.length === d0 - 3 - 2, 'Wait for It draws its own 2 plus 1 from the Power');
+  play(s, p, 'hilt_to_the_teeth', false, e); ok(p.draw.length === d0 - 5, 'fourth 0-cost card in a turn: no extra draw (max 3)');
   enemyHits(s, e, 0, 1); endTurn(s, p); p.hand = []; play(s, p, 'precision_attack', false, e);
   ok(p.hand.length === 2, 'the 3-a-turn limit resets next turn (Precision Attack draws 1 + 1)'); }
 { const { s, p, e } = ffight(); play(s, p, 'no_wasted_motion', true); const d0 = p.draw.length; p.hand = [];
   play(s, p, 'strike', true, e); ok(p.draw.length === d0, 'an upgraded 1-cost card still costs 1: no draw'); }
 // ---------- F5 Old Scars: whenever you heal in a fight, gain that much Block ----------
 { const { s, p } = ffight(); play(s, p, 'old_scars', false); p.hp = p.maxHp - 20; p.block = 0;
-  play(s, p, 'field_dressing', false); ok(p.block === 5 && p.hp === p.maxHp - 15, 'Field Dressing heal 5 -> 5 Block');
-  p.hp = p.maxHp - 2; play(s, p, 'second_wind', false); ok(p.block === 7, 'only the HP actually healed counts (2 of 4)');
-  p.hp = p.maxHp; play(s, p, 'healing_potion', false); ok(p.block === 7, 'full HP: no heal, no Block'); }
+  play(s, p, 'field_dressing', false); ok(p.block === 8 && p.hp === p.maxHp - 12, 'Field Dressing heal 8 -> 8 Block');
+  p.hp = p.maxHp - 2; play(s, p, 'second_wind', false); ok(p.block === 10, 'only the HP actually healed counts (2 of 4)');
+  p.hp = p.maxHp; play(s, p, 'healing_potion', false); ok(p.block === 10, 'full HP: no heal, no Block'); }
 { const { s, p } = ffight(); p.hp = p.maxHp - 20; play(s, p, 'field_dressing', false); ok(p.block === 0, 'without Old Scars, healing gives no Block'); }
 // ---------- Retain (shared keyword) ----------
 { const { s, p, e } = ffight(); const keep = { uid: 'rt1', id: 'wait_for_it' }, fd = { uid: 'rt2', id: 'field_dressing', up: true }, sb = { uid: 'rt3', id: 'defend' };
@@ -262,8 +262,8 @@ const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid &&
   ok(p.hand.some(c => c.uid === 'rt1') && p.hand.some(c => c.uid === 'rt2'), 'Retain cards stay in hand at the end of the turn');
   ok(!p.hand.some(c => c.uid === 'rt3') && p.discard.some(c => c.uid === 'rt3'), 'a normal card is discarded as usual');
   let t = JSON.parse(JSON.stringify(s)); ok(t.players[0].hand.some(c => c.uid === 'rt1'), 'retained card survives save/reload');
-  p.energy = 3; const hp0 = (p.hp = p.maxHp - 10); E.dispatch(s, { type: 'PLAY_CARD', player: p.uid, card: 'rt2' }); E.takeEvents(s);
-  ok(p.exhaust.some(c => c.uid === 'rt2') && p.hp === hp0 + 7, 'a retained card still plays normally (Field Dressing+ heals 7, then Exhausts)');
+  p.energy = 3; const hp0 = (p.hp = p.maxHp - 15); E.dispatch(s, { type: 'PLAY_CARD', player: p.uid, card: 'rt2' }); E.takeEvents(s);
+  ok(p.exhaust.some(c => c.uid === 'rt2') && p.hp === hp0 + 11, 'a retained card still plays normally (Field Dressing+ heals 11, then Exhausts)');
   e.hp = 1; play(s, p, 'strike', false, e); ok(s.phase === 'reward', 'fight won');
   ok(p.hand.length === 0 && p.discard.some(c => c.uid === 'rt1'), 'fight end clears retained cards from the hand'); }
 { const { s, p, e } = ffight('lone_goblin', 7, 'barbarian'); p.hand.push({ uid: 'rb1', id: 'wait_for_it' }); enemyHits(s, e, 0, 1); endTurn(s, p);

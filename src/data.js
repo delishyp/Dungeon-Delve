@@ -127,18 +127,18 @@
     // F4 Tempo: three 0-cost commons (names and text by Lorekeeper) and the legendary. Hilt and Give Ground 5 (upgraded 7), not the
     // planned 3/5: at 3 they diluted random-pick decks (random 43.5% -> 32.7%).
     hilt_to_the_teeth: { cls: 'fighter', name: 'Hilt to the Teeth', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 5 }], upgrade: { effects: [{ t: 'damage', n: 7 }] } },
+      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 6 }], upgrade: { effects: [{ t: 'damage', n: 8 }] } },
     give_ground: { cls: 'fighter', name: 'Give Ground', cost: 0, type: 'skill', rarity: 'common', target: 'none',
-      desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 5 }], upgrade: { effects: [{ t: 'block', n: 7 }] } },
+      desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 6 }], upgrade: { effects: [{ t: 'block', n: 8 }] } },
     wait_for_it: { cls: 'fighter', name: 'Wait for It', cost: 0, type: 'skill', rarity: 'common', target: 'none', retain: true,
-      desc: 'Draw {0} card.', effects: [{ t: 'draw', n: 1 }],
-      upgrade: { desc: 'Draw {0} cards.', effects: [{ t: 'draw', n: 2 }] } },
+      desc: 'Draw {0} cards.', effects: [{ t: 'draw', n: 2 }],
+      upgrade: { effects: [{ t: 'draw', n: 3 }] } },
     no_wasted_motion: { cls: 'fighter', name: 'No Wasted Motion', cost: 2, type: 'power', rarity: 'legendary', target: 'none',
       desc: 'Whenever you play a 0-cost card, draw 1 card (up to 3 a turn).',
       effects: [], power: { zeroCostDraw: 1, zeroCostDrawPerTurn: 3 }, upgrade: { cost: 1 } },
     // F5 Old Soldier (healing)
     field_dressing: { cls: 'fighter', name: 'Field Dressing', cost: 1, type: 'skill', rarity: 'rare', target: 'none', retain: true, exhaust: true,
-      desc: 'Heal {0} HP. Exhaust.', effects: [{ t: 'heal', n: 5 }], upgrade: { effects: [{ t: 'heal', n: 7 }] } },
+      desc: 'Heal {0} HP. Exhaust.', effects: [{ t: 'heal', n: 8 }], upgrade: { effects: [{ t: 'heal', n: 11 }] } },
     old_scars: { cls: 'fighter', name: 'Old Scars', cost: 2, type: 'power', rarity: 'legendary', target: 'none',
       desc: 'Whenever you heal, gain that much Block.',
       effects: [], power: { healToBlock: true }, upgrade: { cost: 1 } },
