@@ -20,7 +20,7 @@ eq(crypto.createHash('md5').update(JSON.stringify(st)).digest('hex'), 'd8108b41f
 const R = (id) => D.CARDS[id].rarity;
 // Producer 23:02: the Burn It Down cards stay uncommon with their 4e6fcb1 numbers; four plain uncommons drop to common, numbers unchanged
 eq(['burn_through', 'worn_grip', 'ember_hide', 'blood_in_mouth'].map(R), ['uncommon', 'uncommon', 'uncommon', 'uncommon'], 'Barbarian: Burn It Down cards stay uncommon');
-eq(['burn_through', 'worn_grip', 'ember_hide', 'blood_in_mouth'].map(id => [D.CARDS[id].effects[0].n, E.cardDef({ id, up: true }).effects[0].n]), [[9, 12], [12, 15], [8, 11], [10, 10]], 'Burn It Down cards: original numbers');
+eq(['burn_through', 'worn_grip', 'ember_hide', 'blood_in_mouth'].map(id => [D.CARDS[id].effects[0].n, E.cardDef({ id, up: true }).effects[0].n]), [[13, 16], [12, 15], [8, 11], [10, 10]], 'Burn It Down cards: original numbers, Burn Through 13 / 16 (Designer 23:31)');
 eq(['whirling_axe', 'brutal_critical', 'bear_totem', 'relentless_rage'].map(R), ['common', 'common', 'common', 'common'], 'Whirling Axe, Brutal Critical, Bearskin, Relentless Rage uncommon -> common');
 eq(['whirling_axe', 'brutal_critical', 'bear_totem', 'relentless_rage'].map(id => [D.CARDS[id].cost, D.CARDS[id].effects[0].n]), [[2, 13], [2, 15], [1, 4], [1, 10]], 'their numbers unchanged');
 eq(R('whats_left'), 'rare', "What's Left uncommon -> rare");
@@ -29,13 +29,17 @@ eq([R('read_the_opening'), R('no_wasted_motion')], ['rare', 'rare'], 'Read the O
 eq([D.CARDS.read_the_opening.cost, E.cardDef({ id: 'read_the_opening', up: true }).cost, D.CARDS.no_wasted_motion.cost, E.cardDef({ id: 'no_wasted_motion', up: true }).cost], [3, 2, 2, 1], 'their costs unchanged');
 eq([D.CARDS.ten_thousand_drills.power.thirdCardMightCap, D.CARDS.ten_thousand_drills.cost, E.cardDef({ id: 'ten_thousand_drills', up: true }).cost], [5, 3, 2], 'Drills: cap 5 again, cost 3 / upgraded 2');
 ok(/up to 5 a fight/.test(D.CARDS.ten_thousand_drills.desc), 'Drills text says up to 5');
+// Designer 23:31 numbers pass (numbers only). Headbutt is NOT changed: 8 would break Anna 04:20 (a Rage attack hits for less than Greataxe Chop 7).
+const n0 = (id, up) => E.cardDef({ id, up: !!up }).effects[0].n;
+eq([n0('wild_swing'), n0('wild_swing', 1), n0('burn_through'), n0('burn_through', 1), n0('whirlwind'), n0('whirlwind', 1), D.CARDS.whirlwind.effects[0].times, n0('headbutt'), n0('headbutt', 1), n0('reckless_flurry'), D.CARDS.old_scars.cost === 2 && D.CARDS.old_scars.power.healToBlock === true, n0('scorching_ray')],
+  [6, 8, 13, 16, 8, 10, 2, 5, 7, 10, true, 4], 'Wild Swing 6/8, Burn Through 13/16, Whirlwind 8x2 (10x2), Headbutt 5/7 kept, Reckless Flurry and Scorching Ray unchanged');
 // ---- new cards: id, cost/upgraded cost, rarity, kind, base text, upgraded text ----
 const NEW = {
-  sweeping_attack: [1, 1, 'common', '', 'Deal 6 damage. Deal 4 damage to a random enemy.', 'Deal 9 damage. Deal 4 damage to a random enemy.'],
+  sweeping_attack: [1, 1, 'common', '', 'Deal 7 damage. Deal 5 damage to a random enemy.', 'Deal 10 damage. Deal 5 damage to a random enemy.'],
   evasive_footwork: [1, 1, 'common', '', 'Gain 7 Block.', 'Gain 10 Block.'],
   extra_attack: [1, 1, 'uncommon', '', 'Deal 5 damage.', 'Deal 7 damage.'],
-  eldritch_strike: [2, 2, 'uncommon', '', 'Deal 7 damage to ALL enemies. Apply 1 Frightened to ALL.', 'Deal 10 damage to ALL enemies. Apply 1 Frightened to ALL.'],
-  shield_wall: [2, 2, 'uncommon', '', 'Gain 10 Block. Gain 1 Armor.', 'Gain 13 Block. Gain 1 Armor.'],
+  eldritch_strike: [2, 2, 'uncommon', '', 'Deal 8 damage to ALL enemies. Apply 1 Frightened to ALL.', 'Deal 11 damage to ALL enemies. Apply 1 Frightened to ALL.'],
+  shield_wall: [2, 2, 'uncommon', '', 'Gain 12 Block. Gain 1 Armor.', 'Gain 15 Block. Gain 1 Armor.'],
   feinting_attack: [0, 0, 'uncommon', '', 'Deal 4 damage. Apply 1 Prone.', 'Deal 6 damage. Apply 1 Prone.'],
   shocking_grasp: [0, 0, 'common', 'cantrip', 'Deal 2 damage. Apply 1 Prone.', 'Deal 5 damage. Apply 2 Prone.'],
   acid_splash: [0, 0, 'common', 'cantrip', 'Deal 2 damage. Apply 2 Poisoned.', 'Deal 5 damage. Apply 3 Poisoned.'],
@@ -43,14 +47,14 @@ const NEW = {
   ice_knife: [1, 1, 'common', 'spell', 'Deal 5 damage. Deal 2 damage to ALL enemies.', 'Deal 7 damage. Deal 3 damage to ALL enemies.'],
   absorb_elements: [1, 1, 'common', 'spell', 'Gain 4 Block.', 'Gain 6 Block.'],
   lightning_bolt: [2, 2, 'uncommon', 'spell', 'Deal 9 damage to a random enemy twice.', 'Deal 11 damage to a random enemy twice.'],
-  counterspell: [1, 1, 'uncommon', 'spell', 'Apply 3 Frightened. Gain 5 Block.', 'Apply 4 Frightened. Gain 8 Block.'],
+  counterspell: [1, 1, 'uncommon', 'spell', 'Apply 2 Frightened. Gain 5 Block.', 'Apply 3 Frightened. Gain 8 Block.'],
   vampiric_touch: [2, 2, 'uncommon', 'spell', 'Deal 10 damage. Heal 4 HP.', 'Deal 13 damage. Heal 5 HP.'],
   cloudkill: [2, 2, 'uncommon', 'spell', 'Apply 5 Poisoned to ALL enemies.', 'Apply 6 Poisoned to ALL enemies.'],
   cone_of_cold: [2, 2, 'rare', 'spell', 'Deal 12 damage to ALL enemies. Apply 2 Frightened to ALL.', 'Deal 15 damage to ALL enemies. Apply 2 Frightened to ALL.'],
   wall_of_force: [2, 2, 'rare', 'spell', 'Gain 20 Block. Exhaust.', 'Gain 23 Block. Exhaust.'],
   blight: [2, 2, 'rare', 'spell', 'Deal 8 damage. Apply 8 Poisoned.', 'Deal 11 damage. Apply 9 Poisoned.'],
   meteor_swarm: [3, 3, 'legendary', 'spell', 'Deal 10 damage to ALL enemies 3 times. Exhaust.', 'Deal 11 damage to ALL enemies 3 times. Exhaust.'],
-  time_stop: [1, 0, 'legendary', 'spell', 'Gain 2 Energy. Draw 2 cards. Exhaust.', 'Gain 2 Energy. Draw 2 cards. Exhaust.'],   // 3 -> 2 Energy + Retain (Designer 23:18)
+  time_stop: [1, 1, 'legendary', 'spell', 'Gain 2 Energy. Draw 2 cards. Exhaust.', 'Gain 2 Energy. Draw 3 cards. Exhaust.'],   // upgrade draws 3, no cost drop (Designer 23:31)   // 3 -> 2 Energy + Retain (Designer 23:18)
   wish: [3, 3, 'legendary', 'spell', 'At the start of each of your turns, gain 1 Energy.', 'At the start of each of your turns, gain 1 Energy.'],
 };
 const plain = (t) => t.replace(/«[+-]?(\d+)»/g, '$1');
@@ -72,8 +76,8 @@ const play = (s, p, c, t) => { const r = E.dispatch(s, { type: 'PLAY_CARD', play
 { const { s, p } = fight('fighter'), e = s.enemies[0]; const ev = play(s, p, give(p, 'extra_attack'), e);
   eq(ev.filter(x => x.kind === 'hit' && x.target === e.uid).map(x => x.amount), [5, 5], 'Extra Attack: Replay hits twice for 5'); }
 { const { s, p } = fight('fighter', 'goblin_pack'); const L = E.livingEnemies(s), hp = L.map(e => e.hp); play(s, p, give(p, 'sweeping_attack'), L[0]);
-  eq(L.reduce((a, e, i) => a + hp[i] - e.hp, 0), 10, 'Sweeping Attack: 6 to the target + 4 to a random enemy'); }
-{ const { s, p } = fight('fighter'); play(s, p, give(p, 'shield_wall'), null); eq([p.block, p.statuses.armor], [10, 1], 'Shield Wall: 10 Block, 1 Armor'); }
+  eq(L.reduce((a, e, i) => a + hp[i] - e.hp, 0), 12, 'Sweeping Attack: 7 to the target + 5 to a random enemy'); }
+{ const { s, p } = fight('fighter'); play(s, p, give(p, 'shield_wall'), null); eq([p.block, p.statuses.armor], [12, 1], 'Shield Wall: 12 Block, 1 Armor'); }
 { const { s, p } = fight('wizard'); p.statuses.arcane = 2; play(s, p, give(p, 'absorb_elements'), null); eq(p.block, 2 * (4 + 4), 'Absorb Elements: Repeat 2, Arcane Focus on each (2 x (4+4))'); }
 { const { s, p } = fight('wizard', 'goblin_pack'); const L = E.livingEnemies(s), hp = L.map(e => e.hp); const ev = play(s, p, give(p, 'lightning_bolt'), null);
   eq(ev.filter(x => x.kind === 'hit').length, 2, 'Lightning Bolt: two hits'); eq(L.reduce((a, e, i) => a + hp[i] - e.hp, 0), 18, 'Lightning Bolt: 9 + 9'); }

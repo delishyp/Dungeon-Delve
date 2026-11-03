@@ -120,7 +120,7 @@ for (const up of [false, true]) {
   let f = fight(); const hp = f.p.hp, h = hits(play(f.s, f.p, 'headbutt', up, f.e).ev, f.e.uid);
   ok(h[0].amount === (up ? 7 : 5) && f.p.statuses.rage === 2 && f.p.hp === hp - 2, `Headbutt${up ? '+' : ''}: ${up ? 7 : 5} damage, 2 Rage, lose 2 HP`);
   f = fight('rat_swarm'); const ev = play(f.s, f.p, 'wild_swing', up).ev;
-  ok(f.s.enemies.every(x => hits(ev, x.uid)[0].amount === (up ? 6 : 4)) && f.p.statuses.rage === 1, `Wild Swing${up ? '+' : ''}: ${up ? 6 : 4} to ALL, 1 Rage`);
+  ok(f.s.enemies.every(x => hits(ev, x.uid)[0].amount === (up ? 8 : 6)) && f.p.statuses.rage === 1, `Wild Swing${up ? '+' : ''}: ${up ? 8 : 6} to ALL, 1 Rage`);
   f = fight(); let hk = hits(play(f.s, f.p, 'bloodied_knuckles', up, f.e).ev, f.e.uid);
   ok(hk.length === 2 && hk.every(x => x.amount === (up ? 5 : 4)) && f.p.statuses.rage === 2, `Bloodied Knuckles${up ? '+' : ''}: 2 hits, 2 Rage`);
   f = fight(); f.e.block = up ? 5 : 4; hk = hits(play(f.s, f.p, 'bloodied_knuckles', up, f.e).ev, f.e.uid);
@@ -160,7 +160,7 @@ ok(Object.values(D.CARDS).filter(d => d.rarity === 'legendary').every(d => ['bar
 }
 // ---------- upgraded versions: one change each, as written ----------
 { const u = (id) => E.cardDef({ id, up: true }), b = (id) => D.CARDS[id];
-  ok(u('headbutt').effects[0].n === 7 && u('wild_swing').effects[0].n === 6 && u('bloodied_knuckles').effects[0].n === 5 && u('bloodied_knuckles').effects[0].times === 2, 'upgraded numbers: Headbutt 7, Wild Swing 6, Knuckles 5x2');
+  ok(u('headbutt').effects[0].n === 7 && u('wild_swing').effects[0].n === 8 && u('bloodied_knuckles').effects[0].n === 5 && u('bloodied_knuckles').effects[0].times === 2, 'upgraded numbers: Headbutt 7, Wild Swing 6, Knuckles 5x2');
   ok(u('goad').cost === 0 && u('blood_up').cost === 0 && u('last_tally').cost === 1 && u('enraged').effects[0].n === 8, 'upgraded costs: Goad 0, Blood Up 0, Last Tally 1; Enraged 8 a hit');
   ok(u('scar_tissue').power.onHpLossEnemyTurn.block === 6 && /6 Block/.test(u('scar_tissue').desc) && b('scar_tissue').power.onHpLossEnemyTurn.block === 4, 'Scar Tissue+ 6 Block');
   ok(u('bear_beneath').effects.map(f => f.n).join() === '4,4' && u('bear_beneath').power.onHpLossEnemyTurn.rage === 1, 'Bear Beneath+ 4 Armor 4 Retaliate, still 1 Rage per enemy turn');
@@ -231,9 +231,9 @@ const mine = (ev, p) => ev.filter(x => x.kind === 'hit' && x.source === p.uid &&
   h = mine(play(s, p, 'strike', false, e).ev, p); ok(h[0].amount === 9, 'second hit that turn: Prone only, 9');
   e.statuses.prone = 2; enemyHits(s, e, 0, 1); endTurn(s, p); e.statuses = { frightened: 2 };
   h = mine(play(s, p, 'strike', false, e).ev, p); ok(h[0].amount === 12, 'next turn, first hit on Frightened: 12');
-  e.statuses = { prone: 2 }; h = mine(play(s, p, 'whirlwind', false).ev, p); ok(h.map(x => x.amount).join() === '7,7', 'multi-hit card: only the first hit of the turn is doubled, and it was used this turn already'); }
+  e.statuses = { prone: 2 }; h = mine(play(s, p, 'whirlwind', false).ev, p); ok(h.map(x => x.amount).join() === '12,12', 'multi-hit card: only the first hit of the turn is doubled, and it was used this turn already'); }
 { const { s, p, e } = ffight(); play(s, p, 'read_the_opening', false); e.statuses.prone = 2;
-  const h = mine(play(s, p, 'whirlwind', false).ev, p); ok(h.map(x => x.amount).join() === '14,7', 'Whirlwind 5x2 on Prone: 7 -> 14 first hit only, then 7'); }
+  const h = mine(play(s, p, 'whirlwind', false).ev, p); ok(h.map(x => x.amount).join() === '24,12', 'Whirlwind 8x2 on Prone: 12 -> 24 first hit only, then 12'); }
 { const { s, p, e } = ffight(); e.statuses.prone = 2; ok(mine(play(s, p, 'strike', false, e).ev, p)[0].amount === 9, 'without the Power, Prone is the usual x1.5'); }
 // ---------- F3 Ten Thousand Drills: the third card each turn gives 1 Might, up to 5 a fight ----------
 { const { s, p, e } = ffight(); play(s, p, 'ten_thousand_drills', false); play(s, p, 'defend', false);

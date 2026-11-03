@@ -295,7 +295,7 @@ eq([E.cardText(null, null, { id: 'blood_in_mouth' }), E.cardLines(null, null, { 
   eq(hits, [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1], 'Worn Grip fades 12..1'); eq(where(p, c), ['exhaust'], 'then Exhausts'); }
 // Ember Hide, Burn Through
 { const { s, p } = fresh(), c = give(p, 'ember_hide'); play(s, p, c, null); eq([p.block, p.statuses.rage, where(p, c)[0]], [8, 2, 'exhaust'], 'Ember Hide: 8 Block, Exhaust, Last Word 2 Rage'); }
-{ const { s, p } = fresh(), c = give(p, 'burn_through'); play(s, p, c, null); eq([p.block, where(p, c)[0], p.fightExhausted], [9, 'exhaust', 1], 'Burn Through: 9 Block, Exhaust, counted'); }
+{ const { s, p } = fresh(), c = give(p, 'burn_through'); play(s, p, c, null); eq([p.block, where(p, c)[0], p.fightExhausted], [13, 'exhaust', 1], 'Burn Through: 13 Block, Exhaust, counted (9 before Designer 23:31)'); }
 // Kindling: every Exhaust gives 1 Rage per copy; not on Vanish; Fading-out and Last Word cards count
 { const { s, p } = fresh(), k = give(p, 'kindling'); play(s, p, k, null); ok(p.powers.includes(k), 'Kindling stays in play');
   play(s, p, give(p, 'burn_through'), null); eq(p.statuses.rage, 1, 'Kindling: an Exhaust gives 1 Rage');
@@ -340,7 +340,7 @@ NEW.forEach(id => { delete D.CARDS[id].inPool; }); delete D.RELICS.ash_bracer.in
   ok(hit > 0, 'with the switch off the card is in the reward pool (' + hit + '/200)'); }
 // Upgrade lines: Lorekeeper 14:20, numbers moved with the 15:09 pass (Burn Through, Worn Grip, Ember Hide, Blood in the Mouth)
 eq(['burn_through', 'kindling', 'whats_left', 'worn_grip', 'ember_hide', 'blood_in_mouth', 'last_one_standing'].map(id => [E.cardDef({ id, up: true }).cost, E.cardText(null, null, { id, up: true }), E.cardLines(null, null, { id, up: true })]),
-  [[1, 'Gain «+12» Block. Exhaust.', { bloodied: null, lastWord: null }], [0, 'Whenever a card Exhausts, gain 1 Rage.', { bloodied: null, lastWord: null }],
+  [[1, 'Gain «+16» Block. Exhaust.', { bloodied: null, lastWord: null }], [0, 'Whenever a card Exhausts, gain 1 Rage.', { bloodied: null, lastWord: null }],
    [2, 'Deal «+4» damage for each card Exhausted this fight.', { bloodied: null, lastWord: null }], [1, 'Deal «+15» damage.', { bloodied: null, lastWord: null }],
    [1, 'Gain «+11» Block. Exhaust.', { bloodied: null, lastWord: 'Gain 2 Rage.' }], [1, 'Deal 10 damage.', { bloodied: 'Deal «+11» more.', lastWord: null }],
    [1, 'Gain «+3» Might.', { bloodied: 'Gain 2 more Might and draw 1 card.', lastWord: null }]], 'upgraded texts');
