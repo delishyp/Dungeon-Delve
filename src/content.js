@@ -112,7 +112,8 @@
       text: "Someone has chalked Saint Brennick's circle on the wall and set a tin cup beneath it. The cup is full of coins. Delvers leave one for luck on the way down. None of them came back for theirs.",
       choices: [
         { label: 'Drop fifteen gold in the cup and ask for luck.', hint: '', req: { gold: 15 },
-          ops: { gold: -15, relic: 'tymora_coin', text: "The coins settle, and one that isn't yours rolls out against your boot. It's warm. You get the sense there's a reason this tradition has lasted." } },
+          ops: { gold: -15, relic: 'tymora_coin', text: "The coins settle, and one that isn't yours rolls out against your boot. It's warm. You get the sense there's a reason this tradition has lasted.",
+            textOwned: "The coins settle, and something that isn't a coin rolls out against your boot. Someone left it here for whoever asked next." } },
         { label: 'Kneel under the circle.', hint: '', ops: { upgradeRandom: 1, text: "You don't remember the prayer, but your hands do. When you stand, one of your skills comes easier." } },
         { label: 'Leave the cup alone.', hint: '', ops: { text: 'You walk on. Behind you, a coin drops into the cup, and no one is there.' } }] },
     talking_skull: { name: 'The Skull in the Niche', art: 'ev_skull',

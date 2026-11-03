@@ -242,7 +242,8 @@
     if (o.hp < 0) { const n = Math.min(-o.hp, p.hp - 1); p.hp -= n; if (n) out.push('-' + n + ' HP'); }
     if (o.maxHp) { p.maxHp += o.maxHp; p.hp += o.maxHp; out.push('+' + o.maxHp + ' max HP'); }
     if (o.healPct) { const before = p.hp; heal(s, p, Math.round(p.maxHp * o.healPct)); out.push('+' + (p.hp - before) + ' HP'); }
-    if (o.relic) { const r = o.relic === 'random' ? randomRelic(s, p) : (hasRelic(p, o.relic) ? randomRelic(s, p) : o.relic); if (r) { gainRelic(s, p, r); out.push('Relic: ' + D.RELICS[r].name); } else { p.gold += 40; out.push('+40 gold'); } }
+    let ownedAlt = false;
+    if (o.relic) { ownedAlt = o.relic !== 'random' && !!o.textOwned && hasRelic(p, o.relic); const r = o.relic === 'random' ? randomRelic(s, p) : (hasRelic(p, o.relic) ? randomRelic(s, p) : o.relic); if (r) { gainRelic(s, p, r); out.push('Relic: ' + D.RELICS[r].name); } else { p.gold += 40; out.push('+40 gold'); } }
     if (o.potion) { const id = o.potion === 'random' ? randomPotion(s) : o.potion; if (gainPotion(s, p, id)) out.push('Potion: ' + D.POTIONS[id].name); else out.push('(potion belt full)'); }
     if (o.curse) { p.deck.push({ uid: uid(s, 'c'), id: o.curse }); out.push('Curse: ' + D.CARDS[o.curse].name); }
     if (o.upgradeRandom) {
@@ -259,7 +260,7 @@
     if (o.then) ev.next = { then: o.then };
     if (o.fight) ev.next = { fight: o.fight, fightType: o.fightType || 'fight', relicAfter: o.relicAfter || null };
     if (o.shop) ev.next = { shop: o.shop };
-    if (o.text) ev.result = o.text;
+    if (o.text) ev.result = ownedAlt ? o.textOwned : o.text;
   }
   function eventChoice(s, p, idx) {
     if (s.phase !== 'event' || !s.event || s.event.stage !== 'choose') return err('No event choice');
