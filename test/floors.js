@@ -40,11 +40,11 @@ for (let seed = 1; seed <= 40; seed++) {
     }
     if (id === 'beholder') {
       e.intent = { move: 'rays', target: s.players[0].uid }; const i = E.describeIntent(s, e);
-      ok(i.times === 6 && i.damage != null, 'Watcher Rays 4x6 after phase');
+      ok(i.times === 5 && i.damage != null, 'Watcher Rays 4x5 after phase');
       ok(atk('beholder', 'rays').times === 4, 'base Rays data untouched');
       const p = s.players[0]; p.hp = 9999; p.maxHp = 9999; p.block = 0;
       E.dispatch(s, { type: 'END_TURN', player: p.uid }); const hits = E.takeEvents(s).filter(x => x.kind === 'hit' && x.source === e.uid);
-      ok(hits.length === 6, 'Rays actually hit 6 times (' + hits.length + ')');
+      ok(hits.length === 5, 'Rays actually hit 5 times (' + hits.length + ')');
     }
     if (id === 'mimic') {
       ok(!(e.intent.move === 'disguise'), 'Mimic intent is not Play Dead after phase');
@@ -73,7 +73,7 @@ for (let seed = 1; seed <= 30; seed++) {
     const k = ev.findIndex(x => x.kind === 'stripBlock' && x.target === p.uid), h = ev.findIndex(x => x.kind === 'hit' && x.source === e.uid && x.target === p.uid);
     ok(k >= 0 && ev[k].amount === 25, 'Rip Apart strips all 25 Block');
     ok(h > k && ev[h].blocked === 0 && ev[h].amount > 0, 'then hits with no Block left');
-    ok(D.MONSTERS.troll.startStatus.regen === 5 && D.MONSTERS.troll.ai.pattern.includes('rip'), 'Troll keeps Regen 5 and uses Rip Apart'); }
+    ok(D.MONSTERS.troll.startStatus.regen === 7 && D.MONSTERS.troll.ai.pattern.includes('rip'), 'Troll keeps Regen 7 and uses Rip Apart'); }
   // Cube Engulf: one Acid into the discard pile, gone after the fight
   { const s = fight('cube', seed, 1), p = s.players[0], e = s.enemies[0];
     e.intent = { move: 'engulf', target: p.uid }; p.hp = p.maxHp;
@@ -97,7 +97,7 @@ for (let seed = 1; seed <= 30; seed++) {
     s.enemies.forEach(x => { if (x !== e) x.intent = { move: 'ward', target: p.uid }; });
     e.intent = { move: 'crossbow', target: p.uid }; p.hp = p.maxHp; delete p.statuses.poisoned;
     E.dispatch(s, { type: 'END_TURN', player: p.uid }); const ev = E.takeEvents(s);
-    ok(ev.some(x => x.kind === 'status' && x.target === p.uid && x.status === 'poisoned' && x.amount === 3), 'Poisoned Bolt: 3 Poisoned'); }
+    ok(ev.some(x => x.kind === 'status' && x.target === p.uid && x.status === 'poisoned' && x.amount === 5), 'Poisoned Bolt: 5 Poisoned'); }
 }
 ok(atk('ghoul', 'hunger').n === 7 && D.MONSTERS.ghoul.moves.hunger.effects[0].drain === true && !D.MONSTERS.ghoul.moves.chill, 'Grave Hunger 7, drains; Grave Chill gone');
 ok(atk('troll', 'rip').n === 11 && D.MONSTERS.troll.moves.rip.effects[0].t === 'stripBlock', 'Rip Apart: strip Block, then 11');
@@ -111,11 +111,11 @@ ok(stat('skeleton') === '26-30 sword:5 rattle:3 bow:2x3', 'skeleton unchanged: '
 ok(stat('skeleton_altar') === '16-19 sword:6 rattle:3 bow:2x3', 'skeleton_altar unchanged: ' + stat('skeleton_altar'));
 ok(stat('ghoul_altar') === '12-13 claw:6 bite:11', 'ghoul_altar unchanged: ' + stat('ghoul_altar'));
 ok(D.ENCOUNTERS.altar_dead_f1.enemies.join() === 'skeleton_altar,skeleton_altar,ghoul_altar', 'F1 altar uses its own copies');
-// ---------- Floor 2 numbers (Nov 3: F2 normal fights raised to ~12-16% HP cost; Surgeon/Sewn and Watcher eased) ----------
+// ---------- Floor 2 numbers (Nov 3: F2 normal fights raised to ~12-16% HP cost; Surgeon/Sewn and Watcher eased; enemy pass Nov 3: Mimic HP/Chomp and Watcher HP/phase Rays trimmed) ----------
 { const want = { ghoul: '22-25 claw:8 bite:13 hunger:7', drow_early: '28-33 crossbow:7 blades:7x2 darkness:6', drow_mage_early: '24-28 bolt:14 fear: ward:',
     drow: '30-36 crossbow:7 blades:7x2 darkness:7', drow_mage: '26-30 bolt:14 fear: ward:', troll: '72-75 claws:7x2 bite:14 hunch: rip:11',
     gelatinous_cube: '78-82 engulf:10 pseudo:12 quiver:', mind_flayer: '66-66 stitch: incision:15 steady:', sewn: '30-30 wait: heavy:15 guard: lurch:9x2',
-    beholder: '298-298 fear:6 rays:4x4 paralyze:5 disint:18 antimagic:', mimic: '119-125 adhesive:13 chomp:31 disguise:' };
+    beholder: '310-310 fear:6 rays:4x4 paralyze:5 disint:18 antimagic:', mimic: '101-106 adhesive:13 chomp:27 disguise:' };
   for (const [id, w] of Object.entries(want)) ok(stat(id) === w, id + ' numbers: ' + stat(id)); }
 for (const enc of D.FLOORS[0].easy.concat(D.FLOORS[0].hard, D.FLOORS[0].elites, [D.FLOORS[0].boss, 'altar_dead_f1'])) for (const id of D.ENCOUNTERS[enc].enemies)
   ok(!D.MONSTERS[id].phase && !Object.values(D.MONSTERS[id].moves).some(mv => mv.effects.some(f => f.t === 'stripBlock' || f.card === 'acid')), 'no Floor 2 mechanics on Floor 1: ' + id);

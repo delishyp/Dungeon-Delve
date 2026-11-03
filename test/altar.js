@@ -10,7 +10,7 @@ ok(S.hp.join() === '16,19' && atk('skeleton_altar', 'sword').n === 6 && atk('ske
 ok(G.hp.join() === '12,13' && atk('ghoul_altar', 'claw').n === 6 && atk('ghoul_altar', 'bite').n === 11, 'ghoul_altar HP 12-13, claw 6, bite 11');
 // the F2 skeleton copy's numbers (base, before depth scaling)
 const S2 = D.MONSTERS.skeleton_altar_f2;
-ok(S2.hp.join() === '32,36' && atk('skeleton_altar_f2', 'sword').n === 6 && atk('skeleton_altar_f2', 'rattle').n === 4 && atk('skeleton_altar_f2', 'bow').n === 3 && atk('skeleton_altar_f2', 'bow').times === 3, 'skeleton_altar_f2 HP 32-36, sword 6, rattle 4, bow 3x3');
+ok(S2.hp.join() === '42,47' && atk('skeleton_altar_f2', 'sword').n === 10 && atk('skeleton_altar_f2', 'rattle').n === 7 && atk('skeleton_altar_f2', 'bow').n === 5 && atk('skeleton_altar_f2', 'bow').times === 3, 'skeleton_altar_f2 HP 42-47, sword 10, rattle 7, bow 5x3');
 ok(S2.moves.rattle.effects.find(f => f.t === 'block').n === 7, 'skeleton_altar_f2 rattle block 7');
 // the shared skeleton (Floor 1 Restless Dead) is untouched
 const S0 = D.MONSTERS.skeleton;

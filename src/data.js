@@ -317,11 +317,11 @@
         bow:    { name: 'Bone Arrows', intent: 'attack', effects: [{ t: 'attack', n: 2, times: 3 }] },
       }, ai: { pattern: ['sword', 'rattle', 'bow'] } },
     // Guardians of the Altar on Floor 2 (Producer, Nov 3 04:58): its own tougher copies, so the shared skeleton (Floor 1) stays as is.
-    skeleton_altar_f2: { name: 'Skeleton', sprite: 'skeleton', variantOf: 'skeleton', hp: [32, 36],
+    skeleton_altar_f2: { name: 'Skeleton', sprite: 'skeleton', variantOf: 'skeleton', hp: [42, 47],
       moves: {
-        sword:  { name: 'Shortsword', intent: 'attack', effects: [{ t: 'attack', n: 6 }] },
-        rattle: { name: 'Rattling Guard', intent: 'attack_defend', effects: [{ t: 'block', n: 7 }, { t: 'attack', n: 4 }] },
-        bow:    { name: 'Bone Arrows', intent: 'attack', effects: [{ t: 'attack', n: 3, times: 3 }] },
+        sword:  { name: 'Shortsword', intent: 'attack', effects: [{ t: 'attack', n: 10 }] },
+        rattle: { name: 'Rattling Guard', intent: 'attack_defend', effects: [{ t: 'block', n: 7 }, { t: 'attack', n: 7 }] },
+        bow:    { name: 'Bone Arrows', intent: 'attack', effects: [{ t: 'attack', n: 5, times: 3 }] },
       }, ai: { pattern: ['sword', 'rattle', 'bow'] } },
     gnoll: { name: 'Gnoll', hp: [35, 42],
       moves: {
@@ -369,7 +369,7 @@
       }, ai: { weights: { claw: 45, bite: 55 }, noRepeat: true } },
     drow: { name: 'Drow Warrior', hp: [30, 36],
       moves: {
-        crossbow: { name: 'Poisoned Bolt', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'poisoned', n: 3, to: 'target' }] },
+        crossbow: { name: 'Poisoned Bolt', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'poisoned', n: 5, to: 'target' }] },
         blades:   { name: 'Twin Blades', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },
         darkness: { name: 'Faerie Darkness', intent: 'attack_defend', effects: [{ t: 'block', n: 10 }, { t: 'attack', n: 7 }] },
       }, ai: { opener: 'crossbow', pattern: ['blades', 'darkness', 'crossbow'] } },
@@ -392,7 +392,7 @@
         fear:  { name: 'Spider Curse', intent: 'debuff', effects: [{ t: 'status', status: 'frightened', n: 2, to: 'target' }, { t: 'status', status: 'prone', n: 1, to: 'target' }] },
         ward:  { name: 'Arcane Ward', intent: 'buff', effects: [{ t: 'block', n: 8, }, { t: 'status', status: 'might', n: 2, to: 'allies' }] },
       }, ai: { opener: 'fear', pattern: ['bolt', 'ward', 'bolt', 'fear'] } },
-    troll: { name: 'Troll', hp: [72, 75], startStatus: { regen: 5 },
+    troll: { name: 'Troll', hp: [72, 75], startStatus: { regen: 7 },
       moves: {
         claws: { name: 'Claw Flurry', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },
         bite:  { name: 'Bite', intent: 'attack', effects: [{ t: 'attack', n: 14 }] },
@@ -401,7 +401,7 @@
       }, ai: { pattern: ['claws', 'bite', 'hunch', 'rip'] } },
     gelatinous_cube: { name: 'Gelatinous Cube', hp: [78, 82],
       moves: {
-        engulf: { name: 'Engulf', intent: 'attack_debuff', effects: [{ t: 'attack', n: 10 }, { t: 'status', status: 'poisoned', n: 4, to: 'target' }, { t: 'addCards', card: 'acid', n: 1, to: 'discard' }] },
+        engulf: { name: 'Engulf', intent: 'attack_debuff', effects: [{ t: 'attack', n: 10 }, { t: 'status', status: 'poisoned', n: 6, to: 'target' }, { t: 'addCards', card: 'acid', n: 1, to: 'discard' }] },
         pseudo: { name: 'Pseudopod', intent: 'attack', effects: [{ t: 'attack', n: 12 }] },
         quiver: { name: 'Quiver', intent: 'defend', effects: [{ t: 'block', n: 15 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
       }, ai: { pattern: ['pseudo', 'engulf', 'quiver'] } },
@@ -420,14 +420,14 @@
         guard: { name: 'Stand Guard', intent: 'buff', effects: [{ t: 'blockLeader', leader: 'mind_flayer', n: 6 }] },
         lurch: { name: 'Lurch', intent: 'attack', effects: [{ t: 'attack', n: 9, times: 2 }] },
       }, ai: { opener: 'wait', pattern: ['heavy', 'guard', 'lurch'] } },
-    mimic: { name: 'Mimic', hp: [119, 125], elite: true,
+    mimic: { name: 'Mimic', hp: [101, 106], elite: true,
       moves: {
         adhesive: { name: 'Adhesive Grip', intent: 'attack_debuff', effects: [{ t: 'attack', n: 13 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
-        chomp:    { name: 'Chomp', intent: 'attack', effects: [{ t: 'attack', n: 31 }] },
+        chomp:    { name: 'Chomp', intent: 'attack', effects: [{ t: 'attack', n: 27 }] },
         disguise: { name: 'Play Dead', intent: 'defend', effects: [{ t: 'block', n: 20 }] },
       }, ai: { opener: 'disguise', pattern: ['adhesive', 'chomp', 'disguise'] },
       phase: { at: 0.5, status: { might: 2 }, pattern: ['adhesive', 'chomp'] } },
-    beholder: { name: 'The Watcher', hp: [298, 298], boss: true,
+    beholder: { name: 'The Watcher', hp: [310, 310], boss: true,
       moves: {
         fear:     { name: 'I Saw That', intent: 'attack_debuff', effects: [{ t: 'attack', n: 6 }, { t: 'status', status: 'frightened', n: 3, to: 'target' }] },
         rays:     { name: 'Every Eye Opens', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 4 }] },
@@ -435,7 +435,7 @@
         disint:   { name: 'Seen Through', intent: 'attack', effects: [{ t: 'attack', n: 18 }] },
         antimagic:{ name: 'She Watches', intent: 'buff', effects: [{ t: 'block', n: 20 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
       }, ai: { pattern: ['fear', 'rays', 'disint', 'paralyze', 'antimagic'] },
-      phase: { at: 0.5, status: { might: 2 }, moves: { rays: { attack: { times: 6 } } } } },
+      phase: { at: 0.5, status: { might: 2 }, moves: { rays: { attack: { times: 5 } } } } },
   };
 
   // Encounters by floor and node type. `easy` used on the first rows, `hard` later.
