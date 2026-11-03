@@ -123,6 +123,76 @@
     return `<div class="intent ${i.kind}" data-tip="${esc(e.name)} intends to use <b>${esc(i.name)}</b>: ${parts.join(', ')}.">${ic} ${text}</div>`;
   }
 
+  // ---------- action poses (Darkest Dungeon-style swap) ----------
+  // Pose files share one canvas and feet anchor per character (heroes 887x900, feet at 443,891), so swapping the
+  // <img> src keeps the figure on the same foot line. Heroes: hero_<class>_<pose> (idle, attack, defend, cast, hit).
+  // Enemies: enemy_<id>_<pose> (idle, attack, hit), used only when enemy_<id>_idle exists (same canvas);
+  // a missing attack/hit falls back to that idle. Without pose files the legacy single sprite is drawn.
+  const POSES = ['idle', 'attack', 'defend', 'cast', 'hit'];
+  const POSE_MS = 520;                 // how long a pose holds before returning to idle (normal speed)
+  const BEAT_ZOOM = 1.05, SHAKE_PX = 3, SHAKE_MS = 220;
+  // Hero pose canvases are drawn at one scale for every class: the 752-px idle figure stays about as tall as the old Barbarian.
+  const HERO_POSE_H = 263;
+  const poseSetCache = {};
+  function poseSet(u) {
+    const base = u.side === 'enemy' ? 'enemy_' + (D.MONSTERS[u.monsterId].sprite || u.monsterId) : 'hero_' + u.heroId;
+    if (base in poseSetCache) return poseSetCache[base];
+    const idle = A[base + '_idle'];
+    return (poseSetCache[base] = idle ? Object.fromEntries(POSES.map(p => [p, A[base + '_' + p] || idle])) : null);
+  }
+  ui.poses = {};
+  const curPose = (uid) => { const p = ui.poses[uid]; return p && performance.now() < p.until ? p.pose : 'idle'; };
+  const preloaded = [];
+  function preloadPoses() {   // decode every pose up front so the first swap never flashes
+    for (const k of Object.keys(A)) if (/^(hero|enemy)_.+_(idle|attack|defend|cast|hit)$/.test(k)) {
+      const im = new Image(); im.decoding = 'async'; im.src = A[k]; if (im.decode) im.decode().catch(() => {}); preloaded.push(im);
+    }
+  }
+  function setPose(uid, pose) {
+    if (ui.fast || !G) return false;
+    const u = E.find(G, uid), set = u && poseSet(u);
+    if (!set || (u.side === 'enemy' && pose !== 'idle' && set[pose] === set.idle)) return false;
+    const sp = ST.get('speed'), hold = POSE_MS * (sp === 'fast' ? 0.8 : sp === 'instant' ? 0.6 : 1);
+    const prev = ui.poses[uid]; if (prev) clearTimeout(prev.timer);
+    const el = spriteOf(uid); if (el && el.getAttribute('src') !== set[pose]) el.src = set[pose];
+    ui.poses[uid] = { pose, until: performance.now() + hold, timer: setTimeout(() => {
+      delete ui.poses[uid]; const e2 = spriteOf(uid); if (e2 && e2.getAttribute('src') !== set.idle) e2.src = set.idle; }, hold) };
+    return true;
+  }
+  const cardPose = (id) => { const def = D.CARDS[id]; if (!def) return null;
+    if (def.type === 'attack') return 'attack';
+    if (def.type === 'power') return 'cast';
+    return D.frameOf(def, id) === 'defense' ? 'defend' : 'cast'; };
+  // Action beat: the battlefield zooms slightly toward whoever acts, then eases back. Re-applied after a re-render.
+  function beat(uids) {
+    if (ui.fast || reduced()) return;
+    const f = $app.querySelector('.field'); if (!f) return;
+    const fr = f.getBoundingClientRect(), s = (parseFloat(getComputedStyle(f).scale) || 1) * Z();
+    let x = 0, y = 0, n = 0;
+    for (const id of uids) { const sp = spriteOf(id); if (!sp) continue; const r = sp.getBoundingClientRect(); x += r.left + r.width / 2; y += r.top + r.height * 0.6; n++; }
+    if (!n) return;
+    const sp = ST.get('speed');
+    ui.beat = { ox: (x / n - fr.left) / s, oy: (y / n - fr.top) / s, t0: performance.now(), dur: POSE_MS * (sp === 'fast' ? 0.8 : sp === 'instant' ? 0.6 : 1) };
+    applyBeat();
+  }
+  function applyBeat() {
+    const b = ui.beat, f = $app.querySelector('.field');
+    if (!b || !f) return;
+    const t = performance.now() - b.t0; if (t >= b.dur) { ui.beat = null; return; }
+    if (ui.beatAnim) ui.beatAnim.cancel();
+    f.style.transformOrigin = `${b.ox.toFixed(1)}px ${b.oy.toFixed(1)}px`;
+    ui.beatAnim = f.animate([{ scale: 1 }, { scale: BEAT_ZOOM, offset: 0.25 }, { scale: BEAT_ZOOM, offset: 0.55 }, { scale: 1 }],
+      { duration: b.dur, easing: 'ease-out' });
+    ui.beatAnim.currentTime = t;
+  }
+  function shakeSmall() {   // a few px; the field sits inside the zoomed #app, so px are already scaled by Z
+    if (ui.fast || reduced() || !ST.get('shake')) return;
+    const f = $app.querySelector('.field'); if (!f) return;
+    const k = SHAKE_PX;
+    f.animate([{ translate: '0 0' }, { translate: `${-k}px ${k * 0.6}px` }, { translate: `${k}px ${-k * 0.6}px` },
+      { translate: `${-k * 0.6}px ${-k * 0.3}px` }, { translate: `${k * 0.3}px ${k * 0.3}px` }, { translate: '0 0' }], { duration: SHAKE_MS, easing: 'linear' });
+  }
+
   // idle "breathing" keeps its phase across re-renders: the delay is derived from the clock
   function idleStyle(u, boss) {
     let h = 0; for (const ch of u.uid + (u.monsterId || u.heroId)) h = (h * 31 + ch.charCodeAt(0)) % 1000;
@@ -132,16 +202,16 @@
   }
   function unitHTML(u, isEnemy) {
     const def = isEnemy ? D.MONSTERS[u.monsterId] : D.HEROES[u.heroId];
-    const key = isEnemy ? (def.sprite || u.monsterId) : u.heroId;
+    const key = isEnemy ? (def.sprite || u.monsterId) : u.heroId, pset = poseSet(u);
     const sel = ui.selected && P().hand.find(c => c.uid === ui.selected);
     const dead = u.hp <= 0;
     const targetable = isEnemy && !dead && sel && E.needsTarget(sel);
     const pct = Math.max(0, 100 * u.hp / u.maxHp);
-    const h = Math.round((D.SPRITE_H[isEnemy ? u.monsterId : u.heroId] || 170) * (innerWidth >= 1000 && !TOUCH ? 1.25 : 1));   // desktop: bigger, StS-like figures
+    const h = Math.round((!isEnemy && pset ? HERO_POSE_H : D.SPRITE_H[isEnemy ? u.monsterId : u.heroId] || 170) * (innerWidth >= 1000 && !TOUCH ? 1.25 : 1));   // desktop: bigger, StS-like figures
     const goneCls = dead ? (ui.deadShown[u.uid] ? 'dead gone' : '') : '';
     return `<div class="unit ${isEnemy ? 'enemy' : 'player'} ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${goneCls} ${targetable ? 'targetable' : ''}" data-uid="${u.uid}" style="--sh:${h}px">
       ${isEnemy && !dead ? intentHTML(u) : ''}
-      <div class="sprite-wrap"><div class="idle" style="${idleStyle(u, def.boss)}"><img class="sprite" src="${img(key)}" alt="${esc(u.name)}" draggable="false"></div><div class="shadow"></div></div>
+      <div class="sprite-wrap"><div class="idle" style="${idleStyle(u, def.boss)}"><img class="sprite" src="${pset ? pset[curPose(u.uid)] : img(key)}" alt="${esc(u.name)}" draggable="false"></div><div class="shadow"></div></div>
       <div class="plate"><div class="uname">${esc(u.name)}${def.elite ? ' <span class="tag">Elite</span>' : ''}${def.boss ? ' <span class="tag">Boss</span>' : ''}</div>
       <div class="hpbar ${u.block ? 'blocked' : ''}">${u.block ? `<div class="blockbadge" data-tip="${esc(D.KEYWORDS.Block)}">${u.block}</div>` : ''}
         <div class="fill" style="width:${pct}%"></div><div class="txt">${u.hp} / ${u.maxHp}</div></div>
@@ -730,6 +800,7 @@
     if (ui.screen === 'title' && !ui.firstMenuAt) ui.firstMenuAt = performance.now();   // timings for the update tests
     if (ui.disp && ui.disp.pending > 0) html += dispPendingHTML();
     $app.innerHTML = html;
+    if (ui.beat) applyBeat();
     markSeen();
     document.body.classList.toggle('is-modal', !!(ui.paused || ui.settingsTab || ui.confirm || ui.modal));
     $tip.style.display = 'none';
@@ -850,10 +921,12 @@
   function showEvent(ev, live, quiet) {
     if (ev.kind === 'hit') {
       const big = ev.amount >= 12;
-      if (ev.amount > 0) { floatAt(ev.target, '-' + ev.amount, big ? 'dmg big' : 'dmg'); anim(wrapOf(ev.target), 'hit'); anim(spriteOf(ev.target), 'flash'); if (!quiet) sfx(big ? 'bigHit' : 'hit'); if (big && !reduced() && ST.get('shake')) anim($app, 'shake-screen'); }
+      if (ev.amount > 0) { setPose(ev.target, 'hit'); floatAt(ev.target, '-' + ev.amount, big ? 'dmg big' : 'dmg'); anim(wrapOf(ev.target), 'hit'); anim(spriteOf(ev.target), 'flash'); if (!quiet) sfx(big ? 'bigHit' : 'hit'); if (big && !reduced() && ST.get('shake')) anim($app, 'shake-screen'); else shakeSmall(); }
       else if (ev.blocked > 0) { floatAt(ev.target, 'Blocked', 'zero'); anim(spriteOf(ev.target), 'glow-block'); sfx('blocked'); }
       if (live) updateBar(ev.target, ev.hp, ev.block);
-    } else if (ev.kind === 'cardPlayed') { const cs = CARD_SOUNDS[ev.card]; sfx(cs && S.has && S.has(cs.sound) ? cs.sound : 'card'); if (D.CARDS[ev.card].type === 'attack') lunge(ev.source); }
+    } else if (ev.kind === 'cardPlayed') { const cs = CARD_SOUNDS[ev.card]; sfx(cs && S.has && S.has(cs.sound) ? cs.sound : 'card'); if (D.CARDS[ev.card].type === 'attack') lunge(ev.source);
+      const pose = cardPose(ev.card);
+      if (pose) { setPose(ev.source, pose); beat(pose === 'attack' ? [ev.source].concat(ev.target ? [ev.target] : E.livingEnemies(G).map(e => e.uid)) : [ev.source]); } }
     else if (ev.kind === 'block') { sfx('block'); floatAt(ev.target, '+' + ev.amount + ' Block', 'blk'); anim(spriteOf(ev.target), 'glow-block'); if (live) updateBar(ev.target, ev.hp, ev.block); }
     else if (ev.kind === 'heal' && ev.amount > 0) { sfx('heal'); floatAt(ev.target, '+' + ev.amount, 'heal'); anim(spriteOf(ev.target), 'glow-heal'); if (live) updateBar(ev.target, ev.hp, ev.block); }
     else if (ev.kind === 'status') {
@@ -871,7 +944,7 @@
     else if (ev.kind === 'enemyAct') {
       const el = unitEl(ev.source); if (!el) return;
       const mv = D.MONSTERS[E.find(G, ev.source).monsterId].moves;
-      if (Object.values(mv).some(m => m.name === ev.name && m.effects.some(f => f.t === 'attack'))) lunge(ev.source);
+      if (Object.values(mv).some(m => m.name === ev.name && m.effects.some(f => f.t === 'attack'))) { lunge(ev.source); setPose(ev.source, 'attack'); beat([ev.source].concat(G.players.filter(p => p.hp > 0).map(p => p.uid))); }
       const m = document.createElement('div'); m.className = 'movename'; m.textContent = ev.name; el.appendChild(m);
     }
   }
@@ -1274,6 +1347,7 @@
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
   if (REDUCED) document.body.classList.add('reduced');
+  (window.requestIdleCallback || setTimeout)(preloadPoses);
   applySettings();
   ST.onChange(() => applySettings());
   $app.addEventListener('change', (e) => {   // display dropdowns
@@ -1299,7 +1373,7 @@
   });
   document.addEventListener('change', (e) => { if (e.target.matches && e.target.matches('[data-vol]')) sfx('click'); });
   applyScale();
-  window.__game = { get scale() { return zCache; }, get state() { return G; }, act, clickCard, startGame, ui, render, tell, playLine };
+  window.__game = { get scale() { return zCache; }, get state() { return G; }, act, clickCard, startGame, ui, render, tell, playLine, setPose, beat };
   render();
   // the desktop app swapped in a new window (switching to / from borderless): pick up right where the player was
   if (IS_APP && /(^|[?&])resume=1/.test(location.search)) {
