@@ -685,11 +685,13 @@ body.is-modal #fx .speech,body.is-modal #fx .dmcaption{display:none}
 .deckbtn{padding:4px 14px;border-radius:10px}
 .potions{gap:4px}.topbar .potslot{width:48px;height:58px;border-radius:10px}.topbar .flask{width:36px;height:48px}
 .topbar .tbbtns{gap:10px}.topbar .tbbtn{width:52px;height:52px}.topbar .tbbtn .vi{width:30px;height:30px}
-.topbar .relics{gap:6px;flex-wrap:nowrap;flex:0 1 auto;min-width:0}
-.topbar .relics>span{flex:0 1 88px;min-width:30px;display:flex}
+.topbar .relics{gap:6px;flex-wrap:wrap;flex:0 1 auto;min-width:0;align-content:center;padding:2px 0}
+.topbar .relics>span{flex:0 0 88px;width:88px;display:flex}
+.topbar .relics.small>span{flex-basis:72px;width:72px}
 .topbar .relics .medal{width:100%;height:auto;aspect-ratio:1}
 .topbar .floorname{white-space:nowrap;flex:0 0 auto;padding-left:8px}
 .topbar .title{white-space:nowrap;flex:0 0 auto}
 .medal.painted{background:none;box-shadow:none;border-radius:50%}
 .medal.painted>img{width:100%;height:100%;display:block;filter:none}
 }
+.topbar.many .title{display:none}

@@ -9,7 +9,7 @@
   let cfg = { muted: false, vol: 0.6, music: 0.7, sfx: 0.9 };   // v2.1 saves only had {muted, vol}: the new fields default in
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* no storage */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* ignore */ } };
-  let ctx = null, master = null, sfxBus = null, musBus = null, noiseBuf = null, disabled = false;
+  let ctx = null, master = null, sfxBus = null, musBus = null, fileBus = null, noiseBuf = null, disabled = false;
 
   function init() {
     if (ctx || disabled) return !!ctx;
@@ -19,6 +19,7 @@
     const comp = ctx.createDynamicsCompressor(); comp.connect(master);
     sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9; sfxBus.connect(comp);
     musBus = ctx.createGain(); musBus.gain.value = 0.32; musBus.connect(comp);
+    fileBus = ctx.createGain(); fileBus.connect(master);   // recorded music: own mastered level, no compressor
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     applyVol();
@@ -30,8 +31,8 @@
     const files = window.AUDIO_FILES || {};
     for (const [key, url] of Object.entries(files)) {
       const name = key.replace(/^ui_/, '');
-      fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(buf => { buffers[name] = buf; })
-        .catch(() => { /* keep the synthesized fallback */ });
+      fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(buf => { buffers[name] = buf; if (TRACK_OF[name] && TRACK_OF[name] === wanted) music(wanted, true); })
+        .catch(() => { const k = TRACK_OF[name]; if (k) { delete TRACKS[k]; if (k === wanted) music(wanted, true); } /* keep the synthesized fallback */ });
     }
   }
   function playFile(buf, t0) {
@@ -41,7 +42,7 @@
     if (!master) return;
     const t = ctx.currentTime;
     master.gain.setTargetAtTime(cfg.muted ? 0 : cfg.vol, t, 0.03);
-    sfxBus.gain.setTargetAtTime(cfg.sfx, t, 0.03); musBus.gain.setTargetAtTime(0.42 * cfg.music, t, 0.05);
+    sfxBus.gain.setTargetAtTime(cfg.sfx, t, 0.03); musBus.gain.setTargetAtTime(0.42 * cfg.music, t, 0.05); fileBus.gain.setTargetAtTime(cfg.music, t, 0.05);
   }
   const unlock = () => { if (init() && ctx.state === 'suspended') ctx.resume(); if (pendingMusic !== undefined) { const m = pendingMusic; pendingMusic = undefined; music(m); } };
   ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, (e) => { if (e.isTrusted) unlock(); }, { capture: true }));
@@ -113,16 +114,53 @@
       nextT += eighth; step++;
     }
   }
-  function music(which) {
+  // ---- recorded music (approved tracks in assets/audio/game): intro once, then the loop repeats seamlessly ----
+  // once: the intro plays only the first time (The Rim's launch build-up); otherwise every time the track starts (boss fights).
+  const TRACKS = {
+    menu: { intro: 'music_rim_intro', loop: 'music_rim_loop', once: true },
+    'boss:crier': { intro: 'music_boss_crier_intro', loop: 'music_boss_crier_loop' },
+    'boss:owlbear': { intro: 'music_boss_beast_intro', loop: 'music_boss_beast_loop' },
+  };
+  const TRACK_OF = {}; for (const [k, t] of Object.entries(TRACKS)) { TRACK_OF[t.intro] = k; TRACK_OF[t.loop] = k; }
+  const introDone = {};
+  let wanted, playing = null;   // playing: { key, gain, srcs }
+  function stopFile(fade = 0.8) {
+    if (!playing) return;
+    const p = playing, t = ctx.currentTime; playing = null;
+    p.gain.gain.cancelScheduledValues(t); p.gain.gain.setValueAtTime(p.gain.gain.value, t); p.gain.gain.linearRampToValueAtTime(0, t + fade);
+    p.srcs.forEach(s => { try { s.stop(t + fade + 0.05); } catch (e) {} });
+  }
+  function startFile(key) {
+    const tr = TRACKS[key], loopBuf = buffers[tr.loop], introBuf = buffers[tr.intro];
+    const useIntro = introBuf && !(tr.once && introDone[key]);
+    if (!loopBuf || (!introBuf && (window.AUDIO_FILES || {})[tr.intro] && !(tr.once && introDone[key]))) return false;   // still decoding: wait
+    const g = ctx.createGain(); g.connect(fileBus);
+    const t0 = ctx.currentTime + 0.05, srcs = [];
+    g.gain.setValueAtTime(0, ctx.currentTime); g.gain.linearRampToValueAtTime(1, t0 + (useIntro ? 0.05 : 1.2));
+    let tl = t0;
+    if (useIntro) { const a = ctx.createBufferSource(); a.buffer = introBuf; a.connect(g); a.start(t0); srcs.push(a); tl = t0 + introBuf.duration; introDone[key] = true; }
+    const l = ctx.createBufferSource(); l.buffer = loopBuf; l.loop = true; l.connect(g); l.start(tl); srcs.push(l);
+    playing = { key, gain: g, srcs };
+    return true;
+  }
+  function music(which, retry) {
     if (!ctx) { pendingMusic = which; return; }
-    const s = which == null ? null : (SONGS[which] || SONGS[0]);
-    if (s === song) return;
-    song = s; step = 0; nextT = ctx.currentTime + 0.1;
+    if (retry && which !== wanted) return;
+    if (!retry && which === wanted) return;
+    wanted = which;
+    const key = which == null ? null : TRACKS[which] ? which : null;
+    if (playing && playing.key !== key) stopFile();
+    if (key && playing && playing.key === key) return;
+    if (key) { song = null; if (timer) { clearInterval(timer); timer = null; } startFile(key); return; }   // silent until decoded
+    const syn = which == null ? null : (SONGS[which] || (String(which).startsWith('boss') ? SONGS.boss : SONGS[0]));
+    if (syn === song) return;
+    song = syn; step = 0; nextT = ctx.currentTime + 0.1;
     if (timer) { clearInterval(timer); timer = null; }
     if (song) timer = setInterval(sched, 90);
   }
   window.Sfx = {
     play, music, has: (name) => !!buffers[name],
+    get nowPlaying() { return playing ? playing.key : song ? 'synth:' + wanted : null; },
     get muted() { return cfg.muted; }, get volume() { return cfg.vol; },
     setMuted(m) { cfg.muted = !!m; save(); applyVol(); },
     setVolume(v) { cfg.vol = Math.max(0, Math.min(1, v)); if (cfg.vol > 0) cfg.muted = false; save(); applyVol(); },

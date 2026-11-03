@@ -109,7 +109,7 @@
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 10 }] },
     relentless_rage: { cls: 'barbarian', name: 'Relentless Rage', cost: 1, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
       desc: 'Heal {0} HP. Gain {1} Rage. Exhaust.', effects: [{ t: 'heal', n: 6 }, { t: 'status', status: 'rage', n: 2, to: 'self' }] },
-    bear_totem: { cls: 'barbarian', name: 'Totem of the Bear', cost: 1, type: 'power', rarity: 'uncommon', target: 'none', exhaust: true,
+    bear_totem: { cls: 'barbarian', name: 'Bearskin', cost: 1, type: 'power', rarity: 'uncommon', target: 'none', exhaust: true,
       desc: 'Gain {0} Armor. Exhaust.', effects: [{ t: 'status', status: 'armor', n: 3, to: 'self' }] },
     retaliation: { cls: 'barbarian', name: 'Retaliation', cost: 1, type: 'power', rarity: 'uncommon', target: 'none', exhaust: true,
       desc: 'Gain {0} Retaliate. Exhaust.', effects: [{ t: 'status', status: 'thorns', n: 3, to: 'self' }] },
@@ -351,9 +351,9 @@
   };
 
   const FLOORS = [
-    { name: 'Floor 1', easy: ['lone_goblin', 'rat_swarm', 'kobolds'], hard: ['goblin_pack', 'skeletons', 'gnolls'],
+    { name: 'The Bottom of the Fall', slainPrep: 'at', easy: ['lone_goblin', 'rat_swarm', 'kobolds'], hard: ['goblin_pack', 'skeletons', 'gnolls'],
       elites: ['bugbear', 'ogre'], boss: 'owlbear', gold: { fight: [10, 18], elite: [28, 36], boss: [60, 75] } },
-    { name: 'Floor 2', easy: ['ghouls', 'drow_patrol'], hard: ['troll', 'cube', 'drow_patrol'],
+    { name: 'The Hanging Town', slainPrep: 'in', easy: ['ghouls', 'drow_patrol'], hard: ['troll', 'cube', 'drow_patrol'],
       elites: ['mind_flayer', 'mimic'], boss: 'beholder', gold: { fight: [16, 24], elite: [36, 46], boss: [100, 120] } },
   ];
 

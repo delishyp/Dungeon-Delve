@@ -66,7 +66,9 @@
   const arrow = () => '<svg class="vi arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l12 8-12 8z"/></svg>';
   const medal = (inner, cls = '') => `<span class="medal ${cls}">${inner}</span>`;
   // Painted relic tiles (assets/relic_<id>.webp) already carry their own disc, outline and shadow: drawn as-is, no CSS medal.
-  const relicMedal = (id, cls = '') => A['relic_' + id] ? `<span class="medal painted ${cls}"><img src="${A['relic_' + id]}" alt="" draggable="false"></span>` : medal(I(id, 'relic'), cls);
+  // Top-bar relics are 88 reference px; use Palette's hand-built 73/130 px tiles when they match the real pixel size.
+  const relicSrc = (id, px) => { for (const n of [73, 130]) if (px && Math.abs(px - n) / n < 0.12 && A['relic_' + id + '_' + n]) return A['relic_' + id + '_' + n]; return A['relic_' + id]; };
+  const relicMedal = (id, cls = '', px) => A['relic_' + id] ? `<span class="medal painted ${cls}"><img src="${relicSrc(id, px)}" alt="" draggable="false"></span>` : medal(I(id, 'relic'), cls);
   const statusIcon = (k) => I(k, 'st', window.Icons.STATUS_COLOR[k]);
 
   // ---------- cards ----------
@@ -163,13 +165,13 @@
   }
   function topbarHTML() {
     const p = P();
-    return `<div class="topbar"><span class="title">Dungeon Delve</span>
+    return `<div class="topbar${p.relics.length > 6 ? ' many' : ''}"><span class="title">Dungeon Delve</span>
       <span class="stat hero" data-tip="${esc(D.HEROES[p.heroId].blurb)}"><img src="${img(p.heroId)}" alt="">${esc(p.name)}</span>
       <span class="stat hp" data-tip="Your hit points. They carry over between fights. If they reach 0, the run is over.">${I('heart')} ${p.hp}/${p.maxHp}</span>
       <span class="stat gold" data-tip="Gold: spend it at merchants (shops and some events).">${I('coin')} ${p.gold}</span>
       <span class="stat deckbtn" data-act="pile" data-pile="deck" data-tip="View your whole deck">${I('deck')} ${p.deck.length}</span>
       ${potionsHTML(p)}
-      <span class="relics">${p.relics.map(r => `<span data-tip="${esc(relicTip(r))}">${relicMedal(r)}</span>`).join('')}</span>
+      <span class="relics${p.relics.length > 9 ? ' small' : ''}">${p.relics.map(r => `<span data-tip="${esc(relicTip(r))}">${relicMedal(r, '', (p.relics.length > 9 ? 72 : 88) * Z() * (window.devicePixelRatio || 1))}</span>`).join('')}</span>
       <span class="stat floorname">${esc(D.FLOORS[G.floor].name)}</span>
       <span class="tbbtns"><button class="tbbtn" data-act="qmute" data-tip="${S.muted ? 'Sound is off: click to unmute' : 'Mute sound'}">${I(S.muted ? 'mute' : 'speaker')}</button><button class="tbbtn" data-act="pause" data-tip="Menu &amp; settings (Esc)">${I('gear')}</button></span></div>`;
   }
@@ -682,7 +684,7 @@
     return `<div class="overlay"><div class="panel scene">${win ? `<img class="scene-art" src="${img('ev_treasure')}" alt="">` : `<img class="hero-dead" src="${img(p.heroId)}" alt="">`}
       <h1>${esc(fill(win ? 'You Climbed Out' : 'You Have Fallen'))}</h1>
       <p>${win ? `${esc(fill('{' + p.heroId + '_name}'))} conquered the dungeon with ${p.hp}/${p.maxHp} HP, ${p.gold} gold, ${p.relics.length} relics and a ${p.deck.length}-card deck.`
-               : `Slain on ${esc(D.FLOORS[G.floor].name)} by ${esc(D.ENCOUNTERS[G.encounter].name.replace(/^The /, 'the '))}, after ${G.stats.fights} victories and ${G.stats.events} strange encounters.`}</p>
+               : `Slain ${D.FLOORS[G.floor].slainPrep || 'on'} ${esc(D.FLOORS[G.floor].name.replace(/^The /, 'the '))} by ${esc(D.ENCOUNTERS[G.encounter].name.replace(/^The /, 'the '))}, after ${G.stats.fights} victories and ${G.stats.events} strange encounters.`}</p>
       <div class="row"><button class="btn" data-act="classes">${win ? 'Play Again' : 'Try Again'}</button><button class="btn ghost" data-act="title">Main Menu</button></div></div></div>`;
   }
   function pileHTML() {
@@ -731,7 +733,7 @@
     $tip.style.display = 'none';
     if (G && ui.screen === 'game' && G.phase === 'map') scrollMap();
     layoutHand(true);
-    try { S.music(!G || ui.screen !== 'game' ? 'menu' : (G.node === 'boss' && (G.phase === 'combat' || ui.holdCombat)) ? 'boss' : G.floor); } catch (e) {}
+    try { S.music(!G || ui.screen !== 'game' ? 'menu' : (G.node === 'boss' && (G.phase === 'combat' || ui.holdCombat)) ? 'boss:' + G.encounter : G.floor); } catch (e) {}
   }
 
   // ---------- StS-style fanned hand ----------
