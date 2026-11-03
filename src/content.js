@@ -54,7 +54,7 @@
   // ---------- new relics (special ones never appear randomly) ----------
   Object.assign(D.RELICS, {
     smiling_mask:     { name: 'Mask of the Smiling Merchant', hook: 'passive', effects: [], desc: 'Shop prices are 20% lower.' },
-    illithid_tadpole: { name: 'The Worm Behind the Eye', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane (+2 damage per hit). It whispers to you…' },
+    illithid_tadpole: { name: 'The Worm Behind the Eye', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane Focus. It whispers to you...' },
     tymora_coin:      { name: "Brennick's Penny", hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
     // Burn It Down relic (keyword_use_v2 part 2), Barbarian only (Producer 11:41): never offered to another hero (relicInPool).
     ash_bracer:       { name: 'Ash-Caked Bracer', cls: 'barbarian', hook: 'firstExhaustEachTurn', effects: [{ t: 'draw', n: 1 }], desc: 'The first time a card Exhausts each turn, draw 1 card.' },

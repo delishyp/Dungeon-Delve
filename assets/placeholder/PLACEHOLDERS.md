@@ -34,3 +34,4 @@ To swap one out: add the real `assets/card_<card id>.webp` (it wins automaticall
 | `placeholder_ember_hide.webp` | `ember_hide` | Ember Hide: barbarian common skill card illustration (defense frame) |
 | `placeholder_blood_in_mouth.webp` | `blood_in_mouth` | Blood in the Mouth: barbarian common attack card illustration (attack frame) |
 | `placeholder_last_one_standing.webp` | `last_one_standing` | Last One Standing: barbarian uncommon skill card illustration (buff frame) |
+| `placeholder_fireball_starter.webp` | `fireball_starter` | Fireball: wizard starter attack card illustration (attack frame) |
