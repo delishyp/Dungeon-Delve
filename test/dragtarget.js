@@ -59,14 +59,15 @@ const ok = (c, m) => { n++; if (!c) fails.push(m); };
         E.dispatch = function (s, act) { if (act.type === 'PLAY_CARD') sent = act.target; return d0.apply(this, arguments); };
         drag(document.querySelector('.hand .card[data-card="dz"]'), at.x, at.y); await tick(); E.dispatch = d0;
         res.push(['corpse', sent !== a.uid, 'a drop on a fresh corpse sent it as the target']); }
-      // the demo.1 selftest miss: a 0-cost card under No Wasted Motion with empty piles plays, reshuffles itself and draws itself
-      // straight back, so the same card is in hand again. The play still counts (the selftest now checks plays, not the hand).
+      // the demo.1 selftest miss: a 0-cost card under No Wasted Motion with empty piles used to reshuffle itself and draw itself
+      // straight back. Since Producer 19:27 the card reaches the discard pile only after the draw, so it stays out of the hand;
+      // the selftest counts plays, not the hand, either way.
       { E.startEncounter(G(), 'rat_swarm'); G().phase = 'combat'; E.takeEvents(G()); ui.deadShown = {};
         const p = G().players[0]; p.energy = 9; p.hand = [{ id: 'no_wasted_motion', uid: 'nw' }]; E.dispatch(G(), { type: 'PLAY_CARD', player: p.uid, card: 'nw' }); E.takeEvents(G());
         p.hand = [{ id: 'hilt_to_the_teeth', uid: 'self' }]; p.draw = []; p.discard = []; g.render(); await tick();
         const foe = E.targetableEnemies(G())[0], at = body(document.querySelector(`.unit[data-uid="${foe.uid}"] .sprite`)), n0 = p.turnFx.played || 0, hp0 = foe.hp;
         drag(document.querySelector('.hand .card[data-card="self"]'), at.x, at.y); await tick();
-        res.push(['self-draw', p.turnFx.played === n0 + 1 && foe.hp < hp0 && p.hand.some(c => c.uid === 'self'), `self-draw: played ${p.turnFx.played - n0}, hp ${hp0}->${foe.hp}, back in hand ${p.hand.some(c => c.uid === 'self')}`]); }
+        res.push(['self-draw', p.turnFx.played === n0 + 1 && foe.hp < hp0 && !p.hand.some(c => c.uid === 'self') && p.discard.some(c => c.uid === 'self'), `self-draw: played ${p.turnFx.played - n0}, hp ${hp0}->${foe.hp}, back in hand ${p.hand.some(c => c.uid === 'self')}`]); }
       return res;
     });
     for (const [, c, m] of r) ok(c, `${w}x${h} ${m}`);

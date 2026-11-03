@@ -959,9 +959,10 @@
     if (fadedOut) { emit(s, { kind: 'fadedOut', source: p.uid, card: c.id }); log(s, `${def.name} fades out.`); }
     // Powers (Anna): once played they stay in play for the rest of the fight, in their own list, not in any pile.
     if (def.type === 'power') { (p.powers = p.powers || []).push(c); emit(s, { kind: 'powerPlayed', source: p.uid, card: c.id, up: !!c.up }); }
-    else if (def.exhaust || fadedOut) exhaustCard(s, p, c);
-    else p.discard.push(c);
     afterCardPlayed(s, p, def);   // once per card played, after any Repeat/Replay plays (Fighter F3 Drill, F4 Tempo)
+    // The card leaves for its pile only after its effects AND the on-play triggers above have resolved (as in Slay the Spire),
+    // so nothing it draws can reshuffle it back into the hand (Producer 19:27: Wait for It / No Wasted Motion free replays).
+    if (def.type !== 'power') { if (def.exhaust || fadedOut) exhaustCard(s, p, c); else p.discard.push(c); }
     for (const { e, before } of shovers) {   // one big hit shoves one status card off (Beast's Grand Slam)
       const sh = D.MONSTERS[e.monsterId].shove, k = p.hand.findIndex(x => x.id === sh.card);
       if (k >= 0 && before - (Math.max(0, e.hp) + e.block) >= sh.at) {
