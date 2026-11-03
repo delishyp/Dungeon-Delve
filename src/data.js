@@ -41,7 +41,7 @@
     rage:       { name: 'Rage', debuff: false, decays: true,
                   tip: 'Rage: while you have any Rage, you take 25% less damage from attacks, however many stacks you have. Rage adds no damage; some cards count your stacks. Goes down by 1 at the end of your turn.' },
     arcane:     { name: 'Arcane', debuff: false, decays: false,
-                  tip: 'Arcane: each spell hit deals extra damage equal to Arcane. Some spells grow even stronger with Arcane. Lasts the whole fight.' },
+                  tip: "Arcane: each stack adds 2 to the damage and Block of your spells, on every hit. Cantrips don't get it. Lasts the whole fight." },
     armor:      { name: 'Armor', debuff: false, decays: false,
                   tip: 'Armor: gain this much Block at the start of every turn. Lasts the whole fight.' },
     thorns:     { name: 'Retaliate', debuff: false, decays: false,
@@ -58,7 +58,7 @@
     Energy:     'Energy: you get 3 each turn. Each card costs the number in its corner.',
     Upgrade:    'Upgraded cards (marked +) have better numbers. Upgrade cards at rest sites.',
     // Keyword lines (Anna 11:17), wording from lore/text/how_to_play_v1.md section 3 (Lorekeeper).
-    Spell:      "Spell: this card is a spell, so Arcane Focus makes it stronger. Cards without the Spell keyword are cantrips. Cantrips are cheap and quick, and Arcane Focus doesn't affect them.",
+    Spell:      "Spell: Arcane makes this card stronger. Cards without Spell are cantrips: cheap and quick, and Arcane doesn't affect them.",
     Retain:     "Retain: the card stays in your hand until you play it. It isn't discarded at the end of your turn.",
   };
   for (const k in STATUSES) KEYWORDS[STATUSES[k].name] = STATUSES[k].tip;
@@ -228,7 +228,7 @@
     chain_lightning: { cls: 'wizard', kind: 'spell', name: 'Chain Lightning', cost: 3, type: 'attack', rarity: 'rare', target: 'none',
       desc: 'Deal {0} damage to ALL enemies. Draw {1} card.', effects: [{ t: 'damageAll', n: 12 }, { t: 'draw', n: 1 }] },
     arcane_torrent: { cls: 'wizard', kind: 'spell', name: 'Arcane Torrent', cost: 2, type: 'attack', rarity: 'rare', target: 'enemy',
-      desc: 'Deal {0} damage. Grows by 4 for each Arcane you have.', effects: [{ t: 'damage', n: 6, scale: { status: 'arcane', per: 4 } }] },
+      desc: 'Deal {0} damage. Arcane counts three times on this card.', effects: [{ t: 'damage', n: 6, scale: { status: 'arcane', per: 4 } }] },
   };
 
   const RARITY_WEIGHTS = { common: 60, uncommon: 32, rare: 8 };
@@ -248,8 +248,8 @@
     },
     wizard: {
       name: 'Wizard', maxHp: 72, energy: 3, handSize: 5,
-      blurb: 'A fragile scholar of the arcane. Builds Arcane power that makes every spell hit harder, then wipes out whole groups with area spells.',
-      mechanic: 'Arcane: permanent +damage per hit; multi-hit spells scale best.',
+      blurb: 'A frail scholar who came down for the books. Cheap cantrips buy time while Arcane builds, then the spells take whole rooms apart.',
+      mechanic: "Arcane: each stack adds 2 to every spell's damage and Block, on every hit. Cantrips don't get it.",
       deck: ['fire_bolt', 'fire_bolt', 'fire_bolt', 'fire_bolt', 'shield_spell', 'shield_spell', 'shield_spell', 'shield_spell', 'magic_missile', 'arcane_focus'],
     },
   };
