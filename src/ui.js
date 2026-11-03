@@ -606,7 +606,7 @@
     const p = P(), r = p.reward, fromEvent = G.node === 'event';
     return `<div class="overlay"><div class="panel">${fromEvent ? '<h1>A New Technique</h1>' : '<h1>Victory!</h1>'}
       <div class="relicrow">${r.gold ? `<span class="goldline">${I('coin')} +${r.gold} gold</span>` : ''}
-      ${[r.relic, r.bonusRelic].filter(Boolean).map(id => `<span class="lootline" data-tip="${esc(relicTip(id))}">${relicMedal(id, 'big')} <b>${esc(D.RELICS[id].name)}</b>${id === r.bonusRelic ? ' <small class="trophy">Trophy</small>' : ''} <small>${esc(D.RELICS[id].desc)}</small></span>`).join('')}
+      ${[r.relic, r.bonusRelic].filter(Boolean).map(id => `<span class="lootline" data-tip="${esc(relicTip(id))}">${relicMedal(id, 'big')} <b>${esc(D.RELICS[id].name)}</b>${id === r.bonusRelic ? ' <small class="trophy">Prize</small>' : ''} <small>${esc(D.RELICS[id].desc)}</small></span>`).join('')}
       ${r.potion ? `<span class="lootline" data-tip="${esc(potionTip(r.potion.id))}">${flask(D.POTIONS[r.potion.id].color)} <b>${esc(D.POTIONS[r.potion.id].name)}</b> <small>${r.potion.taken ? 'added to your belt' : 'belt full: left behind'}</small></span>` : ''}</div>
       <h2${ST.get('devMode') && !fromEvent ? ` data-devtip="1" data-tip="${esc(devOddsTip('Each card offered was rolled as', E.weightOdds(E.rewardRarityWeights(G.node)))
         + (G.node === 'fight' ? devOddsTip('Potion drop after a normal fight', [{ key: 'potion', p: D.POTION_DROP }, { key: 'no potion', p: 1 - D.POTION_DROP }]) : ''))}"` : ''}>Choose a card to add to your deck</h2>
