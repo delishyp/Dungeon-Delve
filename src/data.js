@@ -318,14 +318,14 @@
   const HEROES = {
     fighter: {
       name: 'Fighter', maxHp: 66, energy: 3, handSize: 5,
-      blurb: 'A disciplined warrior. Solid attacks and Block, with tactical maneuvers that knock foes Prone or Frighten them.',
-      mechanic: 'Balanced: maneuvers (Prone / Frightened), Might, Armor.',
+      blurb: 'A sellsword who has held worse lines than this one. Steady attacks and Block, with maneuvers that knock foes Prone or Frighten them.',
+      mechanic: 'Maneuvers: Prone and Frightened weaken your foes, while Might and Armor make you stronger. Action Surge gives you 1 extra Energy when you need it most.',
       deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'second_wind', 'action_surge'],   // Anna 15:19: 8 basics + 2 unique
     },
     barbarian: {
       name: 'Barbarian', maxHp: 85, energy: 3, handSize: 5,
-      blurb: 'A furious brute. Little Block, but while he has any Rage he takes 25% less damage. Rage attacks build stacks for big payoffs. Reckless attacks hit huge but leave you Prone.',
-      mechanic: 'Rage: any Rage = 25% less damage taken (adds no damage); stacks feed payoff cards; fades by 1 each turn.',
+      blurb: 'A furious brute with little Block. Anger keeps the Barbarian standing, and reckless attacks hit huge but can leave you Prone.',
+      mechanic: "Rage: while you have any Rage, you take 25% less damage. Rage adds no damage, but some cards hit harder the more you've built. It goes down by 1 each turn.",
       deck: ['greataxe', 'greataxe', 'greataxe', 'greataxe', 'parry', 'parry', 'parry', 'parry', 'rage', 'reckless_attack'],
     },
     wizard: {
@@ -449,62 +449,62 @@
       }, ai: { opener: 'screech', pattern: ['rearup', 'slam', 'rend', 'beak'] } },
 
     // ---------- demo.2 bosses (Producer, Nov 3): movesets drafted from the approved designs (LORE 1j, boss_cutscenes_v2.md),
-    // built only from mechanics already in the engine. Move names marked (ph) are placeholders for Lorekeeper.
+    // built only from mechanics already in the engine. Display names: Lorekeeper, demo_text_v1.md section 4 (ids unchanged).
     // The Crier (Floor 1 boss, 50/50 with the Beast). Anna's pick B, Echoes: her calls put Echo cards in your hand (at most 3
     // of them in the fight at once). Each one still in hand at the end of your turn costs 3 HP; playing one (1 Energy) silences it.
     crier: { name: 'The Crier', hp: [228, 228], boss: true, sprite: 'enemy_crier_idle',
       moves: {
-        call:   { name: 'Call', intent: 'debuff', effects: [{ t: 'addCards', card: 'echo', n: 1, max: 3 }, { t: 'block', n: 8 }] },                       // (ph) pose `call`
-        reach:  { name: 'Reach', intent: 'attack', effects: [{ t: 'attack', n: 14 }] },                                                                  // (ph) pose `reach`
-        voice:  { name: 'Borrowed Voice', intent: 'attack_debuff', effects: [{ t: 'attack', n: 6, times: 2 }, { t: 'addCards', card: 'echo', n: 1, max: 3 }] },   // (ph)
-        listen: { name: 'Listen', intent: 'defend', effects: [{ t: 'block', n: 12 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },             // (ph) pose `listen`
+        call:   { name: 'Over Here', intent: 'debuff', effects: [{ t: 'addCards', card: 'echo', n: 1, max: 3 }, { t: 'block', n: 8 }] },                       // pose `call`
+        reach:  { name: 'Long Fingers', intent: 'attack', effects: [{ t: 'attack', n: 14 }] },                                                                  // pose `reach`
+        voice:  { name: 'Someone You Knew', intent: 'attack_debuff', effects: [{ t: 'attack', n: 6, times: 2 }, { t: 'addCards', card: 'echo', n: 1, max: 3 }] },
+        listen: { name: 'Hush', intent: 'defend', effects: [{ t: 'block', n: 12 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },             // pose `listen`
       }, ai: { opener: 'call', pattern: ['reach', 'voice', 'listen', 'call'] } },
     // The Toll of the Narrows (Floor 2 trial boss, 50/50 with the Brood). The gate itself; it sends what it owns: the Kneeling
-    // Penitent holds it up (while she kneels the gate can't be hit), the risen bones come through on its Breath (they fall when the
-    // gate opens), and the Count cuts a tally (all its things grow stronger) and lets the Tally-Scratcher through.
+    // Penitent holds it up (while she kneels the gate can't be hit), Those Who Stopped come through on its Breath (they fall when the
+    // gate opens), and the Count cuts a tally (all its things grow stronger) and lets the Tallyman through.
     toll: { name: 'The Toll of the Narrows', hp: [185, 185], boss: true, sprite: 'enemy_toll_idle', minion: 'toll_bones', guardedBy: 'toll_penitent',
       moves: {
-        kneel:  { name: 'The Penitent Kneels', intent: 'summon', effects: [{ t: 'summon', monster: 'toll_penitent', max: 1 }, { t: 'block', n: 10 }] },   // (ph)
-        breath: { name: 'Breath', intent: 'summon', effects: [{ t: 'summon', monster: 'toll_bones', max: 2 }] },                                      // (ph) pose `breath`: dust
-        narrow: { name: 'The Narrows Close', intent: 'attack', effects: [{ t: 'attack', n: 30 }] },                                                   // (ph)
-        count:  { name: 'The Count', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 2, to: 'allies' }, { t: 'summon', monster: 'toll_tally', max: 1 }] },   // (ph) pose `count`
-        shut:   { name: 'Shut', intent: 'defend', effects: [{ t: 'block', n: 12 }] },                                                                 // (ph) pose `shut`
+        kneel:  { name: 'Kneel at the Gate', intent: 'summon', effects: [{ t: 'summon', monster: 'toll_penitent', max: 1 }, { t: 'block', n: 10 }] },
+        breath: { name: 'The Gate Breathes', intent: 'summon', effects: [{ t: 'summon', monster: 'toll_bones', max: 2 }] },                                      // pose `breath`: dust
+        narrow: { name: 'The Narrows Close', intent: 'attack', effects: [{ t: 'attack', n: 30 }] },
+        count:  { name: 'The Count Goes On', intent: 'buff', effects: [{ t: 'status', status: 'might', n: 2, to: 'allies' }, { t: 'summon', monster: 'toll_tally', max: 1 }] },   // pose `count`
+        shut:   { name: 'Shut Fast', intent: 'defend', effects: [{ t: 'block', n: 12 }] },                                                                 // pose `shut`
       }, ai: { opener: 'kneel', pattern: ['narrow', 'breath', 'count', 'shut'] } },
     toll_penitent: { name: 'Kneeling Penitent', hp: [44, 44], sprite: 'ghoul',
       moves: {
-        hold:    { name: 'Holds Them Up', intent: 'buff', effects: [{ t: 'blockLeader', leader: 'toll', n: 10 }] },   // (ph)
-        penance: { name: 'Penance', intent: 'attack', effects: [{ t: 'attack', n: 16 }] },                          // (ph)
+        hold:    { name: 'Shoulder the Stone', intent: 'buff', effects: [{ t: 'blockLeader', leader: 'toll', n: 10 }] },
+        penance: { name: 'Scourge', intent: 'attack', effects: [{ t: 'attack', n: 16 }] },
       }, ai: { pattern: ['hold', 'penance'] } },
-    toll_bones: { name: 'Risen Bones', hp: [16, 18], sprite: 'skeleton',   // (ph) name; LORE: "the bones of those who stopped, standing back up"
+    toll_bones: { name: 'Those Who Stopped', hp: [16, 18], sprite: 'skeleton',   // LORE: "the bones of those who stopped, standing back up"
       moves: {
-        wait:   { name: 'Standing Back Up', intent: 'wait', effects: [{ t: 'wait' }] },   // (ph)
-        hack:   { name: 'Hack', intent: 'attack', effects: [{ t: 'attack', n: 15 }] },     // (ph)
-        rattle: { name: 'Rattle', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },   // (ph)
+        wait:   { name: 'Getting Up Again', intent: 'wait', effects: [{ t: 'wait' }] },
+        hack:   { name: 'Old Blade', intent: 'attack', effects: [{ t: 'attack', n: 15 }] },
+        rattle: { name: 'Rattling Swing', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },
       }, ai: { opener: 'wait', pattern: ['hack', 'rattle'] } },
-    toll_tally: { name: 'Tally-Scratcher', hp: [30, 30], sprite: 'goblin_shaman',   // (ph) name; LORE: "scratches a new tally on itself every turn and gets stronger"
+    toll_tally: { name: 'The Tallyman', hp: [30, 30], sprite: 'goblin_shaman',   // LORE: "scratches a new tally on itself every turn and gets stronger"
       moves: {
-        scratch: { name: 'Another Mark', intent: 'attack', effects: [{ t: 'status', status: 'might', n: 1, to: 'self' }, { t: 'attack', n: 11 }] },   // (ph)
+        scratch: { name: 'Scratch Another', intent: 'attack', effects: [{ t: 'status', status: 'might', n: 1, to: 'self' }, { t: 'attack', n: 11 }] },
       }, ai: { pattern: ['scratch'] } },
     // The Brood (Floor 2 trial boss): the grey spore wall. Its Split grows a Husk that is still in its pod for a turn ("burst them
     // before they ripen": a fresh Husk has low HP and does nothing that turn); the Mossed Shell gives the wall Block; the Pulse
     // breathes spore dust (Poisoned). The Husks go still when the wall goes dormant.
     brood: { name: 'The Brood', hp: [160, 160], boss: true, sprite: 'enemy_brood_idle', minion: 'brood_husk',
       moves: {
-        seal:  { name: 'Sealed', intent: 'summon', effects: [{ t: 'summon', monster: 'brood_shell', max: 1 }, { t: 'block', n: 12 }] },   // (ph) pose `sealed`
-        split: { name: 'Split', intent: 'summon', effects: [{ t: 'summon', monster: 'brood_husk', max: 2 }] },                           // (ph) pose `split`
-        pulse: { name: 'Pulse', intent: 'debuff', effects: [{ t: 'status', status: 'poisoned', n: 8, to: 'target' }, { t: 'block', n: 8 }] },   // (ph) pose `pulse`
-        rot:   { name: 'Slow Rot', intent: 'attack_debuff', effects: [{ t: 'attack', n: 28 }, { t: 'status', status: 'poisoned', n: 3, to: 'target' }] },   // (ph)
+        seal:  { name: 'Sealed Tight', intent: 'summon', effects: [{ t: 'summon', monster: 'brood_shell', max: 1 }, { t: 'block', n: 12 }] },   // pose `sealed`
+        split: { name: 'A Pod Tears', intent: 'summon', effects: [{ t: 'summon', monster: 'brood_husk', max: 2 }] },                           // pose `split`
+        pulse: { name: 'Spore Breath', intent: 'debuff', effects: [{ t: 'status', status: 'poisoned', n: 8, to: 'target' }, { t: 'block', n: 8 }] },   // pose `pulse`
+        rot:   { name: 'Rotfall', intent: 'attack_debuff', effects: [{ t: 'attack', n: 28 }, { t: 'status', status: 'poisoned', n: 3, to: 'target' }] },
       }, ai: { opener: 'seal', pattern: ['split', 'rot', 'pulse', 'split'] } },
     brood_husk: { name: 'Husk', hp: [11, 13], sprite: 'ghoul',
       moves: {
-        wait:  { name: 'Still in the Pod', intent: 'wait', effects: [{ t: 'wait' }] },   // (ph)
-        claw:  { name: 'Grey Hands', intent: 'attack', effects: [{ t: 'attack', n: 10 }] },     // (ph)
-        grasp: { name: 'Grasp', intent: 'attack', effects: [{ t: 'attack', n: 5, times: 2 }] },   // (ph)
+        wait:  { name: 'Not Yet Ripe', intent: 'wait', effects: [{ t: 'wait' }] },
+        claw:  { name: 'Grey Hands', intent: 'attack', effects: [{ t: 'attack', n: 10 }] },
+        grasp: { name: 'Clutch', intent: 'attack', effects: [{ t: 'attack', n: 5, times: 2 }] },
       }, ai: { opener: 'wait', pattern: ['claw', 'grasp'] } },
     brood_shell: { name: 'Mossed Shell', hp: [36, 36], sprite: 'troll',
       moves: {
-        shelter: { name: 'Shelter', intent: 'buff', effects: [{ t: 'blockLeader', leader: 'brood', n: 6 }] },   // (ph)
-        bump:    { name: 'Lean In', intent: 'attack', effects: [{ t: 'attack', n: 10 }] },                       // (ph)
+        shelter: { name: 'Moss Over', intent: 'buff', effects: [{ t: 'blockLeader', leader: 'brood', n: 6 }] },
+        bump:    { name: 'Topple', intent: 'attack', effects: [{ t: 'attack', n: 10 }] },
       }, ai: { pattern: ['shelter', 'bump'] } },
 
     // ---------- Floor 2: the Underdark ----------
@@ -582,7 +582,7 @@
       phase: { at: 0.5, status: { might: 2 }, pattern: ['adhesive', 'chomp'] } },
     // Vessa the Unsleeping (Floor 2 boss). Her design was approved by Anna at 15:04; Palette's game file is enemy_beholder_idle.webp
     // (boss canvas). The old beholder.webp stays in assets/ for rollback, and the fight falls back to it if the new file is
-    // missing. LORE: "The Watcher" was a placeholder until her art existed, so her name goes on now.
+    // missing. LORE: her old placeholder name was retired once her art existed, so her name goes on now.
     beholder: { name: 'Vessa the Unsleeping', hp: [330, 330], boss: true, sprite: 'enemy_beholder_idle',
       moves: {
         fear:     { name: 'I Saw That', intent: 'attack_debuff', effects: [{ t: 'attack', n: 9 }, { t: 'status', status: 'frightened', n: 3, to: 'target' }] },
@@ -612,10 +612,10 @@
     cube:         { name: 'Gelatinous Cube', enemies: ['gelatinous_cube'], scene: 'Suspiciously Clean Hall' },
     mind_flayer:  { name: 'The Surgeon', enemies: ['mind_flayer'], scene: 'The Long Table', elite: true },
     mimic:        { name: 'Treasure Mimic', enemies: ['mimic'], scene: 'Treasure Vault?', elite: true },
-    beholder:     { name: 'Vessa the Unsleeping', enemies: ['beholder'], scene: 'The Watching Cavern', boss: true },
-    crier:        { name: 'The Crier', enemies: ['crier'], scene: 'The Quiet Dark', boss: true },             // scene (ph)
-    toll:         { name: 'The Toll of the Narrows', enemies: ['toll'], scene: 'The Narrows', boss: true },   // scene (ph)
-    brood:        { name: 'The Brood', enemies: ['brood'], scene: 'The Spore Wall', boss: true },           // scene (ph)
+    beholder:     { name: 'Vessa the Unsleeping', enemies: ['beholder'], scene: 'Vessa\'s Hall', boss: true },
+    crier:        { name: 'The Crier', enemies: ['crier'], scene: 'The Keepsake Burrow', boss: true },
+    toll:         { name: 'The Toll of the Narrows', enemies: ['toll'], scene: 'The Counted Gate', boss: true },
+    brood:        { name: 'The Brood', enemies: ['brood'], scene: 'The Breathing Wall', boss: true },
   };
 
   // bossPool (demo.2, from ROADMAP/LORE): each floor's boss is picked per run when its map is made (map.boss). Floor 1: the Crier or

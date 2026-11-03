@@ -43,13 +43,13 @@ const echoes = p => [p.hand, p.draw, p.discard].reduce((a, x) => a + x.filter(c 
   E.dispatch(s3, { type: 'END_TURN', player: p3.uid }); E.takeEvents(s3); ok(p3.hp === 47, 'an Echo left in hand costs 3 HP (' + p3.hp + ')');
   ok(!p.deck.some(x => x.id === 'echo'), 'Echoes never reach the deck'); }
 
-// ---- the Toll: the Penitent kneels first (the gate can't be hit while she does); Breath brings the bones; Count the Tally-Scratcher
+// ---- the Toll: the Penitent kneels first (the gate can't be hit while she does); Breath brings the bones; Count the Tallyman
 { const s = fight('toll'), toll = s.enemies[0];
   eq(toll.intent.move, 'kneel', 'opener: the Penitent kneels'); endTurn(s);
   const pen = s.enemies.find(e => e.monsterId === 'toll_penitent'); ok(pen && !E.isTargetable(s, toll), 'the gate is held up (untargetable) while the Penitent kneels');
   const seen = [toll.lastMove]; for (let t = 0; t < 5; t++) { endTurn(s); seen.push(toll.lastMove); }
   eq(seen, ['kneel', 'narrow', 'breath', 'count', 'shut', 'narrow'], 'Toll pattern');
-  ok(s.enemies.some(e => e.monsterId === 'toll_bones') && s.enemies.some(e => e.monsterId === 'toll_tally'), 'bones and the Tally-Scratcher came through');
+  ok(s.enemies.some(e => e.monsterId === 'toll_bones') && s.enemies.some(e => e.monsterId === 'toll_tally'), 'bones and the Tallyman came through');
   pen.hp = 0; s.enemies.forEach(e => { if (e.monsterId === 'toll_penitent') e.hp = 0; }); E.dispatch(s, { type: 'END_TURN', player: s.players[0].uid }); E.takeEvents(s);
   toll.hp = 1; toll.block = 0; const p = s.players[0]; p.energy = 9; p.hand.push({ uid: 'k1', id: 'strike' });
   if (s.phase === 'combat' && E.isTargetable(s, toll)) { E.dispatch(s, { type: 'PLAY_CARD', player: p.uid, card: 'k1', target: toll.uid }); E.takeEvents(s);

@@ -33,8 +33,8 @@
       desc: 'Unplayable. Deal 6 or more damage to her with one card to remove this.', effects: [] },
     // Status card from the Crier's calls (Anna's pick B, Echoes). Playing it (1 Energy) silences it (Exhaust). Reuses the
     // Whispers curse art until it has its own. Name from LORE; the card text is a placeholder for Lorekeeper.
-    echo: { cls: 'curse', name: 'Echo', art: 'curse_whispers', cost: 1, type: 'status', rarity: 'status', target: 'none', exhaust: true, combatOnly: true, endTurnHpLoss: 3,
-      desc: 'Play to silence it. Exhaust. If this is in your hand at the end of your turn, lose 3 HP.', effects: [] },
+    echo: { cls: 'curse', name: 'Echo', cost: 1, type: 'status', rarity: 'status', target: 'none', exhaust: true, combatOnly: true, endTurnHpLoss: 3,
+      desc: 'Play to silence it. Exhaust. If this is still in your hand at the end of your turn, lose 3 HP.', effects: [] },
     // Status card from the Gelatinous Cube's Engulf: goes into the discard pile, gone when the fight ends.
     // Own placeholder art (assets/placeholder/placeholder_acid.webp) until it is painted; no longer reuses Mummy Rot's art.
     acid: { cls: 'curse', name: 'Acid', cost: 0, type: 'status', rarity: 'status', target: 'none', unplayable: true, combatOnly: true,
@@ -309,16 +309,19 @@
     },
     bossIntro: {
       owlbear: ["The nest is woven from bones.", "A huge grey shape rises over it: a starving owlbear with milky eyes.", "The Beast of Saint Brennick stands, huge and heavy, and lowers her head."],
-      beholder: ["A cavern lit by nothing. Feral drow kneel around its edges, all facing the middle.", "Above them hangs something round and swollen, made almost entirely of eyes. Every one of them opens at once.", "VESSA: \"I see who you were. Oh, I see it. Shall I tell you?\""],
-      // demo.2 bosses: Lorekeeper's DRAFT v2 cutscene lines (boss_cutscenes_v2.md), word for word minus the pose tags, until the
-      // final intros come; the Crier uses hint B (Echoes, Anna's pick). No defeat lines exist yet (Lorekeeper).
-      crier: ["Something in the dark goes quiet when you do.", 'THE CRIER: "Over here. I\'ve got a light."', 'THE CRIER: "Please. It\'s so quiet down here."', "The voices follow you down. Don't hold on to them."],
-      toll: ["The passage narrows to a gate cut into the rock. Above it, someone carved a long row of marks.", "Behind the stone, something breathes. Slow. Patient.", "Bones lie heaped at the threshold. Beside each body there are a few scratches: six, seven. None reach the end.", "Hold for the count and the way opens. Brace when it comes. Every time you give ground, more of it comes through."],
-      brood: ["The walls here are furred grey, and rows of swollen pods grow out of them.", "They breathe out when you breathe in. The air tastes of old bread.", "A note sits under a dead delver's hand, half grown over: \"Count the rows. When the bottom row bursts, it's the last one.\"", "Burst them before they ripen. Whatever you break now can't walk out later."],
+      beholder: ["A street hangs on its side here, its doorways open in the ceiling. Feral drow crouch along the walls, all facing the same way.", "Among them stands a drow woman, hunched and crooked under a torn veil. Eyes are open all along her arms and throat, red and unblinking.", "VESSA: \"There you are. I watched you all the way up. Shall I tell you who you were?\""],
+      // demo.2 bosses: Lorekeeper's lines (lore/text/demo_text_v1.md section 4, v1.1), word for word; the Crier uses hint B (Echoes,
+      // Anna's pick); the Toll's hint is the no-survive-win line (Producer 18:02).
+      crier: ["Something in the dark goes quiet when you do.", "THE CRIER: \"Over here. I've got a light.\"", "THE CRIER: \"Please. It's so quiet down here.\"", "The voices stay with you. Don't hold on to them."],
+      toll: ["The passage narrows to a gate cut into the rock. Above it, someone carved a long row of marks.", "Behind the stone, something breathes. Slow. Patient.", "Bones lie heaped at the threshold. Beside each body, someone scratched a few marks into the rock.", "While she kneels, nothing touches the gate. Every mark it counts makes the dead stronger, so don't let it count for long."],
+      brood: ["The walls here are grey and spongy, and lumpy pods grow out of them in loose rows.", "They breathe out when you breathe in. The air tastes of old bread.", "A note sits under a dead delver's hand, half grown over: \"They wait a breath before they climb out. Don't give them one.\"", "Burst them before they ripen. Whatever you break now can't walk out later."],
     },
     bossDefeat: {
       owlbear: ["The Beast sinks down over her nest and goes still.", "Behind the nest, a crack in the rock climbs upward, toward the town."],
-      beholder: ["VESSA: \"Dark. Finally, dark.\"", "Every eye closes. At the edges of the cavern, the drow begin to wander off, like animals after a light goes out."],
+      beholder: ["VESSA: \"Dark. Finally, dark.\"", "Every eye on her closes at once, and she folds down onto the stones. Along the walls, the drow begin to wander off, like animals after a light goes out."],
+      crier: ["The Crier opens her too-wide jaw, and for once nothing comes out.", "In the quiet you can hear water dripping, and behind her burrow a tunnel slopes upward."],
+      toll: ["The newest mark on the arch cracks straight across.", "The gate grinds open. Beyond it, the passage keeps climbing."],
+      brood: ["The pods sag and go soft, one row after another.", "The wall breathes out once more, and then it doesn't breathe in."],
     },
     victory: {
       fighter: ["You climb out into grey daylight above Saint Brennick.", "{fighter_name} looks at the ring on his finger for a long time. He still doesn't know whose it was."],
