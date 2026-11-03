@@ -104,8 +104,11 @@
       desc: 'Gain {0} Armor.', effects: [{ t: 'status', status: 'armor', n: 2, to: 'self' }] },
     healing_potion: { cls: 'fighter', name: 'Potion of Healing', cost: 0, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
       desc: 'Heal {0} HP. Exhaust.', effects: [{ t: 'heal', n: 10 }] },
-    action_surge: { cls: 'fighter', name: 'Action Surge', cost: 0, type: 'skill', rarity: 'rare', target: 'none', exhaust: true,
-      desc: 'Gain {0} Energy. Draw {1} card. Exhaust.', effects: [{ t: 'energy', n: 2 }, { t: 'draw', n: 1 }] },
+    // Action Surge (Anna 15:18-15:19): a Fighter starter card (replaces the old rare 2 Energy + draw version). Starter rarity,
+    // so it never shows up in rewards, the shop or events. The upgrade keeps the effect and cost and drops Exhaust.
+    action_surge: { cls: 'fighter', name: 'Action Surge', cost: 0, type: 'skill', rarity: 'starter', target: 'none', exhaust: true,
+      desc: 'Gain {0} Energy. Exhaust.', effects: [{ t: 'energy', n: 1 }],
+      upgrade: { exhaust: false, desc: 'Gain {0} Energy.' } },
     indomitable: { cls: 'fighter', name: 'Indomitable', cost: 2, type: 'skill', rarity: 'rare', target: 'none',
       desc: 'Gain {0} Block. Remove all your debuffs.', effects: [{ t: 'block', n: 11 }, { t: 'cleanse' }] },
     sundering_blow: { cls: 'fighter', name: 'Sundering Blow', cost: 2, type: 'attack', rarity: 'rare', target: 'enemy',
@@ -317,7 +320,7 @@
       name: 'Fighter', maxHp: 66, energy: 3, handSize: 5,
       blurb: 'A disciplined warrior. Solid attacks and Block, with tactical maneuvers that knock foes Prone or Frighten them.',
       mechanic: 'Balanced: maneuvers (Prone / Frightened), Might, Armor.',
-      deck: ['strike', 'strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'second_wind'],
+      deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'second_wind', 'action_surge'],   // Anna 15:19: 8 basics + 2 unique
     },
     barbarian: {
       name: 'Barbarian', maxHp: 85, energy: 3, handSize: 5,
@@ -539,7 +542,7 @@
     gnolls:       { name: 'Gnoll Raiders', enemies: ['gnoll', 'giant_rat'], scene: 'Bone-strewn Camp' },
     bugbear:      { name: 'Bugbear Ambusher', enemies: ['bugbear'], scene: 'Dark Alcove', elite: true },
     ogre:         { name: 'Ogre Brute', enemies: ['ogre'], scene: 'Ogre Larder', elite: true },
-    owlbear:      { name: 'The Owlbear Den', enemies: ['owlbear'], scene: 'Owlbear Den', boss: true },
+    owlbear:      { name: 'The Beast of Saint Brennick', enemies: ['owlbear'], scene: 'The Bone Nest', boss: true },   // Lorekeeper, events_merchant_v1 A
     ghouls:       { name: 'Ghoul Pack', enemies: ['ghoul', 'ghoul'], scene: 'Charnel Pit' },
     drow_patrol:  { name: 'Drow Patrol', enemies: ['drow', 'drow_mage'], scene: 'Deep Tunnels' },
     drow_patrol_early: { name: 'Drow Patrol', sameAs: 'drow_patrol', enemies: ['drow_early', 'drow_mage_early'], scene: 'Deep Tunnels' },
