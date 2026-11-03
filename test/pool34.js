@@ -22,8 +22,8 @@ const R = (id) => D.CARDS[id].rarity;
 eq(['burn_through', 'worn_grip', 'ember_hide', 'blood_in_mouth'].map(R), ['uncommon', 'uncommon', 'uncommon', 'uncommon'], 'Barbarian: Burn It Down cards stay uncommon');
 eq(['burn_through', 'worn_grip', 'ember_hide', 'blood_in_mouth'].map(id => [D.CARDS[id].effects[0].n, E.cardDef({ id, up: true }).effects[0].n]), [[13, 16], [12, 15], [8, 11], [10, 10]], 'Burn It Down cards: original numbers, Burn Through 13 / 16 (Designer 23:31)');
 eq(['whirling_axe', 'brutal_critical', 'bear_totem', 'relentless_rage'].map(R), ['common', 'common', 'common', 'common'], 'Whirling Axe, Brutal Critical, Bearskin, Relentless Rage uncommon -> common');
-eq(['whirling_axe', 'brutal_critical', 'bear_totem', 'relentless_rage'].map(id => [D.CARDS[id].cost, D.CARDS[id].effects[0].n]), [[2, 15], [2, 17], [1, 4], [1, 10]], 'their numbers: Whirling Axe 15 and Brutal Critical 17 (Designer round 2), Bearskin and Relentless Rage unchanged');
-eq([E.cardDef({ id: 'whirling_axe', up: true }).effects[0].n, E.cardDef({ id: 'brutal_critical', up: true }).effects[0].n, D.CARDS.brutal_critical.effects[0].rageBonus, E.cardDef({ id: 'brutal_critical', up: true }).effects[0].rageBonus], [20, 22, 8, 8], 'upgrades keep the +5 step; Rage bonus 8 unchanged');
+eq(['whirling_axe', 'brutal_critical', 'bear_totem', 'relentless_rage'].map(id => [D.CARDS[id].cost, D.CARDS[id].effects[0].n]), [[2, 15], [2, 17], [1, 4], [1, 12]], 'their numbers: Whirling Axe 15 and Brutal Critical 17 (Designer round 2), Bearskin unchanged, Relentless Rage heal 12 (Designer round 3)');
+eq([E.cardDef({ id: 'whirling_axe', up: true }).effects[0].n, E.cardDef({ id: 'brutal_critical', up: true }).effects[0].n, D.CARDS.brutal_critical.effects[0].rageBonus, E.cardDef({ id: 'brutal_critical', up: true }).effects[0].rageBonus], [20, 22, 10, 10], 'upgrades keep the +5 step; Rage bonus 10 (Designer round 3), unchanged by the upgrade');
 eq(R('whats_left'), 'rare', "What's Left uncommon -> rare");
 eq([R('old_scars'), R('ten_thousand_drills'), R('the_wall_holds')], ['legendary', 'legendary', 'legendary'], 'Fighter legendaries: The Wall Holds, Old Scars, Ten Thousand Drills');
 eq([R('read_the_opening'), R('no_wasted_motion')], ['rare', 'rare'], 'Read the Opening and No Wasted Motion legendary -> rare');
@@ -33,10 +33,18 @@ ok(/up to 5 a fight/.test(D.CARDS.ten_thousand_drills.desc), 'Drills text says u
 // Designer 23:31 numbers pass (numbers only); Headbutt 6/8 from Designer round 2 (still under Greataxe Chop 7, Anna 04:20).
 const n0 = (id, up) => E.cardDef({ id, up: !!up }).effects[0].n;
 eq([n0('wild_swing'), n0('wild_swing', 1), n0('burn_through'), n0('burn_through', 1), n0('whirlwind'), n0('whirlwind', 1), D.CARDS.whirlwind.effects[0].times, n0('headbutt'), n0('headbutt', 1), n0('reckless_flurry'), D.CARDS.old_scars.cost === 2 && D.CARDS.old_scars.power.healToBlock === true, n0('scorching_ray')],
-  [6, 8, 13, 16, 8, 10, 2, 6, 8, 10, true, 4], 'Wild Swing 6/8, Burn Through 13/16, Whirlwind 8x2 (10x2), Headbutt 6/8, Reckless Flurry and Scorching Ray unchanged');
+  [6, 8, 13, 16, 8, 10, 2, 6, 8, 10, true, 6], 'Wild Swing 6/8, Burn Through 13/16, Whirlwind 8x2 (10x2), Headbutt 6/8, Reckless Flurry unchanged, Scorching Ray 6x3 (Designer round 3)');
 // Designer round 2 (23:52), numbers only
 eq([D.CARDS.thick_hide.cost, E.cardDef({ id: 'thick_hide', up: true }).cost, n0('thick_hide'), n0('thick_hide', 1)], [1, 1, 7, 10], 'Thick Hide: cost 1, 7 Block (upgraded 10)');
-eq([n0('berserker_frenzy'), n0('berserker_frenzy', 1), D.CARDS.berserker_frenzy.effects[0].times], [5, 6, 4], 'Berserker Frenzy 5x4 (upgraded 6x4)');
+// Designer round 3 (numbers only; Thick Hide 7 and Ember Hide 8 kept, Anna via Producer)
+eq([n0('thick_hide'), n0('thick_hide', 1), n0('ember_hide'), n0('ember_hide', 1)], [7, 10, 8, 11], 'Thick Hide 7 (10) and Ember Hide 8 (11) unchanged');
+eq([n0('berserker_frenzy'), n0('berserker_frenzy', 1), D.CARDS.berserker_frenzy.effects[0].times], [8, 9, 4], 'Berserker Frenzy 8x4 (upgraded 9x4)');
+ok(n0('berserker_frenzy') * 4 > n0('reckless_flurry') * D.CARDS.reckless_flurry.effects[0].times, 'Berserker Frenzy (rare, 32) beats Reckless Flurry (common, 30)');
+eq([n0('shove'), n0('shove', 1), D.CARDS.shove.effects[1].n, E.cardDef({ id: 'shove', up: true }).effects[1].n], [9, 12, 2, 3], 'Shove 9 (12), still 2 Prone (3)');
+eq([n0('relentless_rage'), n0('relentless_rage', 1), D.CARDS.relentless_rage.effects[1].n, !!D.CARDS.relentless_rage.exhaust], [12, 15, 2, true], 'Relentless Rage heals 12 (15), 2 Rage, Exhaust');
+ok(/Deals 10 more while you have Rage/.test(D.CARDS.brutal_critical.desc), 'Brutal Critical text says 10 more');
+eq([D.CARDS.arcane_study.effects[0].n, D.CARDS.arcane_study.cost, E.cardDef({ id: 'arcane_study', up: true }).effects[0].n, E.cardDef({ id: 'arcane_study', up: true }).cost], [1, 2, 1, 1], 'Arcane Study 1 Arcane Focus, cost 2 (upgraded cost 1)');
+eq([n0('burning_hands'), n0('burning_hands', 1), n0('scorching_ray'), n0('scorching_ray', 1), D.CARDS.scorching_ray.effects[0].times], [12, 17, 6, 7, 3], 'Burning Hands 12 to ALL (17), Scorching Ray 6x3 (7x3)');
 eq([n0('indomitable'), n0('indomitable', 1), n0('sundering_blow'), n0('sundering_blow', 1), n0('great_weapon'), n0('great_weapon', 1)], [15, 18, 11, 14, 19, 24], 'Indomitable 15 (18), Sundering Blow 11 (14), Great Weapon Smash 19 (24)');
 eq([n0('fireball'), n0('fireball', 1), n0('disintegrate'), n0('disintegrate', 1)], [17, 22, 24, 29], 'Wildfire 17 to ALL (22), Disintegrate 24 (29)');
 eq([n0('reckless_attack'), D.CARDS.reckless_attack.rarity], [8, 'starter'], 'Reckless Attack (starter) stays 8');

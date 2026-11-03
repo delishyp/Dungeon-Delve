@@ -197,13 +197,13 @@
     thick_hide: { cls: 'barbarian', name: 'Thick Hide', cost: 1, type: 'skill', rarity: 'common', target: 'none',
       desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 7 }] },   // 12 -> 7 (upgraded 10 by the +3 step), Designer round 2 (23:52)
     shove: { cls: 'barbarian', name: 'Shove', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage. Apply {1} Prone.', effects: [{ t: 'damage', n: 7 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
+      desc: 'Deal {0} damage. Apply {1} Prone.', effects: [{ t: 'damage', n: 9 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },   // 7 -> 9 (upgraded 12, 3 Prone), Designer round 3
     brutal_critical: { cls: 'barbarian', name: 'Brutal Critical', cost: 2, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage. Deals 8 more while you have Rage.', effects: [{ t: 'damage', n: 17, rageBonus: 8 }] },   // 15 -> 17, Designer round 2
+      desc: 'Deal {0} damage. Deals 10 more while you have Rage.', effects: [{ t: 'damage', n: 17, rageBonus: 10 }] },   // 15 -> 17, Designer round 2; Rage bonus 8 -> 10, Designer round 3 (upgraded 22, bonus stays 10)
     whirling_axe: { cls: 'barbarian', name: 'Whirling Axe', cost: 2, type: 'attack', rarity: 'common', target: 'none',
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 15 }] },   // 13 -> 15, Designer round 2
     relentless_rage: { cls: 'barbarian', name: 'Relentless Rage', cost: 1, type: 'skill', rarity: 'common', target: 'none', exhaust: true,
-      desc: 'Heal {0} HP. Gain {1} Rage. Exhaust.', effects: [{ t: 'heal', n: 10 }, { t: 'status', status: 'rage', n: 2, to: 'self' }] },
+      desc: 'Heal {0} HP. Gain {1} Rage. Exhaust.', effects: [{ t: 'heal', n: 12 }, { t: 'status', status: 'rage', n: 2, to: 'self' }] },   // heal 10 -> 12 (upgraded 15), Designer round 3
     bear_totem: { cls: 'barbarian', name: 'Bearskin', cost: 1, type: 'power', rarity: 'common', target: 'none',
       desc: 'Gain {0} Armor.', effects: [{ t: 'status', status: 'armor', n: 4, to: 'self' }] },
     retaliation: { cls: 'barbarian', name: 'Retaliation', cost: 1, type: 'power', rarity: 'uncommon', target: 'none',
@@ -211,7 +211,7 @@
     mindless_rage: { cls: 'barbarian', name: 'Mindless Rage', cost: 1, type: 'power', rarity: 'rare', target: 'none',
       desc: 'Gain {0} Might.', effects: [{ t: 'status', status: 'might', n: 3, to: 'self' }] },
     berserker_frenzy: { cls: 'barbarian', name: 'Berserker Frenzy', cost: 2, type: 'attack', rarity: 'rare', target: 'enemy',
-      desc: 'Deal {0} damage 4 times.', effects: [{ t: 'damage', n: 5, times: 4 }] },
+      desc: 'Deal {0} damage 4 times.', effects: [{ t: 'damage', n: 8, times: 4 }] },   // 5x4 -> 8x4 (upgraded 9x4), Designer round 3
     persistent_rage: { cls: 'barbarian', name: 'Persistent Rage', cost: 1, type: 'skill', rarity: 'rare', target: 'none', exhaust: true,
       desc: 'Gain {0} Rage. Draw {1} cards. Exhaust.', effects: [{ t: 'status', status: 'rage', n: 5, to: 'self' }, { t: 'draw', n: 2 }] },
     // ---- Barbarian deck styles B1-B3 (lore/text/deck_styles_v1.md, approved by Anna Nov 3). Art: placeholders (assets/placeholder/). ----
@@ -303,7 +303,7 @@
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 6 }],
       upgrade: { effects: [{ t: 'damageAll', n: 10 }] } },
     burning_hands: { cls: 'wizard', kind: 'spell', name: 'Burning Hands', cost: 2, type: 'attack', rarity: 'common', target: 'none',
-      desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 15 }] },
+      desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 12 }] },   // 15 -> 12 (upgraded 17), Designer round 3
     ray_of_frost: { cls: 'wizard', kind: 'cantrip', name: 'Ray of Frost', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Apply {1} Frightened.', effects: [{ t: 'damage', n: 2 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
     thunderwave: { cls: 'wizard', kind: 'spell', name: 'Thunderwave', cost: 2, type: 'attack', rarity: 'common', target: 'none',
@@ -319,11 +319,11 @@
     fireball: { cls: 'wizard', kind: 'spell', name: 'Wildfire', cost: 3, type: 'attack', rarity: 'uncommon', target: 'none',
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 17 }] },
     scorching_ray: { cls: 'wizard', kind: 'spell', name: 'Scorching Ray', cost: 2, type: 'attack', rarity: 'uncommon', target: 'enemy',
-      desc: 'Deal {0} damage 3 times.', effects: [{ t: 'damage', n: 4, times: 3 }] },
+      desc: 'Deal {0} damage 3 times.', effects: [{ t: 'damage', n: 6, times: 3 }] },   // 4x3 -> 6x3 (upgraded 7x3), Designer round 3
     arcane_recovery: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Recovery', cost: 0, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
       desc: 'Gain {0} Energy. Draw {1} cards. Exhaust.', effects: [{ t: 'energy', n: 1 }, { t: 'draw', n: 2 }] },
     arcane_study: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Study', cost: 2, type: 'power', rarity: 'uncommon', target: 'none',
-      desc: 'Gain {0} Arcane Focus.', effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }],
+      desc: 'Gain {0} Arcane Focus.', effects: [{ t: 'status', status: 'arcane', n: 1, to: 'self' }],   // 2 -> 1 Arcane Focus, Designer round 3 (upgraded: cost 1, still 1)
       upgrade: { cost: 1 } },
     mirror_image: { cls: 'wizard', kind: 'spell', name: 'Mirror Image', cost: 2, type: 'skill', rarity: 'uncommon', target: 'none',
       desc: 'Gain {0} Block. Draw {1} card.', effects: [{ t: 'block', n: 10 }, { t: 'draw', n: 1 }] },

@@ -36,7 +36,7 @@ function endTurn(s, p) { const r = E.dispatch(s, { type: 'END_TURN', player: p.u
   ok(hits(ev2, p.uid).map(x => x.amount + x.blocked).join() === '6,6', 'enemy 8x2 into Rage = 6,6');
   ok(/25% less damage/.test(D.STATUSES.rage.tip) && !/extra damage/.test(D.STATUSES.rage.tip), 'Rage tooltip matches the rework');
   ok(/25%/.test(D.HEROES.barbarian.mechanic) && !/\+damage/.test(D.HEROES.barbarian.mechanic) && !/Rage boosts every hit/.test(D.HEROES.barbarian.blurb), 'Barbarian hero text matches the rework');
-  ok(D.CARDS.brutal_critical.effects[0].rageBonus === 8, 'Brutal Critical keeps +8 while you have Rage (payoff, not Rage damage)');
+  ok(D.CARDS.brutal_critical.effects[0].rageBonus === 10, 'Brutal Critical deals +10 while you have Rage (payoff, not Rage damage; 8 -> 10 Designer round 3)');
 }
 // ---------- Rage attack tag ----------
 { const tagged = Object.keys(D.CARDS).filter(id => D.CARDS[id].rageAttack).sort();
