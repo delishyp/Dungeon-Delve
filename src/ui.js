@@ -87,9 +87,11 @@
     const cls = ['card', def.type, 'fr-' + fr, c.up ? 'upg' : '', opts.cls || ''].join(' ');
     const rar = def.rarity !== 'starter' && def.rarity !== 'curse' && def.rarity !== 'junk' ? ' · ' + def.rarity : '';
     const emblem = base.cls === 'curse' ? 'curse' : base.cls;
-    return `<div class="${cls}" data-cls="${base.cls}" data-rar="${def.rarity}" data-frame="${fr}" ${opts.attrs || ''}>
+    const foil = def.rarity === 'legendary';   // every legendary gets Palette's foil (only they carry the blend layers)
+    if (foil) foilMask(c.id);
+    return `<div class="${cls}${foil ? ' foil' : ''}" data-id="${esc(c.id)}" data-cls="${base.cls}" data-rar="${def.rarity}" data-frame="${fr}" ${opts.attrs || ''}>
       <div class="cface"><img class="cart" src="${img('card_' + (base.art || c.id))}" alt="" draggable="false"><img class="cframe" src="${img('frame_' + fr)}" alt="" draggable="false">
-      ${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname${def.name.length > 15 ? ' long' : ''}"><span>${esc(def.name)}</span></div>
+      ${foil ? FOIL_LAYERS : ''}${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname${def.name.length > 15 ? ' long' : ''}"><span>${esc(def.name)}</span></div>
       <div class="cclass" title="${esc(base.cls)}">${I(emblem)}</div>
       <div class="ctype">${def.type}${rar}</div>
       <div class="cdesc"><span>${withKeywords(text, base.kwTips)}</span></div></div>
@@ -102,6 +104,169 @@
       el.querySelector('.cdesc span').innerHTML = withKeywords(E.cardText(G, P(), c, liveTarget()), D.CARDS[c.id].kwTips);
     });
   }
+
+  // ---------- legendary foil + card inspect (Anna approved test/foil/inspect.html, ROADMAP row 8, DECISIONS 04:55) ----------
+  // Foil: Palette's art/cards/foil_sample (colours in style.css). Masks are game art, so build.js inlines them like any other:
+  // assets/foil_mask_<card id>.webp if the card has its own, else assets/foil_mask_enraged.webp. Alpha masks (white = foil).
+  const FOIL_LAYERS = '<div class="foil-l foil-sheen"></div><div class="foil-l foil-glitter"></div><div class="foil-l foil-sweep"></div>';
+  const foilCss = document.createElement('style'); foilCss.id = 'foil-masks'; document.head.appendChild(foilCss);
+  const foilDone = new Set();
+  const cssUrl = (u) => 'url("' + String(u).replace(/["\\\n]/g, '') + '")';
+  function foilMask(id) {
+    if (foilDone.has(id)) return; foilDone.add(id);
+    let rules = '';
+    if (foilDone.size === 1 && A.foil_mask_enraged) rules += '.card.foil{--foil-mask:' + cssUrl(A.foil_mask_enraged) + '}\n';
+    if (A['foil_mask_' + id] && id !== 'enraged') rules += '.card.foil[data-id="' + String(id).replace(/[^\w-]/g, '') + '"]{--foil-mask:' + cssUrl(A['foil_mask_' + id]) + '}\n';
+    if (rules) foilCss.appendChild(document.createTextNode(rules));
+  }
+
+  // Tilt: target + smoothed current per card, written to CSS vars from one requestAnimationFrame loop that only runs while
+  // something tilts. No CSS transition on transform (it would kill the hand's hover-lift easing); the hover lift uses the
+  // separate rotate/translate/scale properties, so the tilt on `transform` composes with it instead of fighting.
+  // While a card moves (tilt still easing, or the hover lift transition running) it carries .foil-moving: the glitter stops
+  // following the pointer and the sweep pauses, so the blend layers aren't repainted every frame; both resume when it settles.
+  const TILT = new Map(), HAND_TILT = 6, INSP_Y = 12, INSP_X = 4;
+  let tiltRaf = 0, tiltLast = 0;
+  const tiltOf = (el) => { if (!TILT.has(el)) TILT.set(el, { tx: 0, ty: 0, tmx: .5, tmy: .5, tfo: 0, x: 0, y: 0, mx: .5, my: .5, fo: 0, hold: 0, moving: false, w: '' }); return TILT.get(el); };
+  function tiltKick() { if (!tiltRaf) { tiltLast = performance.now(); tiltRaf = requestAnimationFrame(tiltFrame); } }
+  function tiltFrame(t) {
+    const dt = Math.min(64, Math.max(0, t - tiltLast)); tiltLast = t;
+    const k = 1 - Math.exp(-dt / 85);
+    for (const [el, s] of TILT) {
+      if (!el.isConnected) { TILT.delete(el); continue; }
+      s.x += (s.tx - s.x) * k; s.y += (s.ty - s.y) * k; s.mx += (s.tmx - s.mx) * k; s.my += (s.tmy - s.my) * k; s.fo += (s.tfo - s.fo) * k;
+      const w = s.x.toFixed(2) + s.y.toFixed(2) + s.mx.toFixed(3) + s.my.toFixed(3) + s.fo.toFixed(3);
+      if (w !== s.w) { s.w = w;
+        el.style.setProperty('--rx', s.x.toFixed(2) + 'deg'); el.style.setProperty('--ry', s.y.toFixed(2) + 'deg');
+        el.style.setProperty('--mx', s.mx.toFixed(3)); el.style.setProperty('--my', s.my.toFixed(3)); el.style.setProperty('--fo', s.fo.toFixed(3)); }
+      const moving = t < s.hold || Math.abs(s.tx - s.x) + Math.abs(s.ty - s.y) > .12 || Math.abs(s.tmx - s.mx) + Math.abs(s.tmy - s.my) > .006;
+      if (moving !== s.moving) { s.moving = moving; el.classList.toggle('foil-moving', moving);
+        if (!moving) { el.style.setProperty('--gx', s.mx.toFixed(3)); el.style.setProperty('--gy', s.my.toFixed(3)); } }
+      if (!s.insp && !moving && !s.tfo && Math.abs(s.x) + Math.abs(s.y) < .01 && Math.abs(s.mx - .5) + Math.abs(s.my - .5) < .004) {
+        ['--rx', '--ry', '--mx', '--my', '--fo', '--gx', '--gy'].forEach(v => el.style.removeProperty(v)); el.classList.remove('foil-moving'); TILT.delete(el); }
+    }
+    tiltRaf = TILT.size ? requestAnimationFrame(tiltFrame) : 0;
+  }
+  // hand: a foil card under the mouse tilts toward it (up to 6 deg), as on the test page. Mouse only; never while dragging.
+  let foilHover = null, lastPtr = { x: -1, y: -1 };
+  function foilHoverSet(el) {
+    if (el === foilHover) return;
+    const t = performance.now();
+    if (foilHover) Object.assign(tiltOf(foilHover), { tx: 0, ty: 0, tmx: .5, tmy: .5, tfo: 0, hold: t + 220 });   // 220 ms: the .18 s hover transition
+    foilHover = el; if (el) tiltOf(el).hold = t + 220;
+    tiltKick();
+  }
+  document.addEventListener('pointermove', (e) => {
+    lastPtr = { x: e.clientX, y: e.clientY };
+    if (INSP.src) { inspectPointer(e.clientX, e.clientY); return; }
+    if (e.pointerType && e.pointerType !== 'mouse') return;
+    const el = !reduced() && !(ui.drag && ui.drag.moved) && e.target.closest ? e.target.closest('#app .hand .card.foil:not(.dragging)') : null;
+    foilHoverSet(el);
+    if (!el) return;
+    const r = el.getBoundingClientRect(), s = tiltOf(el);
+    const nx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), ny = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+    s.ty = (nx - .5) * 2 * HAND_TILT; s.tx = (.5 - ny) * 2 * HAND_TILT; s.tmx = nx; s.tmy = ny; s.tfo = 1;
+    tiltKick();
+  }, { passive: true });
+  document.documentElement.addEventListener('pointerleave', () => foilHoverSet(null));
+  document.addEventListener('pointerdown', (e) => { if (foilHover && e.button === 0) foilHoverSet(null); }, true);
+
+  // Inspect: the card is cloned into an overlay at about 470 px (re-laid out at a bigger --cw, not scaled, so the text and
+  // frame stay sharp) and FLIP-lifted from where it sat. The source hides until it goes back.
+  // Triggers: right-click on any card (combat hand, rewards, shop, rest / event / removal grids, deck view, compendium);
+  // also a plain left-click in the deck / pile view and the compendium, where clicking a card does nothing else
+  // (cards with their own action, such as the upgrade / removal / event pick grids, keep it: right-click inspects there).
+  // Left-click and drag on a hand card still play it, exactly as before. Esc, a click outside or a right-click outside closes.
+  const INSP = { src: null, key: null, clone: null, busy: false };
+  const $insp = document.createElement('div'); $insp.className = 'insp'; $insp.id = 'insp';
+  $insp.innerHTML = '<div class="insp-dim"></div><div class="insp-lift"></div><div class="insp-hint">Move the mouse to tilt. Click outside or press Esc to put it back.</div>';
+  document.body.appendChild($insp);
+  const $lift = $insp.querySelector('.insp-lift');
+  const inspCw = () => Math.round(Math.min(innerHeight / Z() * .62 / 1.4, 470));
+  function inspKey(el) {
+    if (el.dataset.card) return { card: el.dataset.card };
+    const same = [...$app.querySelectorAll('.card[data-id="' + el.dataset.id + '"]')];
+    return { id: el.dataset.id, i: same.indexOf(el) };
+  }
+  function inspFind(key) {
+    if (!key) return null;
+    if (key.card) return $app.querySelector('.card[data-card="' + key.card + '"]');
+    return $app.querySelectorAll('.card[data-id="' + key.id + '"]')[key.i] || null;
+  }
+  function fromSrcTransform(src) {   // the transform that puts the lift wrapper exactly over the card where it sits
+    const z = Z(), r = src.getBoundingClientRect(), lr = $lift.getBoundingClientRect();
+    const cs = getComputedStyle(src), k = src.offsetWidth * (parseFloat(cs.scale) || 1) / inspCw(), rot = parseFloat(cs.rotate) || 0;
+    return `translate(${((r.left + r.width / 2 - lr.left) / z).toFixed(1)}px,${((r.top + r.height / 2 - lr.top) / z).toFixed(1)}px) rotate(${rot}deg) scale(${k.toFixed(3)})`;
+  }
+  function inspectPointer(x, y) {
+    if (!INSP.clone) return;
+    const nx = Math.max(0, Math.min(1, x / innerWidth)), ny = Math.max(0, Math.min(1, y / innerHeight)), s = tiltOf(INSP.clone);
+    s.ty = (nx - .5) * 2 * INSP_Y; s.tx = (.5 - ny) * 2 * INSP_X; s.tmx = nx; s.tmy = .25 + ny * .5; s.tfo = 1;
+    tiltKick();
+  }
+  function openInspect(src) {
+    if (INSP.src || INSP.busy || !src || !src.isConnected || (ui.drag && ui.drag.moved)) return false;
+    INSP.busy = true; hideTip(); foilHoverSet(null);
+    const c = src.cloneNode(true);
+    c.classList.remove('selected', 'dragging', 'aiming', 'hovered', 'unplayable', 'buying', 'foil-moving');
+    for (const a of ['style', 'data-act', 'data-card', 'data-reward', 'data-tip', 'id']) c.removeAttribute(a);
+    c.style.setProperty('--cw', inspCw() + 'px');
+    if (!c.classList.contains('foil')) { const sh = document.createElement('div'); sh.className = 'insp-sheen'; const fr = c.querySelector('.cframe'); if (fr) fr.after(sh); }
+    const prev = TILT.get(src);
+    TILT.set(c, Object.assign(tiltOf(c), prev ? { x: prev.x, y: prev.y, mx: prev.mx, my: prev.my, fo: prev.fo } : {}, { tfo: 1, insp: true, w: '' }));
+    INSP.src = src; INSP.key = inspKey(src); INSP.clone = c;
+    $insp.classList.add('open'); $lift.appendChild(c);
+    const from = fromSrcTransform(src);   // measured while the source is still visible (fan rotation, hover lift)
+    src.style.visibility = 'hidden';
+    void $insp.offsetWidth; $insp.classList.add('shown');
+    const a = $lift.animate([{ transform: from }, { transform: 'translate(0,-14px) scale(1.03)', offset: .7 }, { transform: 'none' }],
+      { duration: reduced() || ui.fast ? 1 : 380, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'both' });
+    a.onfinish = () => { INSP.busy = false; }; INSP.anim = a;
+    inspectPointer(lastPtr.x < 0 ? innerWidth / 2 : lastPtr.x, lastPtr.y < 0 ? innerHeight / 2 : lastPtr.y);
+    return true;
+  }
+  function closeInspect() {
+    if (INSP.src && INSP.busy && INSP.anim && INSP.anim.playState === 'running') { INSP.anim.onfinish = null; INSP.anim.finish(); INSP.busy = false; }   // Esc mid-lift: land, then go back
+    if (!INSP.src || INSP.busy) return;
+    INSP.busy = true;
+    let src = INSP.src.isConnected ? INSP.src : inspFind(INSP.key);
+    Object.assign(tiltOf(INSP.clone), { tx: 0, ty: 0, tmx: .5, tmy: .5 });
+    $insp.classList.remove('shown');
+    const ms = reduced() || ui.fast ? 1 : 300;
+    let a;
+    if (src) { src.style.visibility = 'hidden'; a = $lift.animate([{ transform: 'none' }, { transform: fromSrcTransform(src) }], { duration: ms, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'both' }); }
+    else a = $lift.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, fill: 'both' });   // the card is gone (the screen changed): just fade
+    a.onfinish = () => {
+      if (src) src.style.visibility = '';
+      TILT.delete(INSP.clone); $lift.innerHTML = ''; a.cancel(); if (INSP.anim) INSP.anim.cancel(); INSP.anim = null; $insp.classList.remove('open');
+      INSP.src = INSP.key = INSP.clone = null; INSP.busy = false;
+    };
+  }
+  function inspectRelink() {   // render() replaced the screen while a card was inspected: hide the new copy of the card
+    if (!INSP.src || INSP.src.isConnected) return;
+    const el = inspFind(INSP.key); if (el) { el.style.visibility = 'hidden'; INSP.src = el; }
+  }
+  $insp.addEventListener('click', (e) => { e.stopPropagation(); if (!e.target.closest('.card')) closeInspect(); });
+  $insp.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); if (!e.target.closest('.card')) closeInspect(); });
+  $insp.addEventListener('pointerdown', (e) => e.stopPropagation());
+  window.addEventListener('keydown', (e) => {   // while inspecting, keys don't reach the game (no hotkey plays a card under the overlay)
+    if (!INSP.src || e.key === 'F11') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (e.key === 'Escape') closeInspect();
+  }, true);
+  document.addEventListener('contextmenu', (e) => {
+    if (TOUCH) return;
+    const card = e.target.closest && e.target.closest('#app .card'); if (!card) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    openInspect(card);
+  }, true);
+  document.addEventListener('click', (e) => {
+    if (ui.suppressClick) return;
+    const card = e.target.closest && e.target.closest('#app .pileview .card, #app .compcards .card');
+    if (!card || card.hasAttribute('data-act')) return;   // pick grids (upgrade, remove, event pick) share .pileview: a click there still picks
+    e.preventDefault(); e.stopImmediatePropagation();
+    openInspect(card);
+  }, true);
 
   function statusesHTML(u) {
     return Object.entries(u.statuses).map(([k, n]) => {
@@ -839,6 +1004,7 @@
     $tip.style.display = 'none';
     if (G && ui.screen === 'game' && G.phase === 'map') scrollMap();
     layoutHand(true);
+    inspectRelink();
     try { S.music(!G || ui.screen !== 'game' ? 'menu' : (G.node === 'boss' && (G.phase === 'combat' || ui.holdCombat)) ? 'boss:' + G.encounter : G.floor); } catch (e) {}
   }
 
@@ -1445,7 +1611,8 @@
   });
   document.addEventListener('change', (e) => { if (e.target.matches && e.target.matches('[data-vol]')) sfx('click'); });
   applyScale();
-  window.__game = { get scale() { return zCache; }, get state() { return G; }, act, clickCard, startGame, ui, render, tell, playLine, setPose, beat };
+  window.__game = { get scale() { return zCache; }, get state() { return G; }, act, clickCard, startGame, ui, render, tell, playLine, setPose, beat,
+    inspect: { open: (el) => openInspect(el), close: closeInspect, get src() { return INSP.src; }, get clone() { return INSP.clone; }, get busy() { return INSP.busy; } } };
   render();
   // the desktop app swapped in a new window (switching to / from borderless): pick up right where the player was
   if (IS_APP && /(^|[?&])resume=1/.test(location.search)) {
