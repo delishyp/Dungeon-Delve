@@ -324,7 +324,9 @@
  * curse   (black)  curses
  * FRAME_OVERRIDE can pin a card to a frame by hand. */
 (function (G) {
-  G.FRAME_OVERRIDE = { junk_broken_bone: 'curse', acid: 'curse' };
+  G.FRAME_OVERRIDE = { junk_broken_bone: 'curse', acid: 'curse',
+    // Powers whose effect is a hook (no effect list to read the frame from): Barbarian deck styles B1-B3
+    blood_up: 'buff', last_tally: 'buff', scar_tissue: 'defense' };
   G.FRAME_COLORS = { attack: 'red', defense: 'blue', buff: 'green', debuff: 'purple', utility: 'gold', curse: 'black' };
   G.frameOf = function (def, id) {
     if (G.FRAME_OVERRIDE[id]) return G.FRAME_OVERRIDE[id];

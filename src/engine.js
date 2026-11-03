@@ -40,6 +40,12 @@
   function upgradeDef(id) {
     if (upCache[id]) return upCache[id];
     const b = D.CARDS[id];
+    // A hand-written upgrade (deck_styles_v1.md "Upgraded:" lines) replaces the generic one.
+    if (b.upgrade) {
+      const u = b.upgrade;
+      return (upCache[id] = { ...b, ...u, name: b.name + '+', cost: u.cost != null ? u.cost : b.cost,
+        effects: (u.effects || b.effects).map(f => ({ ...f })), power: u.power || b.power, upgraded: true });
+    }
     let changed = false;
     const effects = b.effects.map(fx => {
       const f = { ...fx };
@@ -447,7 +453,7 @@
     s.enemies = enc.enemies.map(id => makeEnemy(s, id));
     for (const p of livingPlayers(s)) {
       p.draw = shuffle(s, p.deck.map(c => ({ ...c })));
-      p.hand = []; p.discard = []; p.exhaust = []; p.powers = []; p.block = 0; p.statuses = {}; p.fresh = {}; p.reward = null;
+      p.hand = []; p.discard = []; p.exhaust = []; p.powers = []; p.block = 0; p.statuses = {}; p.fresh = {}; p.reward = null; p.turnFx = {}; p.enemyTurnFx = {};
     }
     log(s, `— ${enc.name} —`);
     emit(s, { kind: 'encounter', name: enc.name });
@@ -463,13 +469,53 @@
     if (fx.rageBonus && src.statuses.rage) base += fx.rageBonus;
     return base;
   }
+  // Rage (Anna, Nov 3 04:07): adds no damage; any Rage at all cuts the attack damage you take by a flat 25%.
+  const RAGE_TAKEN = 0.75;
   function attackDamage(src, tgt, base) {
     let d = base;
-    if (src) d += (src.statuses.might || 0) + (src.statuses.rage || 0) + (src.statuses.arcane || 0);
+    if (src) d += (src.statuses.might || 0) + (src.statuses.arcane || 0);
     if (src && src.statuses.frightened) d = Math.floor(d * 0.75);
     if (tgt && tgt.statuses.prone) d = Math.floor(d * 1.5);
-    if (tgt && tgt.statuses.rage) d -= 2;
+    if (tgt && tgt.statuses.rage) d = Math.floor(d * RAGE_TAKEN);
     return Math.max(0, d);
+  }
+  // ---------- Power hooks (Barbarian deck styles B1-B3): read from the Powers in play, see data.js `power` ----------
+  const powerDefs = (p) => (p && p.side === 'player' && p.powers ? p.powers.map(cardDef).filter(d => d.power) : []);
+  const rageNoFade = (t) => powerDefs(t).some(d => d.power.rageNoFade);
+  // Blood Up: every attack hit on an enemy gives Rage, up to the cap a turn (one shared counter, reset each turn).
+  function onAttackHit(s, src, tgt) {
+    if (!src || src.side !== 'player' || !tgt || tgt.side !== 'enemy') return;
+    src.turnFx = src.turnFx || {};
+    for (const d of powerDefs(src)) {
+      const P = d.power; if (!P.rageOnHit) continue;
+      const left = (P.rageOnHitPerTurn || Infinity) - (src.turnFx.rageOnHit || 0);
+      const n = Math.min(P.rageOnHit, left); if (n <= 0) continue;
+      src.turnFx.rageOnHit = (src.turnFx.rageOnHit || 0) + n;
+      addStatus(s, src, 'rage', n, true);
+    }
+  }
+  // Scar Tissue / The Bear Beneath: the first HP loss to damage in each enemy turn, per Power in play.
+  function onHpLoss(s, tgt) {
+    if (!s.enemyActing || !tgt || tgt.side !== 'player' || !alive(tgt) || !tgt.powers) return;
+    tgt.enemyTurnFx = tgt.enemyTurnFx || {};
+    tgt.powers.forEach(c => {
+      const d = cardDef(c), h = d.power && d.power.onHpLossEnemyTurn; if (!h) return;
+      const k = 'hpLoss_' + c.uid; if (tgt.enemyTurnFx[k]) return; tgt.enemyTurnFx[k] = true;
+      emit(s, { kind: 'powerTrigger', source: tgt.uid, card: c.id });
+      if (h.block) gainBlock(s, tgt, h.block);
+      if (h.rage) addStatus(s, tgt, 'rage', h.rage, false);
+    });
+  }
+  // Goad: an enemy whose intent has no attack switches to one of its attacking moves (the first one in its own move order).
+  function goad(s, p, e) {
+    if (!alive(e) || e.side !== 'enemy' || !e.intent) return;
+    if (moveOf(e, e.intent.move).effects.some(f => f.t === 'attack')) return;
+    const m = D.MONSTERS[e.monsterId], order = (m.ai.pattern || m.ai.whileUp || []).concat(Object.keys(m.moves));
+    const mv = order.find(k => m.moves[k] && moveOf(e, k).effects.some(f => f.t === 'attack'));
+    if (!mv) return;
+    e.intent = { move: mv, target: p.uid, goaded: true };
+    emit(s, { kind: 'goaded', source: p.uid, target: e.uid, move: mv });
+    log(s, `${e.name} takes the bait.`);
   }
   function dealDamage(s, tgt, amount, src, isAttack) {
     if (!alive(tgt)) return;
@@ -478,7 +524,8 @@
     const loss = amount - blocked;
     tgt.hp = Math.max(0, tgt.hp - loss);
     emit(s, { kind: 'hit', target: tgt.uid, source: src && src.uid, amount: loss, blocked, hp: tgt.hp, block: tgt.block });
-    if (tgt.hp === 0) died(s, tgt); else if (loss > 0) checkPhase(s, tgt);
+    if (tgt.hp === 0) died(s, tgt); else if (loss > 0) { checkPhase(s, tgt); onHpLoss(s, tgt); }
+    if (isAttack) onAttackHit(s, src, tgt);
     if (isAttack && src && alive(src) && tgt.statuses.thorns) dealDamage(s, src, tgt.statuses.thorns, null, false);
     return loss;
   }
@@ -542,9 +589,10 @@
     if (self) t.fresh[status] = true;
     emit(s, { kind: 'status', target: t.uid, status, amount: n });
   }
+  const decaysFor = (t, k) => D.STATUSES[k].decays && !(k === 'rage' && rageNoFade(t));   // Blood Up: Rage stops fading
   function decayStatuses(t) {
     for (const k of Object.keys(t.statuses)) {
-      if (!D.STATUSES[k].decays) continue;
+      if (!decaysFor(t, k)) continue;
       if (t.fresh[k]) continue;
       t.statuses[k]--; if (t.statuses[k] <= 0) delete t.statuses[k];
     }
@@ -574,9 +622,10 @@
   function startPlayersTurn(s) {
     s.turn++;
     for (const p of livingPlayers(s)) {
-      p.block = 0; p.energy = p.maxEnergy; p.endedTurn = false;
+      p.block = 0; p.energy = p.maxEnergy; p.endedTurn = false; p.turnFx = {};
       tickPoison(s, p);
       if (p.statuses.armor) gainBlock(s, p, p.statuses.armor);
+      for (const d of powerDefs(p)) if (d.power.turnStart && alive(p)) runEffects(s, p, d.power.turnStart, null, null);   // The Last Tally
       runRelics(s, p, 'turnStart');
     }
     for (const p of livingPlayers(s)) drawCards(s, p, p.handSize);
@@ -601,6 +650,7 @@
   function enemyTurn(s) {
     emit(s, { kind: 'enemyTurn' });
     s.enemyActing = true;
+    for (const p of s.players) p.enemyTurnFx = {};
     try { enemyActs(s); } finally { delete s.enemyActing; }
     if (s.phase === 'combat') s.enemies.filter(alive).forEach(e => chooseIntent(s, e));
   }
@@ -700,7 +750,7 @@
     // The hero's statuses tick down at the end of their turn, before enemies act: show the hit as it will land.
     if (tgt && tgt.side !== 'enemy' && !tgt.endedTurn) {
       const st = { ...tgt.statuses };
-      for (const k of Object.keys(st)) if (D.STATUSES[k].decays && !(tgt.fresh || {})[k]) { st[k]--; if (st[k] <= 0) delete st[k]; }
+      for (const k of Object.keys(st)) if (decaysFor(tgt, k) && !(tgt.fresh || {})[k]) { st[k]--; if (st[k] <= 0) delete st[k]; }
       tgt = { ...tgt, statuses: st };
     }
     const out = { kind: mv.intent, name: mv.name, damage: null, times: 1, block: 0, debuff: false, buff: false };
@@ -723,9 +773,15 @@
   function runEffects(s, p, effects, tgt, c) {
     let blockSoFar = 0;
     for (const fx of effects) {
-      const times = fx.times || 1;
+      // Enraged: X = your Rage when played (counted once, so its own hits add nothing; Rage is not spent)
+      const times = fx.timesFrom ? (p.statuses[fx.timesFrom] || 0) : (fx.times || 1);
       switch (fx.t) {
-        case 'damage': for (let i = 0; i < times; i++) if (alive(tgt)) dealDamage(s, tgt, attackDamage(p, tgt, attackBase(p, fx)), p, true); break;
+        case 'damage': for (let i = 0; i < times; i++) if (alive(tgt)) {
+          const lost = dealDamage(s, tgt, attackDamage(p, tgt, attackBase(p, fx)), p, true);
+          if (fx.ragePerUnblocked && lost > 0) addStatus(s, p, 'rage', fx.ragePerUnblocked, true);   // Bloodied Knuckles
+        } break;
+        case 'loseHp': loseHp(s, p, fx.n, 'self'); break;
+        case 'goad': if (tgt) goad(s, p, tgt); break;
         case 'damageAll': for (let i = 0; i < times; i++) livingEnemies(s).forEach(e => dealDamage(s, e, attackDamage(p, e, attackBase(p, fx)), p, true)); break;
         case 'damageAllRaw': livingEnemies(s).forEach(e => dealDamage(s, e, fx.n, null, false)); break;
         case 'damageFromBlock': if (alive(tgt)) dealDamage(s, tgt, attackDamage(p, tgt, p.block), p, true); break;
@@ -842,7 +898,11 @@
     emit(s, { kind: finalBoss ? 'victory' : 'encounterWon' });
   }
 
-  function rewardRarityWeights(type) {
+  // Anna (Nov 3 03:48): bosses always offer legendary cards. A hero with legendaries gets a legendary-only boss pick;
+  // legendaries never show up anywhere else (not in normal or elite rewards, events or the shop).
+  const hasLegendaries = (cls) => Object.values(D.CARDS).some(d => d.cls === cls && d.rarity === 'legendary');
+  function rewardRarityWeights(type, cls) {
+    if (type === 'boss' && cls && hasLegendaries(cls)) return { legendary: 1 };
     const weights = { ...D.RARITY_WEIGHTS };
     if (type === 'elite' || type === 'boss') { weights.uncommon *= 1.5; weights.rare *= 3; }
     if (type === 'elite') weights.common = 0; // Anna: elite card rewards are uncommon or rare only
@@ -852,7 +912,7 @@
   function rollCardRewards(s, p, n, type) {
     const cls = D.HEROES[p.heroId] ? p.heroId : 'fighter';
     const pool = Object.keys(D.CARDS).filter(id => D.CARDS[id].rarity !== 'starter' && D.CARDS[id].cls === cls);
-    const weights = rewardRarityWeights(type);
+    const weights = rewardRarityWeights(type, cls);
     const picks = [];
     let guard = 0;
     while (picks.length < n && picks.length < pool.length && guard++ < 200) {

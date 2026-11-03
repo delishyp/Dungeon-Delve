@@ -3,14 +3,21 @@
  * Pure data: no logic here. Add content by adding entries.
  *
  * Card text: {0}, {1}, ... are replaced by the live value of
- * effect #0, #1 ... (damage includes Might/Rage/Prone etc.).
+ * effect #0, #1 ... (damage includes Might/Arcane/Prone etc.; Rage adds no damage).
  *
  * Card effects (run in order by the engine):
- *  damage {n, times, rageBonus, scale:{status,per}} – hit the chosen enemy
+ *  damage {n, times, rageBonus, scale:{status,per}, timesFrom, ragePerUnblocked} – hit the chosen enemy
+ *    timesFrom: 'rage' = hit X times, X = your Rage when played (not spent); ragePerUnblocked: Rage per hit not fully Blocked
+ *  loseHp {n} – lose HP (ignores Block) | goad – a targeted enemy not planning to attack switches to an attack
  *  damageAll {n, times}       – hit every enemy
  *  damageFromBlock            – hit chosen enemy for your current Block
  *  block {n} | heal {n} | draw {n} | energy {n} | cleanse
  *  status {status, n, to: 'target'|'all'|'self'}
+ *
+ * Card flags: rageAttack (an attack that gives Rage; Anna 04:20), upgrade {...} (hand-written upgraded version, merged over
+ *  the card instead of the generic rest-site upgrade), power {...} (whole-fight hooks of a Power while it is in play):
+ *  rageOnHit n + rageOnHitPerTurn cap (every attack hit on an enemy), rageNoFade, turnStart [effects] (start of each of
+ *  your turns), onHpLossEnemyTurn {block, rage} (the first time you lose HP to damage in each enemy turn).
  *
  * Monster move effects: attack {n, times} | block {n} | status | healAllies | healSelf | addCards
  *  summon {monster, max} – sew a minion in front (at most `max` alive) | healMinions {monster, n}
@@ -32,7 +39,7 @@
     might:      { name: 'Might', debuff: false, decays: false,
                   tip: 'Might: each hit deals extra damage equal to Might. Lasts the whole fight.' },
     rage:       { name: 'Rage', debuff: false, decays: true,
-                  tip: 'Rage: each hit deals extra damage equal to Rage, and you take 2 less damage from every hit. Goes down by 1 at the end of your turn.' },
+                  tip: 'Rage: while you have any Rage, you take 25% less damage from attacks, however many stacks you have. Rage adds no damage; some cards count your stacks. Goes down by 1 at the end of your turn.' },
     arcane:     { name: 'Arcane', debuff: false, decays: false,
                   tip: 'Arcane: each spell hit deals extra damage equal to Arcane. Some spells grow even stronger with Arcane. Lasts the whole fight.' },
     armor:      { name: 'Armor', debuff: false, decays: false,
@@ -102,7 +109,7 @@
       desc: 'Gain {0} Rage.', effects: [{ t: 'status', status: 'rage', n: 3, to: 'self' }] },
     reckless_attack: { cls: 'barbarian', name: 'Reckless Attack', cost: 1, type: 'attack', rarity: 'starter', target: 'enemy',
       desc: 'Deal {0} damage. You become {1} Prone.', effects: [{ t: 'damage', n: 12 }, { t: 'status', status: 'prone', n: 1, to: 'self' }] },
-    frenzied_strike: { cls: 'barbarian', name: 'Frenzied Strike', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
+    frenzied_strike: { cls: 'barbarian', name: 'Frenzied Strike', cost: 0, type: 'attack', rarity: 'common', target: 'enemy', rageAttack: true,
       desc: 'Deal {0} damage. Gain {1} Rage.', effects: [{ t: 'damage', n: 6 }, { t: 'status', status: 'rage', n: 1, to: 'self' }] },
     intimidating_presence: { cls: 'barbarian', name: 'Intimidating Presence', cost: 1, type: 'skill', rarity: 'common', target: 'none',
       desc: 'Apply {0} Frightened to ALL enemies.', effects: [{ t: 'status', status: 'frightened', n: 2, to: 'all' }] },
@@ -130,6 +137,47 @@
       desc: 'Deal {0} damage 4 times.', effects: [{ t: 'damage', n: 4, times: 4 }] },
     persistent_rage: { cls: 'barbarian', name: 'Persistent Rage', cost: 1, type: 'skill', rarity: 'rare', target: 'none', exhaust: true,
       desc: 'Gain {0} Rage. Draw {1} cards. Exhaust.', effects: [{ t: 'status', status: 'rage', n: 5, to: 'self' }, { t: 'draw', n: 2 }] },
+    // ---- Barbarian deck styles B1-B3 (lore/text/deck_styles_v1.md, approved by Anna Nov 3). Art: placeholders (assets/placeholder/). ----
+    // B1 Rage Burst: Rage attacks (weaker hits that give Rage), Blood Up (the other route), Enraged (the payoff).
+    headbutt: { cls: 'barbarian', name: 'Headbutt', cost: 1, type: 'attack', rarity: 'common', target: 'enemy', rageAttack: true,
+      desc: 'Deal {0} damage. Gain {1} Rage. Lose {2} HP.',
+      effects: [{ t: 'damage', n: 5 }, { t: 'status', status: 'rage', n: 2, to: 'self' }, { t: 'loseHp', n: 2 }],
+      upgrade: { effects: [{ t: 'damage', n: 7 }, { t: 'status', status: 'rage', n: 2, to: 'self' }, { t: 'loseHp', n: 2 }] } },
+    wild_swing: { cls: 'barbarian', name: 'Wild Swing', cost: 1, type: 'attack', rarity: 'common', target: 'none', rageAttack: true,
+      desc: 'Deal {0} damage to ALL enemies. Gain {1} Rage.',
+      effects: [{ t: 'damageAll', n: 4 }, { t: 'status', status: 'rage', n: 1, to: 'self' }],
+      upgrade: { effects: [{ t: 'damageAll', n: 6 }, { t: 'status', status: 'rage', n: 1, to: 'self' }] } },
+    goad: { cls: 'barbarian', name: 'Goad', cost: 1, type: 'attack', rarity: 'uncommon', target: 'enemy', rageAttack: true,
+      desc: "Deal {0} damage. Gain {1} Rage. If the enemy isn't planning to attack, it switches to an attack.",
+      effects: [{ t: 'damage', n: 4 }, { t: 'status', status: 'rage', n: 1, to: 'self' }, { t: 'goad' }],
+      upgrade: { cost: 0 } },
+    bloodied_knuckles: { cls: 'barbarian', name: 'Bloodied Knuckles', cost: 1, type: 'attack', rarity: 'uncommon', target: 'enemy', rageAttack: true,
+      desc: "Deal {0} damage twice. Gain 1 Rage for each hit that isn't fully Blocked.",
+      effects: [{ t: 'damage', n: 3, times: 2, ragePerUnblocked: 1 }],
+      upgrade: { effects: [{ t: 'damage', n: 4, times: 2, ragePerUnblocked: 1 }] } },
+    blood_up: { cls: 'barbarian', name: 'Blood Up', cost: 1, type: 'power', rarity: 'rare', target: 'none',
+      desc: 'Whenever one of your attacks hits an enemy, gain 1 Rage (up to 3 a turn). Your Rage no longer fades.',
+      effects: [], power: { rageOnHit: 1, rageOnHitPerTurn: 3, rageNoFade: true },
+      upgrade: { cost: 0 } },
+    enraged: { cls: 'barbarian', name: 'Enraged', cost: 2, type: 'attack', rarity: 'legendary', target: 'enemy', exhaust: true,
+      desc: "Deal {0} damage X times, where X is your Rage. Doesn't spend Rage. Exhaust.",
+      effects: [{ t: 'damage', n: 6, timesFrom: 'rage' }],
+      upgrade: { effects: [{ t: 'damage', n: 8, timesFrom: 'rage' }] } },
+    // B2 The Long Grind (Might): no Might cap (Anna 04:00).
+    last_tally: { cls: 'barbarian', name: 'The Last Tally', cost: 2, type: 'power', rarity: 'legendary', target: 'none',
+      desc: 'At the start of each of your turns, gain 1 Might.',
+      effects: [], power: { turnStart: [{ t: 'status', status: 'might', n: 1, to: 'self' }] },
+      upgrade: { cost: 1 } },
+    // B3 Iron Hide: Armor and Retaliate; one "lost HP in the enemy turn" hook serves both cards.
+    scar_tissue: { cls: 'barbarian', name: 'Scar Tissue', cost: 1, type: 'power', rarity: 'rare', target: 'none',
+      desc: 'Whenever you take HP damage, gain 4 Block (once per enemy turn).',
+      effects: [], power: { onHpLossEnemyTurn: { block: 4 } },
+      upgrade: { desc: 'Whenever you take HP damage, gain 6 Block (once per enemy turn).', power: { onHpLossEnemyTurn: { block: 6 } } } },
+    bear_beneath: { cls: 'barbarian', name: 'The Bear Beneath', cost: 2, type: 'power', rarity: 'legendary', target: 'none',
+      desc: 'Gain {0} Armor and {1} Retaliate. Whenever you take HP damage, gain 1 Rage (once per enemy turn).',
+      effects: [{ t: 'status', status: 'armor', n: 3, to: 'self' }, { t: 'status', status: 'thorns', n: 3, to: 'self' }],
+      power: { onHpLossEnemyTurn: { rage: 1 } },
+      upgrade: { effects: [{ t: 'status', status: 'armor', n: 4, to: 'self' }, { t: 'status', status: 'thorns', n: 4, to: 'self' }] } },
 
     // ================= WIZARD =================
     fire_bolt: { cls: 'wizard', name: 'Fire Bolt', cost: 1, type: 'attack', rarity: 'starter', target: 'enemy',
@@ -183,8 +231,8 @@
     },
     barbarian: {
       name: 'Barbarian', maxHp: 85, energy: 3, handSize: 5,
-      blurb: 'A furious brute. Little Block, but Rage boosts every hit and shrugs off damage. Reckless attacks hit huge but leave you Prone.',
-      mechanic: 'Rage: +damage per hit and -2 damage taken per hit; fades each turn.',
+      blurb: 'A furious brute. Little Block, but while he has any Rage he takes 25% less damage. Rage attacks build stacks for big payoffs. Reckless attacks hit huge but leave you Prone.',
+      mechanic: 'Rage: any Rage = 25% less damage taken (adds no damage); stacks feed payoff cards; fades by 1 each turn.',
       deck: ['greataxe', 'greataxe', 'greataxe', 'greataxe', 'parry', 'parry', 'parry', 'parry', 'rage', 'reckless_attack'],
     },
     wizard: {

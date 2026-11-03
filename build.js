@@ -8,8 +8,12 @@ const src = (f) => fs.readFileSync(here('src', f), 'utf8');
 // Art that git ignores (e.g. assets/hero_* work-in-progress listed in .git/info/exclude) is never built in.
 const ignored = (() => { try { return new Set(require('child_process').execFileSync('git', ['ls-files', '--others', '--ignored', '--exclude-standard', '--', 'assets'], { cwd: __dirname }).toString().split('\n').filter(Boolean).map(f => path.basename(f))); } catch (e) { return new Set(); } })();
 const assetFiles = fs.readdirSync(here('assets')).filter(f => /\.(webp|svg)$/.test(f) && !ignored.has(f)).sort();
+// Placeholder card art (Anna, Nov 3 05:31): assets/placeholder/placeholder_<card id>.webp, listed in PLACEHOLDERS.md.
+// Built in like any other art (key = file name), so a card with no card_<id> art shows its placeholder.
+const phDir = here('assets', 'placeholder');
+if (fs.existsSync(phDir)) assetFiles.push(...fs.readdirSync(phDir).filter(f => /^placeholder_.*\.webp$/.test(f) && !ignored.has(f)).sort().map(f => 'placeholder/' + f));
 const mime = (f) => f.endsWith('.svg') ? 'image/svg+xml' : 'image/webp';
-const assetsMap = (embed) => 'window.ASSETS = ' + JSON.stringify(Object.fromEntries(assetFiles.map(f => [f.replace(/\.(webp|svg)$/, ''),
+const assetsMap = (embed) => 'window.ASSETS = ' + JSON.stringify(Object.fromEntries(assetFiles.map(f => [path.basename(f).replace(/\.(webp|svg)$/, ''),
   embed ? 'data:' + mime(f) + ';base64,' + fs.readFileSync(here('assets', f)).toString('base64') : 'assets/' + f]))) + ';';
 // Approved sound files live in assets/audio/game/ (trial audio in assets/audio/sfx and music stays git-ignored, so never built in).
 const audioDir = here('assets', 'audio', 'game');
@@ -33,6 +37,7 @@ const dist = here('dist');
 fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(path.join(dist, 'icons'), { recursive: true });
 fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
+if (assetFiles.some(f => f.startsWith('placeholder/'))) fs.mkdirSync(path.join(dist, 'assets', 'placeholder'), { recursive: true });
 fs.writeFileSync(path.join(dist, 'index.html'), distHtml);
 fs.copyFileSync(here('src', 'manifest.webmanifest'), path.join(dist, 'manifest.webmanifest'));
 const h = crypto.createHash('sha1').update(distHtml);
