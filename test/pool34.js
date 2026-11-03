@@ -43,7 +43,7 @@ ok(n0('berserker_frenzy') * 4 > n0('reckless_flurry') * D.CARDS.reckless_flurry.
 eq([n0('shove'), n0('shove', 1), D.CARDS.shove.effects[1].n, E.cardDef({ id: 'shove', up: true }).effects[1].n], [9, 12, 2, 3], 'Shove 9 (12), still 2 Prone (3)');
 eq([n0('relentless_rage'), n0('relentless_rage', 1), D.CARDS.relentless_rage.effects[1].n, !!D.CARDS.relentless_rage.exhaust], [12, 15, 2, true], 'Relentless Rage heals 12 (15), 2 Rage, Exhaust');
 ok(/Deals 10 more while you have Rage/.test(D.CARDS.brutal_critical.desc), 'Brutal Critical text says 10 more');
-eq([D.CARDS.arcane_study.effects[0].n, D.CARDS.arcane_study.cost, E.cardDef({ id: 'arcane_study', up: true }).effects[0].n, E.cardDef({ id: 'arcane_study', up: true }).cost], [1, 2, 1, 1], 'Arcane Study 1 Arcane Focus, cost 2 (upgraded cost 1)');
+eq([D.CARDS.arcane_study.effects[0].n, D.CARDS.arcane_study.cost, E.cardDef({ id: 'arcane_study', up: true }).effects[0].n, E.cardDef({ id: 'arcane_study', up: true }).cost], [2, 2, 2, 1], 'Arcane Study 2 Arcane Focus, cost 2 (upgraded cost 1) (Designer round 3 fallback)');
 eq([n0('burning_hands'), n0('burning_hands', 1), n0('scorching_ray'), n0('scorching_ray', 1), D.CARDS.scorching_ray.effects[0].times], [12, 17, 6, 7, 3], 'Burning Hands 12 to ALL (17), Scorching Ray 6x3 (7x3)');
 eq([n0('indomitable'), n0('indomitable', 1), n0('sundering_blow'), n0('sundering_blow', 1), n0('great_weapon'), n0('great_weapon', 1)], [15, 18, 11, 14, 19, 24], 'Indomitable 15 (18), Sundering Blow 11 (14), Great Weapon Smash 19 (24)');
 eq([n0('fireball'), n0('fireball', 1), n0('disintegrate'), n0('disintegrate', 1)], [17, 22, 24, 29], 'Wildfire 17 to ALL (22), Disintegrate 24 (29)');

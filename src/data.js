@@ -323,7 +323,7 @@
     arcane_recovery: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Recovery', cost: 0, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
       desc: 'Gain {0} Energy. Draw {1} cards. Exhaust.', effects: [{ t: 'energy', n: 1 }, { t: 'draw', n: 2 }] },
     arcane_study: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Study', cost: 2, type: 'power', rarity: 'uncommon', target: 'none',
-      desc: 'Gain {0} Arcane Focus.', effects: [{ t: 'status', status: 'arcane', n: 1, to: 'self' }],   // 2 -> 1 Arcane Focus, Designer round 3 (upgraded: cost 1, still 1)
+      desc: 'Gain {0} Arcane Focus.', effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }],   // Designer round 3 fallback: back to 2 Arcane Focus (Wizard full run fell to 69.6 at 1); upgraded cost 1
       upgrade: { cost: 1 } },
     mirror_image: { cls: 'wizard', kind: 'spell', name: 'Mirror Image', cost: 2, type: 'skill', rarity: 'uncommon', target: 'none',
       desc: 'Gain {0} Block. Draw {1} card.', effects: [{ t: 'block', n: 10 }, { t: 'draw', n: 1 }] },
