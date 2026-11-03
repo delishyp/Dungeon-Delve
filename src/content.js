@@ -30,7 +30,7 @@
       kwTips: { Unplayable: 'Unplayable: this card cannot be played. It is gone when the fight ends.' },
       desc: 'Unplayable. Deal 6 or more damage to her with one card to remove this.', effects: [] },
   });
-  D.KEYWORDS.Unplayable = 'Unplayable: this card cannot be played. Remove curses at a shop, the purifying fountain, or some events.';
+  D.KEYWORDS.Unplayable = 'Unplayable: this card cannot be played. Remove curses at a shop, the Silver Spring, or some events.';
 
   // ---------- potions (3 belt slots, used in combat; Healing also on the map) ----------
   D.POTIONS = {
@@ -48,7 +48,7 @@
   Object.assign(D.RELICS, {
     smiling_mask:     { name: 'Mask of the Smiling Merchant', hook: 'passive', effects: [], desc: 'Shop prices are 20% lower.' },
     illithid_tadpole: { name: 'The Worm Behind the Eye', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane (+2 damage per hit). It whispers to you…' },
-    tymora_coin:      { name: 'Lucky Coin', hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
+    tymora_coin:      { name: "Brennick's Penny", hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
     wyrm_scale:       { name: 'Red Wyrmling Scale', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'armor', n: 2, to: 'self' }, { t: 'status', status: 'thorns', n: 1, to: 'self' }], desc: 'Start each fight with 2 Armor and 1 Retaliate.' },
   });
 
@@ -104,132 +104,133 @@
   D.SHOP = { price: { common: 48, uncommon: 72, rare: 135, relic: 145, potion: 50 }, remove: 75, removeStep: 25 };
 
   // ---------- events ----------
+  // Wording: lore/text/events_merchant_v1.md section B (Lorekeeper pass, approved Nov 3). No hint text: each choice is one
+  // in-world sentence, and a gamble says so in-world. Rule: a paid choice (gold, HP, a relic or a card) always gives its
+  // reward and may roll only for an extra bonus; only free choices can go wrong.
   D.EVENTS = {
-    shrine_tymora: { name: 'The Wayside Shrine', art: 'ev_tymora',
-      text: 'A small shrine glitters with offered coins. Nobody remembers which saint it was for. A carved face smiles at you, as if daring you to try your luck.',
+    shrine_tymora: { name: 'The Chalk Circle', art: 'ev_tymora',
+      text: "Someone has chalked Saint Brennick's circle on the wall and set a tin cup beneath it. The cup is full of coins. Delvers leave one for luck on the way down. None of them came back for theirs.",
       choices: [
-        { label: 'Flip a coin', hint: 'Pay 15 gold. 50%: Lucky Coin (relic). 50%: nothing.', req: { gold: 15 },
-          ops: { gold: -15 }, chance: [
-            { w: 50, relic: 'tymora_coin', text: 'The coin lands on its edge. A warm laugh echoes, and a lucky coin is pressed into your palm.' },
-            { w: 50, text: 'The coin lands face down and vanishes. Nothing answers.' }] },
-        { label: 'Pray', hint: 'Upgrade a random card.', ops: { upgradeRandom: 1, text: 'You kneel. When you rise, one of your techniques feels sharper, blessed.' } },
-        { label: 'Leave', hint: 'Never tempt fate.', ops: { text: 'You leave the shrine be. The carved face keeps smiling.' } }] },
-    talking_skull: { name: 'The Talking Skull', art: 'ev_skull',
-      text: '"Psst! You! Yes, you with the face!" A grinning skull on a pedestal clacks its jaw. "I know secrets. Secrets cost blood. Just a little."',
+        { label: 'Drop fifteen gold in the cup and ask for luck.', hint: '', req: { gold: 15 },
+          ops: { gold: -15, relic: 'tymora_coin', text: "The coins settle, and one that isn't yours rolls out against your boot. It's warm. You get the sense there's a reason this tradition has lasted." } },
+        { label: 'Kneel under the circle.', hint: '', ops: { upgradeRandom: 1, text: "You don't remember the prayer, but your hands do. When you stand, one of your skills comes easier." } },
+        { label: 'Leave the cup alone.', hint: '', ops: { text: 'You walk on. Behind you, a coin drops into the cup, and no one is there.' } }] },
+    talking_skull: { name: 'The Skull in the Niche', art: 'ev_skull',
+      text: "A skull sits in a wall niche, its jaw wired shut with copper. As you pass, the wire creaks. \"I was a delver too,\" it says. \"I remember things. You don't. That's worth a little blood, isn't it?\"",
       choices: [
-        { label: 'Ask about treasure', hint: 'Lose 6 HP. Gain 55 gold.', req: { hp: 7 }, ops: { hp: -6, gold: 55, text: '"Third loose brick on the left!" it cackles. Your hand bleeds; your purse grows heavier.' } },
-        { label: 'Ask about the boss', hint: 'Lose 8 HP. Upgrade a card of your choice.', req: { hp: 9 }, ops: { hp: -8, then: 'upgrade', text: '"Here\'s how you beat it…" The skull whispers for a long time. You learn something.' } },
-        { label: 'Smash it', hint: 'Gain 20 gold. 50% chance of a curse.', ops: { gold: 20 }, chance: [
-          { w: 50, text: 'It shatters with a satisfying crunch. Some coins were stuffed in its eye sockets.' },
-          { w: 50, curse: 'curse_regret', text: '"You\'ll REGRET this!" it shrieks as it breaks. You do, a little.' }] },
-        { label: 'Leave', hint: 'Skulls should not talk.', ops: { text: '"Fine! Rude!" it calls after you.' } }] },
-    trapped_chest: { name: 'The Trapped Chest', art: 'ev_trapchest',
-      text: 'A sturdy chest sits behind a web of tripwires. Tiny holes in the walls suggest darts. Lots of darts.',
+        { label: 'Give it a little blood and ask where the gold is.', hint: '', req: { hp: 7 }, ops: { hp: -6, gold: 55, text: '"Third stone on the left. Under the bones." Your hand bleeds. The gold is exactly where it said.' } },
+        { label: 'Give it more blood and ask what waits below.', hint: '', req: { hp: 9 }, ops: { hp: -8, then: 'upgrade', text: "It talks for a long time about what's further down. By the end, you know one thing about how to fight it." } },
+        { label: "Break it, and hope it doesn't get the last word.", hint: '', ops: { gold: 20 }, chance: [
+          { w: 50, text: 'It comes apart like chalk. Someone packed coins into the eye sockets.' },
+          { w: 50, curse: 'curse_regret', text: "As it breaks, it says your name, the one you can't remember. You'll be thinking about that for a while. You pocket the coins from its eyes anyway." }] },
+        { label: 'Walk on.', hint: '', ops: { text: '"You\'ll be back," it says. "They all come back. Some of them come back like me."' } }] },
+    trapped_chest: { name: 'The Wired Chest', art: 'ev_trapchest',
+      text: 'A chest sits behind a web of tripwires. The last delver who tried it is still here, slumped against the wall with darts in his neck.',
       choices: [
-        { label: 'Disarm the trap', hint: '60%: a relic. 40%: lose 10 HP, gain 25 gold.', chance: [
-          { w: 60, relic: 'random', text: 'Click. The wires go slack. Inside, wrapped in silk, lies something magical.' },
-          { w: 40, hp: -10, gold: 25, text: 'Twang! Darts pepper you. You grab a few coins and stagger back.' }] },
-        { label: 'Smash it open', hint: 'Lose 6 HP. Gain 35 gold and a potion.', req: { hp: 7 }, ops: { hp: -6, gold: 35, potion: 'random', text: 'You take the darts on purpose and crack the lid. Gold and a sloshing flask!' } },
-        { label: 'Leave', hint: 'Not worth it.', ops: { text: 'You step carefully around the wires and move on.' } }] },
-    lost_adventurer: { name: 'A Lost Adventurer', art: 'ev_adventurer',
-      text: 'A wounded halfling adventurer sits against the wall, map upside-down. "I\'ve been lost for three days. Please… do you have anything?"',
+        { label: 'Work the wires loose and trust your hands.', hint: '', chance: [
+          { w: 60, relic: 'random', text: 'Click. The wires go slack. Inside, wrapped in oilcloth, is something someone wanted kept safe.' },
+          { w: 40, hp: -10, gold: 25, text: 'Darts bite into your arm. You grab what coins you can reach and stagger back.' }] },
+        { label: 'Take the darts and break the lid.', hint: '', req: { hp: 7 }, ops: { hp: -6, gold: 35, potion: 'random', text: 'You let the darts hit you and crack the lid. Gold, and a stoppered flask.' } },
+        { label: 'Step around the wires.', hint: '', ops: { text: 'You step around the wires, and around him.' } }] },
+    lost_adventurer: { name: 'A Lost Delver', art: 'ev_adventurer',
+      text: "A halfling sits against the wall with a map she has drawn over so many times it's nearly black. \"Three days,\" she says. \"Or three weeks. The tunnels keep moving. Do you have anything?\"",
       choices: [
-        { label: 'Share your supplies', hint: 'Lose 25 gold. Choose a rare card to learn from her.', req: { gold: 25 }, ops: { gold: -25, then: 'rareCards', text: '"Thank you, friend!" She shows you a trick from her old adventuring days.' } },
-        { label: 'Bandage her wounds', hint: 'Lose 5 HP. Gain a potion.', req: { hp: 6 }, ops: { hp: -5, potion: 'random', text: 'You cut your hand helping her. She presses a flask into it. "For luck."' } },
-        { label: 'Rob her', hint: 'Gain 60 gold. Gain a curse (Guilty Conscience).', ops: { gold: 60, curse: 'curse_guilt', text: 'She doesn\'t fight back. That is somehow worse.' } },
-        { label: 'Point the way out', hint: 'Nothing happens.', ops: { text: 'You turn her map the right way up. She laughs and hurries off.' } }] },
-    wishing_well: { name: 'The Wishing Well', art: 'ev_well',
-      text: 'An ancient well glows faintly from below. Coins glitter at the bottom. A rope ladder leads down into the dark.',
+        { label: 'Give her twenty-five gold for the climb.', hint: '', req: { gold: 25 }, ops: { gold: -25, then: 'rareCards', text: 'She folds the coins into her map, then shows you the trick that has kept her alive this long.' } },
+        { label: 'Bind her wounds with your own bandages.', hint: '', req: { hp: 6 }, ops: { hp: -5, potion: 'random', text: 'You open your own cut doing it. She gives you her last flask. "I won\'t need it," she says, and doesn\'t explain.' } },
+        { label: 'Take her purse.', hint: '', ops: { gold: 60, curse: 'curse_guilt', text: "She doesn't fight back. She just goes back to drawing on the map. That's worse." } },
+        { label: 'Turn her map the right way up.', hint: '', ops: { text: 'She stares at it for a long moment, then nods and walks off the wrong way.' } }] },
+    wishing_well: { name: "The Saint's Well", art: 'ev_well',
+      text: "A stone well stands where no well should be, its rim carved with Saint Brennick's circle. It's the one that fell with the chapel. Coins glint at the bottom, and something down there is singing very softly. The water in the bucket is clear one moment and cloudy the next. The rope on the winch is old, and half its strands have already parted.",
       choices: [
-        { label: 'Make a wish', hint: 'Pay 20 gold. 55%: heal 40% HP. 30%: a relic. 15%: nothing.', req: { gold: 20 }, ops: { gold: -20 }, chance: [
-          { w: 55, healPct: 0.4, text: 'You wish for strength. Warm light rises from the well and closes your wounds.' },
-          { w: 30, relic: 'random', text: 'The water bubbles and spits up a glittering trinket. Wish granted!' },
-          { w: 15, text: 'Plink. Nothing. Wells are like that.' }] },
-        { label: 'Climb down for the coins', hint: '50%: gain 70 gold. 50%: lose 12 HP.', chance: [
-          { w: 50, gold: 70, text: 'You fill your pockets with old wishes. Nobody was using them anyway.' },
-          { w: 50, hp: -12, text: 'The rope snaps. You land hard, in very cold water.' }] },
-        { label: 'Drink the water', hint: '70%: heal 15 HP. 30%: a curse (Mummy Rot).', chance: [
-          { w: 70, hp: 15, text: 'Cool and sweet. You feel refreshed.' },
-          { w: 30, curse: 'curse_rot', text: 'It tastes of tomb dust. Your skin starts to itch…' }] },
-        { label: 'Leave', hint: '', ops: { text: 'You keep your coins and your dignity.' } }] },
+        { label: 'Drop twenty gold in and make a wish.', hint: '', req: { gold: 20 },
+          ops: { gold: -20, healPct: 0.4, text: 'Warmth rises out of the well and your wounds close. The singing stops while it happens.' }, chance: [
+            { w: 30, relic: 'random', text: 'Warmth rises out of the well and your wounds close. The singing stops while it happens. A moment later, something is pushed up the shaft and lands at your feet, wet and cold.' },
+            { w: 70 }] },
+        { label: 'Climb down after the coins.', hint: '', chance: [
+          { w: 50, gold: 70, text: 'You fill your pockets with old wishes. The singing follows you back up.' },
+          { w: 50, hp: -12, text: 'The rope gives. You land hard in water so cold it burns.' }] },
+        { label: 'Drink from the bucket while the water looks clear.', hint: '', chance: [
+          { w: 70, hp: 15, text: 'It tastes of stone and iron. You feel steadier.' },
+          { w: 30, curse: 'curse_rot', text: 'It tastes of something buried. By the time you walk on, your skin has started to itch.' }] },
+        { label: 'Leave the well to its singing.', hint: '', ops: { text: 'You go. For a long while you can still hear it.' } }] },
     sleeping_wyrmling: { name: 'The Sleeping Wyrmling', art: 'ev_wyrmling',
-      text: 'A red dragon wyrmling snores on a pile of gold, puffs of smoke curling from its nostrils. It\'s small… for a dragon.',
+      text: 'A young red dragon lies curled on a heap of coins, thin and far too still, smoke leaking from its nose. Something hurt it badly, and it crawled here to sleep it off.',
       choices: [
-        { label: 'Sneak a handful of gold', hint: '60%: gain 65 gold. 40%: it wakes up (elite fight).', chance: [
-          { w: 60, gold: 65, text: 'You tiptoe away with your pockets full. The wyrmling mumbles "mine…" in its sleep.' },
-          { w: 40, fight: 'wyrmling', fightType: 'elite', text: 'A coin slips. Clink. One golden eye opens. "THIEF!"' }] },
-        { label: 'Attack it in its sleep', hint: 'Elite fight. Win: its scale (relic) + elite rewards.', ops: { fight: 'wyrmling', fightType: 'elite', relicAfter: 'wyrm_scale', text: 'You strike first. The wyrmling wakes up VERY angry.' } },
-        { label: 'Tiptoe away', hint: 'Let sleeping dragons lie.', ops: { text: 'Wise. Very wise.' } }] },
-    deck_many_things: { name: 'The Fortune Deck', art: 'ev_deck',
-      text: 'Four glowing cards hover over a velvet table. Draw one, and fate decides. People have become kings... or vanished.',
+        { label: 'Take a handful of gold while it sleeps.', hint: '', chance: [
+          { w: 60, gold: 65, text: 'You back away with full hands. It murmurs a word in its sleep that might be "mine".' },
+          { w: 40, fight: 'wyrmling', fightType: 'elite', text: 'A coin slips. One gold eye opens.' }] },
+        { label: 'Strike it before it wakes.', hint: '', ops: { fight: 'wyrmling', fightType: 'elite', relicAfter: 'wyrm_scale', text: 'Your first blow lands. It wakes screaming.' } },
+        { label: 'Leave it sleeping.', hint: '', ops: { text: "You go slowly, and you don't breathe until the tunnel bends." } }] },
+    deck_many_things: { name: "The Teller's Table", art: 'ev_deck',
+      text: "A fortune-teller's table stands in the dark, its cloth rotted, four cards laid face down. The teller is still in her chair. Her hand rests on the deck, waiting for you to draw.",
       choices: [
-        { label: 'Draw a card', hint: 'Anything can happen.', chance: [
-          { w: 20, relic: 'random', gold: 30, text: 'THE SUN. Golden light! Treasure appears at your feet.' },
-          { w: 20, upgradeRandom: 2, text: 'THE STAR. Your mind blazes with insight. Two of your cards grow stronger.' },
-          { w: 15, healPct: 1, text: 'THE FATES. Reality bends. Your wounds were never there.' },
-          { w: 15, then: 'remove', text: 'THE VOID… swallows a part of your past. Choose a card to lose forever.' },
-          { w: 15, hp: -12, curse: 'curse_hex', text: 'THE SKULL. A shadowy Avatar of Death strikes you, then fades, laughing.' },
-          { w: 15, gold: -9999, maxHp: 6, text: 'THE JESTER. Your gold turns into confetti. You laugh so hard you feel sturdier.' }] },
-        { label: 'Walk away', hint: 'Wise adventurers do.', ops: { text: 'The cards sigh and dim as you leave.' } }] },
+        { label: 'Turn over a card and take whatever it gives.', hint: '', chance: [
+          { w: 20, relic: 'random', gold: 30, text: 'THE LANTERN. Light spills out of the card, and in it lies something somebody lost, and a scatter of their coins.' },
+          { w: 20, upgradeRandom: 2, text: 'THE DOOR. Something in you opens. Two of your skills come easier.' },
+          { w: 15, healPct: 1, text: 'THE NEEDLE. Every wound you carry closes, neatly, as if stitched.' },
+          { w: 15, then: 'remove', text: 'THE HOLLOW. A piece of who you were falls away. Choose what you lose.' },
+          { w: 15, hp: -12, curse: 'curse_hex', text: 'THE GRAVE. Cold comes up through the floor and into your chest. Some of it stays.' },
+          { w: 15, gold: -9999, maxHp: 6, text: "THE BEGGAR. Your purse is empty. You've never felt so light, or so hard to kill." }] },
+        { label: 'Leave the cards where they lie.', hint: '', ops: { text: 'As you go, you hear a card turn over behind you.' } }] },
     mimic_or_not: { name: 'A Lonely Chest', art: 'ev_mimicchest',
-      text: 'A single chest sits in an empty room. A gold coin rests on the lid. Is that… drool on the lock?',
+      text: 'A single chest sits in an empty room with a gold coin on its lid. The floor around it is very clean. The lock is wet.',
       choices: [
-        { label: 'Open it', hint: '50%: a relic + 30 gold. 50%: it\'s a mimic (elite fight).', chance: [
-          { w: 50, relic: 'random', gold: 30, text: 'Just a chest! A very nice chest, full of nice things.' },
-          { w: 50, fight: 'lesser_mimic', fightType: 'elite', text: 'The lid opens… and keeps opening. TEETH!' }] },
-        { label: 'Poke it with a stick', hint: 'Gain 25 gold.', ops: { gold: 25, text: 'It flinches! The mimic spits out some coins and scuttles away, offended.' } },
-        { label: 'Leave', hint: '', ops: { text: 'You back away slowly. The chest seems disappointed.' } }] },
-    wandering_merchant: { name: 'The Wandering Merchant', art: 'ev_merchant',
-      text: '"Ah, customers! In a dungeon! What luck!" A tiefling pedlar tips her enormous hat beside a mule cart piled with curiosities.',
+        { label: 'Lift the lid.', hint: '', chance: [
+          { w: 50, relic: 'random', gold: 30, text: "Just a chest. Someone's last savings, by the look of it." },
+          { w: 50, fight: 'lesser_mimic', fightType: 'elite', text: 'The lid opens, and keeps opening.' }] },
+        { label: 'Prod it from as far back as you can reach.', hint: '', ops: { gold: 25, text: 'It flinches, spits out a mouthful of coins and drags itself off into the dark.' } },
+        { label: 'Back away from it.', hint: '', ops: { text: 'You back away slowly. Behind you, the lid closes very quietly.' } }] },
+    wandering_merchant: { name: 'The Last Cart', art: 'ev_merchant',
+      text: 'A pedlar sits on an overturned cart. The mule is still in the harness, or its bones are. "Buying, selling," the pedlar says. "I need enough gold to pay my way out. Nobody gets out for free."',
       choices: [
-        { label: 'Browse her wares', hint: 'Open a shop.', ops: { shop: { discount: 0 }, text: '"Take your time, take your time. No refunds."' } },
-        { label: 'Haggle', hint: '50%: 30% discount. 50%: prices go up 25%.', chance: [
-          { w: 50, shop: { discount: 0.3 }, text: '"You drive a hard bargain, friend!" She knocks a chunk off every price.' },
-          { w: 50, shop: { discount: -0.25 }, text: '"Haggle with ME?" She scribbles new, higher price tags.' }] },
-        { label: 'Leave', hint: '', ops: { text: '"Your loss!" she calls cheerfully.' } }] },
-    cursed_altar: { name: 'The Cursed Altar', art: 'ev_altar',
-      text: 'A black altar drips with old blood. On top sits a golden idol with a cruel smile. The air hums with dark magic.',
+        { label: "See what's on the cart.", hint: '', ops: { shop: { discount: 0 }, text: '"Take your time. I\'ve got plenty of that."' } },
+        { label: 'Push the pedlar on price and risk the temper.', hint: '', chance: [
+          { w: 50, shop: { discount: 0.3 }, text: '"Fine. Fine. I\'m in no state to argue." Every price drops.' },
+          { w: 50, shop: { discount: -0.25 }, text: '"You think I\'m desperate?" The pedlar crosses out every price and writes higher ones.' }] },
+        { label: 'Walk on.', hint: '', ops: { text: '"I\'ll still be here," the pedlar calls after you. "I\'m always still here."' } }] },
+    cursed_altar: { name: 'The Black Altar', art: 'ev_altar',
+      text: 'A black altar crusted with old offerings. On it sits a gold idol with its eyes scratched out. The scratches are fresh.',
       choices: [
-        { label: 'Take the idol', hint: 'Gain a relic and a curse (Hex of Misfortune).', ops: { relic: 'random', curse: 'curse_hex', text: 'You snatch the idol. The runes flare red, and something follows you out.' } },
-        { label: 'Offer your blood', hint: 'Lose 10 HP. Upgrade 2 random cards.', req: { hp: 11 }, ops: { hp: -10, upgradeRandom: 2, text: 'The altar drinks deeply. Dark power seeps into your skills.' } },
-        { label: 'Desecrate it', hint: 'Fight its undead guardians.', ops: { fight: 'altar_dead', fightType: 'fight', text: 'You kick the altar over. Bones rise from the floor to defend it!' } },
-        { label: 'Leave', hint: '', ops: { text: 'Some things are best left alone.' } }] },
-    yawning_portal: { name: 'The Sunken Tavern', art: 'ev_tavern',
-      text: 'Impossibly, there\'s a tavern down here, loud with song and spilled ale. A half-orc slams a fist on the table. "Who wants to arm-wrestle?"',
+        { label: 'Take the idol.', hint: '', ops: { relic: 'random', curse: 'curse_hex', text: 'You take it. On the way out, you hear bare feet behind you, keeping your pace.' } },
+        { label: 'Cut your palm over the altar.', hint: '', req: { hp: 11 }, ops: { hp: -10, upgradeRandom: 2, text: 'The stone drinks. Something answers by sharpening two of your skills.' } },
+        { label: 'Tip the altar over.', hint: '', ops: { fight: 'altar_dead', fightType: 'fight', text: 'It cracks on the floor. The bones around it start to stand.' } },
+        { label: 'Leave it be.', hint: '', ops: { text: 'Some things are best left where they are.' } }] },
+    yawning_portal: { name: 'The Drowned Taproom', art: 'ev_tavern',
+      text: 'A taproom from old Saint Brennick, sunk whole on the night the ground split. Water stands ankle-deep. Three delvers have barricaded themselves in with the last of the ale, and a big half-orc woman watches the door. "Pay or wrestle," she says. "Those are the only games left."',
       choices: [
-        { label: 'Buy a round', hint: 'Pay 15 gold. Heal 20 HP.', req: { gold: 15 }, ops: { gold: -15, hp: 20, text: 'The bard plays your favorite song. Everyone sings badly. You feel wonderful.' } },
-        { label: 'Arm-wrestle the half-orc', hint: '50%: gain 45 gold. 50%: lose 8 HP.', chance: [
-          { w: 50, gold: 45, text: 'Your arm shakes… and SLAM! The tavern roars. The half-orc pays up, grinning.' },
-          { w: 50, hp: -8, text: 'SLAM! Your knuckles hit the table. Everyone winces. That\'s going to bruise.' }] },
-        { label: 'Swap stories with a veteran', hint: 'Choose a card to add to your deck.', ops: { then: 'cards', text: '"Back in my day…" Some of her stories are even useful.' } },
-        { label: 'Leave', hint: '', ops: { text: 'You tip your hat and go back to the dark.' } }] },
-    forgotten_library: { name: 'The Forgotten Library', art: 'ev_library',
-      text: 'Dusty shelves tower into darkness. On a lectern, a tome bound in chains glows and whispers your name.',
+        { label: 'Pay fifteen gold for a seat and a drink.', hint: '', req: { gold: 15 }, ops: { gold: -15, hp: 20, text: 'Nobody sings. You drink in silence by the barricade, and for an hour your wounds stop hurting.' } },
+        { label: 'Arm-wrestle the half-orc, though nobody here has beaten her.', hint: '', chance: [
+          { w: 50, gold: 45, text: 'Your arm shakes, then hers gives. She pays up without a word.' },
+          { w: 50, hp: -8, text: 'Your knuckles crack against the bar. She nods, as if that settled something.' }] },
+        { label: "Ask the oldest one how she's lasted this long.", hint: '', ops: { then: 'cards', text: 'She tells you, slowly, and some of it is even true. One part is worth remembering.' } },
+        { label: 'Go back out into the dark.', hint: '', ops: { text: 'Behind you, they drag the barricade back into place.' } }] },
+    forgotten_library: { name: 'The Damp Library', art: 'ev_library',
+      text: 'Shelves rise into the dark, swollen with damp. On a lectern a chained book lies open, and the page is in your handwriting.',
       choices: [
-        { label: 'Read the chained tome', hint: 'Lose 7 HP. Choose a rare card.', req: { hp: 8 }, ops: { hp: -7, then: 'rareCards', text: 'The words burn into your mind. Painful, but powerful.' } },
-        { label: 'Study quietly', hint: 'Upgrade a card of your choice.', ops: { then: 'upgrade', text: 'Hours pass in candlelight. You master a technique.' } },
-        { label: 'Burn a forbidden page', hint: 'Remove a card from your deck.', ops: { then: 'remove', text: 'You burn a page… and forget something you never needed.' } },
-        { label: 'Leave', hint: '', ops: { text: 'Shhh. You tiptoe out.' } }] },
-    purifying_fountain: { name: 'The Purifying Fountain', art: 'ev_fountain', floors: [1],
-      text: 'Deep below, a fountain of pure silver water shines. Here, nothing evil can last.',
+        { label: 'Read the page in your handwriting.', hint: '', req: { hp: 8 }, ops: { hp: -7, then: 'rareCards', text: 'The words burn going in. You learn something you once knew, and it costs you.' } },
+        { label: 'Sit and study by candlelight.', hint: '', ops: { then: 'upgrade', text: 'Hours pass. You master one thing, and lose count of the hours.' } },
+        { label: 'Burn one of the pages.', hint: '', ops: { then: 'remove', text: 'The page curls up. Something you never needed goes with it.' } },
+        { label: 'Close the book and go.', hint: '', ops: { text: 'As you leave, you hear the pages turn back to where they were.' } }] },
+    purifying_fountain: { name: 'The Silver Spring', art: 'ev_fountain', floors: [1],
+      text: 'Water wells up out of a crack in the floor, clear and silver and far too clean for this place. The rock around it is bare. Nothing grows near it, and nothing lives.',
       choices: [
-        { label: 'Bathe', hint: 'Remove ALL curses from your deck (or remove any 1 card if you have none).', ops: { removeCurses: true, text: 'The water washes away every taint on your soul.' } },
-        { label: 'Drink deeply', hint: 'Heal 35% HP. Gain 4 max HP.', ops: { healPct: 0.35, maxHp: 4, text: 'It tastes like moonlight. You feel stronger.' } },
-        { label: 'Fill a flask', hint: 'Gain a Potion of Healing.', ops: { potion: 'healing', text: 'You bottle a little of the light for later.' } }] },
-    illithid_tadpole: { name: 'The Tadpole in the Jar', art: 'ev_tadpole', floors: [1],
-      text: 'On a workbench in an abandoned lab, a pale worm wriggles in a glowing jar. You hear it in your head: "Let me in. I can make you powerful."',
+        { label: 'Wash in it.', hint: '', ops: { removeCurses: true, text: 'The water takes the dirt off you, then everything else that clung on.' } },
+        { label: 'Drink deeply.', hint: '', ops: { healPct: 0.35, maxHp: 4, text: 'It tastes of nothing at all. Afterwards you feel stronger, and a little less like yourself.' } },
+        { label: 'Fill a flask.', hint: '', ops: { potion: 'healing', text: "You stopper a little for later. It doesn't warm in your hand." } }] },
+    illithid_tadpole: { name: 'The Worm in the Jar', art: 'ev_tadpole', floors: [1],
+      text: "On a workbench in a dead delver's camp, a pale worm turns slowly in a jar of cloudy water. You hear it without hearing it: \"Let me in. I'll give you back what you've lost.\"",
       choices: [
-        { label: 'Swallow it', hint: 'Gain The Worm Behind the Eye (relic: +2 Arcane each fight) and a curse (Whispers Behind the Eye).', ops: { relic: 'illithid_tadpole', curse: 'curse_whispers', text: 'It slides behind your eye. Power floods in… and so do the whispers.' } },
-        { label: 'Smash the jar', hint: 'Gain 30 gold from the lab.', ops: { gold: 30, text: 'The worm shrieks and dissolves. You loot the lab for coin.' } },
-        { label: 'Leave', hint: '', ops: { text: 'NOPE.' } }] },
-    myconid_circle: { name: 'The Mushroom Circle', art: 'ev_myconids', floors: [1],
-      text: 'Gentle mushroom-folk sway in a circle, glowing spores drifting between them. They invite you to join their dream, slow and shared and peaceful.',
+        { label: 'Drink it down.', hint: '', ops: { relic: 'illithid_tadpole', curse: 'curse_whispers', text: "It slides in behind your eye. Power floods in, and so does a voice that isn't yours." } },
+        { label: 'Smash the jar and search the camp.', hint: '', ops: { gold: 30, text: "The worm shrivels on the bench. You go through the dead delver's things for coin." } },
+        { label: 'Leave it in the jar.', hint: '', ops: { text: "It keeps talking until you're out of earshot, and a little after." } }] },
+    myconid_circle: { name: 'The Dreamers', art: 'ev_myconids', floors: [1],
+      text: "A ring of stuck delvers sits around a cold lamp, eyes shut, holding hands. They take turns dreaming the same dream out loud: a kitchen, bread, the sun. It's how they stay themselves. One of them makes room for you.",
       choices: [
-        { label: 'Join the dream', hint: 'Heal 20 HP and upgrade a random card.', ops: { hp: 20, upgradeRandom: 1, text: 'You dream their slow, kind dreams. You wake up healed and wiser.' } },
-        { label: 'Eat a mushroom', hint: '50%: +8 max HP. 50%: lose 7 HP.', chance: [
-          { w: 50, maxHp: 8, text: 'Delicious! You feel… bigger, somehow.' },
-          { w: 50, hp: -7, text: 'That was NOT an edible one. The mushroom-folk look embarrassed for you.' }] },
-        { label: 'Trade a memory', hint: 'Remove a card from your deck.', ops: { then: 'remove', text: 'They take a memory from you, gently, like picking a mushroom.' } }] },
+        { label: 'Sit down in the circle and close your eyes.', hint: '', ops: { hp: 20, upgradeRandom: 1, text: 'You dream their kitchen with them. When you open your eyes, your wounds have eased and your hands remember something new.' } },
+        { label: 'Drink from the bowl they pass round, though not all of them look well for it.', hint: '', chance: [
+          { w: 50, maxHp: 8, text: "It's bitter and thick. You feel bigger, somehow, and harder to break." },
+          { w: 50, hp: -7, text: "Your stomach turns over. They don't open their eyes while you're sick." }] },
+        { label: 'Give them one of your memories for the dream.', hint: '', ops: { then: 'remove', text: "You tell them something you remember. When you've finished, you can't remember what it was." } }] },
   };
 
   // ---------- roleplay text ----------
