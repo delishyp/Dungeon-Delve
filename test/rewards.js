@@ -28,22 +28,23 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
   ok(num('greataxe') === 7 && num('shove') === 7 && num('mindless_rage') === 3 && num('reckless_attack') === 8 && num('rage') === 3, 'Barbarian: Greataxe Chop 7, Shove 7, Mindless Rage 3, Reckless Attack 8, Rage 3');
   ok(num('frenzied_strike') < num('greataxe') && num('headbutt') < num('greataxe'), 'Rage attacks hit for less than a normal attack (Anna 04:20)');
   // Wizard spell set (wz9, Arcane Focus rework Anna 10:36): cantrips unboosted, spells +2 per Arcane Focus stack.
-  // Numbers: design draft 6.3 plus the wz9 W2 fix on QA_SPELL=1 (Fire Bolt 3, upgraded 5; Ray of Frost 2), Producer 13:10.
+  // Numbers: design draft 6.3 plus the wz9 W2 fix on QA_SPELL=1 (Fire Bolt 3, upgraded 5; Ray of Frost 2), Producer 13:10. wz9c (Anna 15:09, no Arcane Focus card, fifth Fire Bolt): Shield 5, Magic Missile 4x3, Poison Spray 7.
   const k = id => D.CARDS[id].kind, c = id => D.CARDS[id].cost;
+  ok(num('poison_spray') === 7 && k('poison_spray') === 'cantrip', 'Wizard: Poison Spray cantrip 7 Poisoned');
   ok(num('misty_step') === 3 && c('misty_step') === 0 && k('misty_step') === 'cantrip', 'Wizard: Misty Step cantrip 0 / 3 Block');
   ok(num('burning_hands') === 12 && c('burning_hands') === 2 && num('chromatic_orb') === 15 && c('chromatic_orb') === 2 && num('thunderwave') === 8 && c('thunderwave') === 2,
     'Wizard commons: Burning Hands 2/12, Chromatic Orb 2/15, Thunderwave 2/8');
-  ok(num('fire_bolt') === 3 && E.cardDef({ id: 'fire_bolt', up: true }).effects[0].n === 5 && c('fire_bolt') === 0 && k('fire_bolt') === 'cantrip' && num('magic_missile') === 2 && D.CARDS.magic_missile.effects[0].times === 3 && c('magic_missile') === 2
-    && num('shield_spell') === 3 && k('shield_spell') === 'spell' && k('magic_missile') === 'spell', 'Wizard starter: Fire Bolt 0/3 cantrip, Magic Missile 2/2x3 spell, Shield 1/3 spell');
+  ok(num('fire_bolt') === 3 && E.cardDef({ id: 'fire_bolt', up: true }).effects[0].n === 5 && c('fire_bolt') === 0 && k('fire_bolt') === 'cantrip' && num('magic_missile') === 4 && D.CARDS.magic_missile.effects[0].times === 3 && c('magic_missile') === 2
+    && num('shield_spell') === 5 && k('shield_spell') === 'spell' && k('magic_missile') === 'spell', 'Wizard starter: Fire Bolt 0/3 cantrip, Magic Missile 2/4x3 spell, Shield 1/5 spell');
   ok(num('fireball') === 20 && c('fireball') === 3 && num('scorching_ray') === 4 && num('mirror_image') === 10 && num('disintegrate') === 28 && num('chain_lightning') === 12 && c('chain_lightning') === 3
     && num('arcane_torrent') === 6 && c('arcane_torrent') === 2 && num('mage_armor') === 1 && c('arcane_study') === 2, 'Wizard uncommons/rares: wz9 spell set numbers');
   // Arcane Focus: +2 per stack on a spell's damage (every hit) and Block, nothing on a cantrip.
   { const s = E.newGame({ seed: 5, heroes: ['wizard'] }), p = s.players[0];
     p.statuses.arcane = 1;
     const txt = id => E.cardText({ phase: 'combat' }, p, { id }, null);
-    ok(/Gain «\+5» Block/.test(txt('shield_spell')), 'Shield shows 3 + 2 = 5 Block with 1 stack: ' + txt('shield_spell'));
+    ok(/Gain «\+7» Block/.test(txt('shield_spell')), 'Shield shows 5 + 2 = 7 Block with 1 stack: ' + txt('shield_spell'));
     ok(txt('fire_bolt') === 'Deal 3 damage.', 'Fire Bolt (cantrip) is not boosted: ' + txt('fire_bolt'));
-    ok(/«\+4» damage 3 times/.test(txt('magic_missile')), 'Magic Missile gets +2 on every hit: ' + txt('magic_missile'));
+    ok(/«\+6» damage 3 times/.test(txt('magic_missile')), 'Magic Missile gets +2 on every hit: ' + txt('magic_missile'));
     ok(/«\+3» Armor/.test(txt('mage_armor')), 'Mage Armor 1 + 2 = 3 Armor with 1 stack: ' + txt('mage_armor')); }
 }
 console.log('rewards ok (' + n + ' checks)');

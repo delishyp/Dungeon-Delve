@@ -20,7 +20,7 @@ for (const id of ['curse_regret', 'curse_guilt', 'curse_rot', 'curse_hex', 'curs
 ok(!D.CARDS.acid.art, 'Acid no longer reuses Mummy Rot art (own placeholder)');
 ok(require('fs').existsSync(path.join(__dirname, '../assets/placeholder/placeholder_acid.webp')) && /placeholder_acid\.webp/.test(require('fs').readFileSync(path.join(__dirname, '../assets/placeholder/PLACEHOLDERS.md'), 'utf8')), 'placeholder_acid exists and is listed in PLACEHOLDERS.md');
 ok(D.keywordLines({ kind: 'spell', retain: true }).join() === 'Spell,Retain' && D.keywordLines({ kind: 'cantrip' }).length === 0 && D.keywordLines({}).length === 0, 'keyword lines: Spell then Retain, Cantrip gets none');
-ok(/Arcane makes this card stronger/.test(D.KEYWORDS.Spell) && /stays in your hand until you play it/.test(D.KEYWORDS.Retain), 'Spell and Retain tooltips use the How to Play wording');
+ok(/Arcane Focus makes this card stronger/.test(D.KEYWORDS.Spell) && /stays in your hand until you play it/.test(D.KEYWORDS.Retain), 'Spell and Retain tooltips use the How to Play wording');
 // status cards are cleared at fight end and never upgraded
 { const s = E.newGame({ seed: 5, heroes: ['barbarian'] }), p = s.players[0]; E.startEncounter(s, 'lone_goblin'); E.takeEvents(s);
   p.hand.push({ uid: 'x1', id: 'acid' }, { uid: 'x2', id: 'junk_broken_bone' }); p.deck.push({ uid: 'x3', id: 'curse_regret' });

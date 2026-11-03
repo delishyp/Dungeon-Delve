@@ -40,8 +40,8 @@
                   tip: 'Might: each hit deals extra damage equal to Might. Lasts the whole fight.' },
     rage:       { name: 'Rage', debuff: false, decays: true,
                   tip: 'Rage: while you have any Rage, you take 25% less damage from attacks, however many stacks you have. Rage adds no damage; some cards count your stacks. Goes down by 1 at the end of your turn.' },
-    arcane:     { name: 'Arcane', debuff: false, decays: false,
-                  tip: "Arcane: each stack adds 2 to the damage and Block of your spells, on every hit. Cantrips don't get it. Lasts the whole fight." },
+    arcane:     { name: 'Arcane Focus', debuff: false, decays: false,
+                  tip: "Arcane Focus: each stack adds 2 to the damage and Block of your spells, on every hit. Cantrips don't get it. Lasts the whole fight." },
     armor:      { name: 'Armor', debuff: false, decays: false,
                   tip: 'Armor: gain this much Block at the start of every turn. Lasts the whole fight.' },
     thorns:     { name: 'Retaliate', debuff: false, decays: false,
@@ -58,7 +58,7 @@
     Energy:     'Energy: you get 3 each turn. Each card costs the number in its corner.',
     Upgrade:    'Upgraded cards (marked +) have better numbers. Upgrade cards at rest sites.',
     // Keyword lines (Anna 11:17), wording from lore/text/how_to_play_v1.md section 3 (Lorekeeper).
-    Spell:      "Spell: Arcane makes this card stronger. Cards without Spell are cantrips: cheap and quick, and Arcane doesn't affect them.",
+    Spell:      "Spell: Arcane Focus makes this card stronger. Cards without Spell are cantrips: cheap and quick, and Arcane Focus doesn't affect them.",
     Retain:     "Retain: the card stays in your hand until you play it. It isn't discarded at the end of your turn.",
   };
   for (const k in STATUSES) KEYWORDS[STATUSES[k].name] = STATUSES[k].tip;
@@ -193,11 +193,9 @@
       desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 3 }],
       upgrade: { effects: [{ t: 'damage', n: 5 }] } },
     shield_spell: { cls: 'wizard', kind: 'spell', name: 'Shield', cost: 1, type: 'skill', rarity: 'starter', target: 'none',
-      desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 3 }] },
+      desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 5 }] },
     magic_missile: { cls: 'wizard', kind: 'spell', name: 'Magic Missile', cost: 2, type: 'attack', rarity: 'starter', target: 'enemy',
-      desc: 'Deal {0} damage 3 times.', effects: [{ t: 'damage', n: 2, times: 3 }] },
-    arcane_focus: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Focus', cost: 0, type: 'power', rarity: 'starter', target: 'none',
-      desc: 'Gain {0} Arcane. Draw {1} card.', effects: [{ t: 'status', status: 'arcane', n: 1, to: 'self' }, { t: 'draw', n: 1 }] },
+      desc: 'Deal {0} damage 3 times.', effects: [{ t: 'damage', n: 4, times: 3 }] },
     burning_hands: { cls: 'wizard', kind: 'spell', name: 'Burning Hands', cost: 2, type: 'attack', rarity: 'common', target: 'none',
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 12 }] },
     ray_of_frost: { cls: 'wizard', kind: 'cantrip', name: 'Ray of Frost', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
@@ -211,7 +209,7 @@
     chromatic_orb: { cls: 'wizard', kind: 'spell', name: 'Chromatic Orb', cost: 2, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 15 }] },
     poison_spray: { cls: 'wizard', kind: 'cantrip', name: 'Poison Spray', cost: 1, type: 'skill', rarity: 'common', target: 'enemy',
-      desc: 'Apply {0} Poisoned.', effects: [{ t: 'status', status: 'poisoned', n: 6, to: 'target' }] },
+      desc: 'Apply {0} Poisoned.', effects: [{ t: 'status', status: 'poisoned', n: 7, to: 'target' }] },
     fireball: { cls: 'wizard', kind: 'spell', name: 'Fireball', cost: 3, type: 'attack', rarity: 'uncommon', target: 'none',
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 20 }] },
     scorching_ray: { cls: 'wizard', kind: 'spell', name: 'Scorching Ray', cost: 2, type: 'attack', rarity: 'uncommon', target: 'enemy',
@@ -219,7 +217,7 @@
     arcane_recovery: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Recovery', cost: 0, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
       desc: 'Gain {0} Energy. Draw {1} cards. Exhaust.', effects: [{ t: 'energy', n: 1 }, { t: 'draw', n: 2 }] },
     arcane_study: { cls: 'wizard', kind: 'cantrip', name: 'Arcane Study', cost: 2, type: 'power', rarity: 'uncommon', target: 'none',
-      desc: 'Gain {0} Arcane.', effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }],
+      desc: 'Gain {0} Arcane Focus.', effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }],
       upgrade: { cost: 1 } },
     mirror_image: { cls: 'wizard', kind: 'spell', name: 'Mirror Image', cost: 2, type: 'skill', rarity: 'uncommon', target: 'none',
       desc: 'Gain {0} Block. Draw {1} card.', effects: [{ t: 'block', n: 10 }, { t: 'draw', n: 1 }] },
@@ -228,7 +226,7 @@
     chain_lightning: { cls: 'wizard', kind: 'spell', name: 'Chain Lightning', cost: 3, type: 'attack', rarity: 'rare', target: 'none',
       desc: 'Deal {0} damage to ALL enemies. Draw {1} card.', effects: [{ t: 'damageAll', n: 12 }, { t: 'draw', n: 1 }] },
     arcane_torrent: { cls: 'wizard', kind: 'spell', name: 'Arcane Torrent', cost: 2, type: 'attack', rarity: 'rare', target: 'enemy',
-      desc: 'Deal {0} damage. Arcane counts three times on this card.', effects: [{ t: 'damage', n: 6, scale: { status: 'arcane', per: 4 } }] },
+      desc: 'Deal {0} damage. Arcane Focus counts three times on this card.', effects: [{ t: 'damage', n: 6, scale: { status: 'arcane', per: 4 } }] },
   };
 
   const RARITY_WEIGHTS = { common: 60, uncommon: 32, rare: 8 };
@@ -248,9 +246,9 @@
     },
     wizard: {
       name: 'Wizard', maxHp: 72, energy: 3, handSize: 5,
-      blurb: 'A frail scholar who came down for the books. Cheap cantrips buy time while Arcane builds, then the spells take whole rooms apart.',
-      mechanic: "Arcane: each stack adds 2 to every spell's damage and Block, on every hit. Cantrips don't get it.",
-      deck: ['fire_bolt', 'fire_bolt', 'fire_bolt', 'fire_bolt', 'shield_spell', 'shield_spell', 'shield_spell', 'shield_spell', 'magic_missile', 'arcane_focus'],
+      blurb: 'A frail scholar who came down for the books. Cheap cantrips buy time while Arcane Focus builds, then the spells take whole rooms apart.',
+      mechanic: "Arcane Focus: each stack adds 2 to every spell's damage and Block, on every hit. Cantrips don't get it.",
+      deck: ['fire_bolt', 'fire_bolt', 'fire_bolt', 'fire_bolt', 'shield_spell', 'shield_spell', 'shield_spell', 'shield_spell', 'magic_missile', 'fire_bolt'],
     },
   };
 
