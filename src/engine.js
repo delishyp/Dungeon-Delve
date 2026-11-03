@@ -115,7 +115,9 @@
   function log(s, msg) { s.log.push(msg); if (s.log.length > 60) s.log.shift(); }
   const hasRelic = (p, id) => p.relics.includes(id);
   // Random relic pools (rewards, events, shop): no special relics, and a hero-only relic (cls) only for its hero.
-  const relicInPool = (p, r) => !D.RELICS[r].special && (!D.RELICS[r].cls || (p && D.RELICS[r].cls === p.heroId));
+  const relicInPool = (p, r) => !D.RELICS[r].special && D.RELICS[r].inPool !== false && (!D.RELICS[r].cls || (p && D.RELICS[r].cls === p.heroId));
+  // Card reward and shop pools: a card with inPool: false (Producer 14:18) is never offered; dev mode and tests can still use it.
+  const cardInPool = (id) => D.CARDS[id].inPool !== false;
 
   // ---------- creation ----------
   function makePlayer(s, heroId, name) {
@@ -405,7 +407,7 @@
     const mult = (1 - discount) * (p && hasRelic(p, 'smiling_mask') ? 0.8 : 1);
     const price = (base) => Math.max(1, Math.round(base * mult * (0.9 + rand(s) * 0.2)));
     const cards = [];
-    const cls = p.heroId, pool = Object.keys(D.CARDS).filter(id => D.CARDS[id].cls === cls && D.CARDS[id].rarity !== 'starter');
+    const cls = p.heroId, pool = Object.keys(D.CARDS).filter(id => D.CARDS[id].cls === cls && D.CARDS[id].rarity !== 'starter' && cardInPool(id));
     for (const rar of ['common', 'common', 'uncommon', 'uncommon', 'rare']) {
       const opts = pool.filter(id => D.CARDS[id].rarity === rar && !cards.some(c => c.id === id));
       if (opts.length) { const id = pick(s, opts); cards.push({ id, price: price(P[rar]), sold: false }); }
@@ -1006,7 +1008,7 @@
 
   // Anna (Nov 3 03:48): bosses always offer legendary cards. A hero with legendaries gets a legendary-only boss pick;
   // legendaries never show up anywhere else (not in normal or elite rewards, events or the shop).
-  const hasLegendaries = (cls) => Object.values(D.CARDS).some(d => d.cls === cls && d.rarity === 'legendary');
+  const hasLegendaries = (cls) => Object.values(D.CARDS).some(d => d.cls === cls && d.rarity === 'legendary' && d.inPool !== false);
   function rewardRarityWeights(type, cls) {
     if (type === 'boss' && cls && hasLegendaries(cls)) return { legendary: 1 };
     const weights = { ...D.RARITY_WEIGHTS };
@@ -1017,7 +1019,7 @@
   }
   function rollCardRewards(s, p, n, type) {
     const cls = D.HEROES[p.heroId] ? p.heroId : 'fighter';
-    const pool = Object.keys(D.CARDS).filter(id => D.CARDS[id].rarity !== 'starter' && D.CARDS[id].cls === cls);
+    const pool = Object.keys(D.CARDS).filter(id => D.CARDS[id].rarity !== 'starter' && D.CARDS[id].cls === cls && cardInPool(id));
     const weights = rewardRarityWeights(type, cls);
     const picks = [];
     let guard = 0;
@@ -1101,7 +1103,7 @@
 
   const Engine = { startEncounter, startFight, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade,
-    weightOdds, choiceWeights, rewardRarityWeights, describeChoice, isEternal, canRemove, canTransform, removeFromDeck, transformCard, repeatOf, playsOf, fadeLeft, isBloodied, cardLines };
+    weightOdds, choiceWeights, rewardRarityWeights, describeChoice, cardInPool, isEternal, canRemove, canTransform, removeFromDeck, transformCard, repeatOf, playsOf, fadeLeft, isBloodied, cardLines };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
 })(typeof window !== 'undefined' ? window : globalThis);

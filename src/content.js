@@ -57,7 +57,7 @@
     illithid_tadpole: { name: 'The Worm Behind the Eye', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane (+2 damage per hit). It whispers to you…' },
     tymora_coin:      { name: "Brennick's Penny", hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
     // Burn It Down relic (keyword_use_v2 part 2), Barbarian only (Producer 11:41): never offered to another hero (relicInPool).
-    ash_bracer:       { name: 'Ash-Caked Bracer', cls: 'barbarian', hook: 'firstExhaustEachTurn', effects: [{ t: 'draw', n: 1 }], desc: 'The first time a card Exhausts each turn, draw 1 card.' },
+    ash_bracer:       { name: 'Ash-Caked Bracer', cls: 'barbarian', inPool: false, hook: 'firstExhaustEachTurn', effects: [{ t: 'draw', n: 1 }], desc: 'The first time a card Exhausts each turn, draw 1 card.' },
     wyrm_scale:       { name: 'Red Wyrmling Scale', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'armor', n: 2, to: 'self' }, { t: 'status', status: 'thorns', n: 1, to: 'self' }], desc: 'Start each fight with 2 Armor and 1 Retaliate.' },
   });
 
@@ -373,7 +373,7 @@
       for (const d of [c, c.upgrade].filter(Boolean)) {
         if ((d.retain || c.retain) && (d.vanish || c.vanish)) bad.push(id + ': has both retain and vanish');
         if (d.repeat != null && !(Number.isInteger(d.repeat) && d.repeat >= 2)) bad.push(id + ': repeat must be a whole number of 2 or more (got ' + d.repeat + ')');
-        for (const f of ['eternal', 'vanish', 'replay', 'retain', 'exhaust', 'fading']) if (d[f] != null && typeof d[f] !== 'boolean') bad.push(id + ': ' + f + ' must be true or false');
+        for (const f of ['eternal', 'vanish', 'replay', 'retain', 'exhaust', 'fading', 'inPool']) if (d[f] != null && typeof d[f] !== 'boolean') bad.push(id + ': ' + f + ' must be true or false');
         const k0 = (f) => (d[f] != null ? d[f] : c[f]);   // an upgrade inherits fields it doesn't set
         const okLine = (L) => L && typeof L === 'object' && typeof L.desc === 'string' && Array.isArray(L.effects) && L.effects.length > 0;
         const k = (f) => ((f === 'bloodied' || f === 'lastWord') && !okLine(k0(f)) ? null : k0(f));   // malformed lines are reported once, below

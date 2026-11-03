@@ -194,27 +194,36 @@
       effects: [{ t: 'status', status: 'armor', n: 3, to: 'self' }, { t: 'status', status: 'thorns', n: 3, to: 'self' }],
       power: { onHpLossEnemyTurn: { rage: 1 } },
       upgrade: { effects: [{ t: 'status', status: 'armor', n: 4, to: 'self' }, { t: 'status', status: 'thorns', n: 4, to: 'self' }] } },
-    // Burn It Down (Exhaust deck style, keyword_use_v2 part 2; Anna 11:54 "build everything"). Lorekeeper wrote no Upgraded
-    // lines for these, so they use the normal rest-site upgrade (upgradeDef) until she does.
-    burn_through: { cls: 'barbarian', name: 'Burn Through', cost: 1, type: 'skill', rarity: 'common', target: 'none', exhaust: true,
-      desc: 'Gain {0} Block. Exhaust.', effects: [{ t: 'block', n: 6 }] },
-    kindling: { cls: 'barbarian', name: 'Kindling', cost: 1, type: 'power', rarity: 'uncommon', target: 'none',
-      desc: 'Whenever a card Exhausts, gain 1 Rage.', effects: [], power: { onExhaust: [{ t: 'status', status: 'rage', n: 1, to: 'self' }] } },
-    whats_left: { cls: 'barbarian', name: "What's Left", cost: 2, type: 'attack', rarity: 'uncommon', target: 'enemy',
-      desc: 'Deal {0} damage for each card Exhausted this fight.', effects: [{ t: 'damagePerExhausted', n: 3 }] },
+    // Burn It Down (Exhaust deck style, keyword_use_v2 part 2; Anna 11:54 "build everything"). Upgrades: Lorekeeper's
+    // written lines (keyword_use_v2, 14:20). inPool: false (Producer 14:18): out of every reward pool (card rewards, shop,
+    // events, relic drops) until the balance bot can value them; dev mode, the compendium and tests still reach them.
+    burn_through: { cls: 'barbarian', name: 'Burn Through', cost: 1, type: 'skill', rarity: 'common', target: 'none', exhaust: true, inPool: false,
+      desc: 'Gain {0} Block. Exhaust.', effects: [{ t: 'block', n: 6 }],
+      upgrade: { effects: [{ t: 'block', n: 9 }] } },
+    kindling: { cls: 'barbarian', name: 'Kindling', cost: 1, type: 'power', rarity: 'uncommon', target: 'none', inPool: false,
+      desc: 'Whenever a card Exhausts, gain 1 Rage.', effects: [], power: { onExhaust: [{ t: 'status', status: 'rage', n: 1, to: 'self' }] },
+      upgrade: { cost: 0 } },
+    whats_left: { cls: 'barbarian', name: "What's Left", cost: 2, type: 'attack', rarity: 'uncommon', target: 'enemy', inPool: false,
+      desc: 'Deal {0} damage for each card Exhausted this fight.', effects: [{ t: 'damagePerExhausted', n: 3 }],
+      upgrade: { effects: [{ t: 'damagePerExhausted', n: 4 }] } },
     // New keyword cards (keyword_use_v2 part 3): Fading, Last Word, Bloodied.
-    worn_grip: { cls: 'barbarian', name: 'Worn Grip', cost: 1, type: 'attack', rarity: 'common', target: 'enemy', fading: true,
-      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 8 }] },
-    ember_hide: { cls: 'barbarian', name: 'Ember Hide', cost: 1, type: 'skill', rarity: 'common', target: 'none', exhaust: true,
+    worn_grip: { cls: 'barbarian', name: 'Worn Grip', cost: 1, type: 'attack', rarity: 'common', target: 'enemy', fading: true, inPool: false,
+      desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 8 }],
+      upgrade: { effects: [{ t: 'damage', n: 11 }] } },
+    ember_hide: { cls: 'barbarian', name: 'Ember Hide', cost: 1, type: 'skill', rarity: 'common', target: 'none', exhaust: true, inPool: false,
       desc: 'Gain {0} Block. Exhaust.', effects: [{ t: 'block', n: 5 }],
-      lastWord: { desc: 'Gain {0} Rage.', effects: [{ t: 'status', status: 'rage', n: 2, to: 'self' }] } },
-    // Blood in the Mouth when Bloodied is ONE 14-damage hit, Might counts once (Lorekeeper 13:25): addTo joins the first hit.
-    blood_in_mouth: { cls: 'barbarian', name: 'Blood in the Mouth', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
+      lastWord: { desc: 'Gain {0} Rage.', effects: [{ t: 'status', status: 'rage', n: 2, to: 'self' }] },
+      upgrade: { effects: [{ t: 'block', n: 8 }] } },
+    // Blood in the Mouth when Bloodied is ONE hit, Might counts once (Lorekeeper 13:25): addTo joins the first hit.
+    // Upgraded: the Bloodied part goes 7 -> 10 (still one combined 17 hit).
+    blood_in_mouth: { cls: 'barbarian', name: 'Blood in the Mouth', cost: 1, type: 'attack', rarity: 'common', target: 'enemy', inPool: false,
       desc: 'Deal {0} damage.', effects: [{ t: 'damage', n: 7 }],
-      bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 7, addTo: 0 }] } },
-    last_one_standing: { cls: 'barbarian', name: 'Last One Standing', cost: 1, type: 'skill', rarity: 'uncommon', target: 'none',
+      bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 7, addTo: 0 }] },
+      upgrade: { effects: [{ t: 'damage', n: 7 }], bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 10, addTo: 0 }] } } },
+    last_one_standing: { cls: 'barbarian', name: 'Last One Standing', cost: 1, type: 'skill', rarity: 'uncommon', target: 'none', inPool: false,
       desc: 'Gain {0} Might.', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }],
-      bloodied: { desc: 'Gain {0} more Might and draw {1} card.', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }, { t: 'draw', n: 1 }] } },
+      bloodied: { desc: 'Gain {0} more Might and draw {1} card.', effects: [{ t: 'status', status: 'might', n: 2, to: 'self' }, { t: 'draw', n: 1 }] },
+      upgrade: { effects: [{ t: 'status', status: 'might', n: 3, to: 'self' }] } },
 
     // ================= WIZARD =================
     fire_bolt: { cls: 'wizard', name: 'Fire Bolt', cost: 1, type: 'attack', rarity: 'starter', target: 'enemy',

@@ -277,7 +277,7 @@ eq(NEW.map(id => [D.CARDS[id].cost, D.CARDS[id].rarity, D.typeWord(D.CARDS[id], 
   eq(e.maxHp - e.hp, 14 + 3, 'Bloodied Blood in the Mouth: 14 + Might once'); eq(ev.filter(x => x.kind === 'hit').map(x => x.amount), [17], 'ONE hit of 17'); }
 { const { s, p } = fresh(), e = s.enemies[0]; e.statuses.prone = 2; p.hp = 10; const c = give(p, 'blood_in_mouth'); play(s, p, c, e); eq(e.maxHp - e.hp, Math.floor(14 * 1.5), 'one hit: Prone applies to 14 once (21)'); }
 { const { s, p } = fresh(), e = s.enemies[0]; const c = give(p, 'blood_in_mouth'); play(s, p, c, e); eq(e.maxHp - e.hp, 7, 'not Bloodied: 7'); }
-{ const { s, p } = fresh(), e = s.enemies[0]; p.hp = 10; const c = give(p, 'blood_in_mouth', true); play(s, p, c, e); eq(e.maxHp - e.hp, 10 + 7, 'upgraded: 10 + 7 in one hit'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; p.hp = 10; const c = give(p, 'blood_in_mouth', true); const { ev } = play(s, p, c, e); eq(ev.filter(x => x.kind === 'hit').map(x => x.amount), [7 + 10], 'Blood in the Mouth+: Bloodied adds 10, still one combined hit (17)'); }
 eq([E.cardText(null, null, { id: 'blood_in_mouth' }), E.cardLines(null, null, { id: 'blood_in_mouth' }).bloodied], ['Deal 7 damage.', 'Deal 7 more.'], "card text stays 'Deal 7 damage.' / 'Bloodied: Deal 7 more.'");
 { const { s, p } = fresh(), e = s.enemies[0]; p.statuses.might = 2; eq(E.cardLines(s, p, { id: 'blood_in_mouth', uid: 'b' }, e.uid).bloodied, 'Deal 7 more.', 'the Bloodied 7 is not shown with Might added (Might counts once)'); }
 // Last One Standing
@@ -302,13 +302,14 @@ eq([E.cardText(null, null, { id: 'blood_in_mouth' }), E.cardLines(null, null, { 
 { const { s, p } = fresh(), e = s.enemies[0]; let h = e.hp; play(s, p, give(p, 'whats_left'), e); eq(h - e.hp, 0, "What's Left with nothing Exhausted: 0");
   for (let i = 0; i < 3; i++) play(s, p, give(p, 'burn_through'), null); p.statuses.might = 2; h = e.hp; play(s, p, give(p, 'whats_left'), e); eq(h - e.hp, 9 + 2, "What's Left after 3 Exhausts: one 9 hit + Might once");
   E.startEncounter(s, 'lone_goblin'); E.takeEvents(s); eq(p.fightExhausted, 0, 'the count resets each fight'); }
-{ const { s, p } = fresh(), e = s.enemies[0]; play(s, p, give(p, 'burn_through'), null); const h = e.hp; play(s, p, give(p, 'whats_left', true), e); eq([h - e.hp, E.cardDef({ id: 'whats_left', up: true }).cost], [3, 1], "What's Left+: costs 1 (normal upgrade)"); }
+{ const { s, p } = fresh(), e = s.enemies[0]; play(s, p, give(p, 'burn_through'), null); const h = e.hp; play(s, p, give(p, 'whats_left', true), e); eq([h - e.hp, E.cardDef({ id: 'whats_left', up: true }).cost], [4, 2], "What's Left+: 4 per Exhausted card, still costs 2 (Lorekeeper 14:20)"); }
 { const { s, p } = fresh(); play(s, p, give(p, 'burn_through'), null); play(s, p, give(p, 'burn_through'), null); const s2 = JSON.parse(JSON.stringify(s)); eq(s2.players[0].fightExhausted, 2, 'Exhausted count survives a save'); }
 // Ash-Caked Bracer: first Exhaust each turn draws 1; Barbarian-only in every relic pool
 { const { s, p } = fresh(); p.relics.push('ash_bracer'); p.draw.push({ uid: 'd1', id: 'strike' }, { uid: 'd2', id: 'strike' }, { uid: 'd3', id: 'strike' }); const n0 = p.hand.length;
   play(s, p, give(p, 'burn_through'), null); eq(p.hand.length, n0 + 1 - 0, 'Bracer: first Exhaust draws 1'); play(s, p, give(p, 'burn_through'), null); eq(p.hand.length, n0 + 1, 'second Exhaust this turn draws nothing');
   E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); if (s.phase === 'combat') { p.energy = 99; const n1 = p.hand.length; play(s, p, give(p, 'burn_through'), null); eq(p.hand.length, n1 + 1, 'next turn the first Exhaust draws again'); } }
 eq(D.RELICS.ash_bracer.cls, 'barbarian', 'Ash-Caked Bracer is Barbarian-only');
+D.RELICS.ash_bracer.inPool = true;   // hero restriction check with the Producer 14:18 switch lifted
 { const pools = {}; for (const hero of Object.keys(D.HEROES)) { pools[hero] = 0;
     for (let seed = 1; seed <= 200; seed++) { const s = E.newGame({ seed, heroes: [hero] }), p = s.players[0]; p.gold = 999; const f = findChoice(o => o.shop); runEvent(s, f); if (s.phase === 'event') E.dispatch(s, { type: 'EVENT_CONTINUE', player: p.uid }); if (s.shop.relics.some(x => x.id === 'ash_bracer')) pools[hero]++; } }
   ok(pools.barbarian > 0, 'the Barbarian shop offers the Bracer sometimes (' + pools.barbarian + '/200)'); ok(pools.fighter === 0 && pools.wizard === 0, 'Fighter and Wizard shops never offer it ' + JSON.stringify(pools)); }
@@ -316,6 +317,26 @@ eq(D.RELICS.ash_bracer.cls, 'barbarian', 'Ash-Caked Bracer is Barbarian-only');
     p.relics = Object.keys(D.RELICS).filter(r => r !== 'ash_bracer' && !D.RELICS[r].special && r !== Object.keys(D.RELICS).filter(x => !D.RELICS[x].special && !D.RELICS[x].cls)[seed % 3]);
     E.startEncounter(s, 'lone_goblin'); E.takeEvents(s); s.node = 'elite'; s.enemies.forEach(e => { e.hp = 0; }); E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); if (p.relics.includes('ash_bracer')) got[hero]++; } }
   ok(got.barbarian > 0 && got.fighter === 0 && got.wizard === 0, 'elite relic rewards: Bracer only for the Barbarian ' + JSON.stringify(got)); }
+delete D.RELICS.ash_bracer.inPool; D.RELICS.ash_bracer.inPool = false;
+// ---- Producer 14:18: the 7 new cards and the Bracer are out of every reward pool (inPool: false), still reachable directly ----
+eq(Object.keys(D.CARDS).filter(id => D.CARDS[id].inPool === false).sort(), NEW.slice().sort(), 'exactly the 7 new cards carry inPool: false');
+eq(D.RELICS.ash_bracer.inPool, false, 'the Bracer carries inPool: false');
+{ const seen = new Set(); for (let seed = 1; seed <= 300; seed++) { const s = E.newGame({ seed, heroes: ['barbarian'] }), p = s.players[0];
+    for (const t of ['fight', 'elite', 'boss', 'rareOnly']) E.rollCardRewards(s, p, 4, t).forEach(id => seen.add(id));
+    p.gold = 999; const f = findChoice(o => o.shop); runEvent(s, f); if (s.phase === 'event') E.dispatch(s, { type: 'EVENT_CONTINUE', player: p.uid }); s.shop.cards.forEach(c => seen.add(c.id)); s.shop.relics.forEach(r => seen.add(r.id));
+    p.relics = Object.keys(D.RELICS).filter(r => r !== 'ash_bracer' && !D.RELICS[r].special).slice(1); E.startEncounter(s, 'lone_goblin'); E.takeEvents(s); s.node = 'elite'; s.enemies.forEach(e => { e.hp = 0; }); E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); p.relics.forEach(r => seen.add(r)); }
+  ok(!NEW.some(id => seen.has(id)) && !seen.has('ash_bracer'), 'no new card or Bracer in rewards, shop or relic drops over 300 seeds: ' + NEW.filter(id => seen.has(id)));
+  ok(seen.size > 10, 'the pools still offer other cards (' + seen.size + ')'); }
+{ D.CARDS.worn_grip.inPool = true; let hit = 0; for (let seed = 1; seed <= 200; seed++) { const s = E.newGame({ seed, heroes: ['barbarian'] }); if (E.rollCardRewards(s, s.players[0], 4, 'fight').includes('worn_grip')) hit++; }
+  D.CARDS.worn_grip.inPool = false; ok(hit > 0, 'lifting the switch puts a card back in the reward pool (' + hit + '/200)'); }
+// Lorekeeper 14:20 upgrade lines
+eq(['burn_through', 'kindling', 'whats_left', 'worn_grip', 'ember_hide', 'blood_in_mouth', 'last_one_standing'].map(id => [E.cardDef({ id, up: true }).cost, E.cardText(null, null, { id, up: true }), E.cardLines(null, null, { id, up: true })]),
+  [[1, 'Gain «+9» Block. Exhaust.', { bloodied: null, lastWord: null }], [0, 'Whenever a card Exhausts, gain 1 Rage.', { bloodied: null, lastWord: null }],
+   [2, 'Deal «+4» damage for each card Exhausted this fight.', { bloodied: null, lastWord: null }], [1, 'Deal «+11» damage.', { bloodied: null, lastWord: null }],
+   [1, 'Gain «+8» Block. Exhaust.', { bloodied: null, lastWord: 'Gain 2 Rage.' }], [1, 'Deal 7 damage.', { bloodied: 'Deal «+10» more.', lastWord: null }],
+   [1, 'Gain «+3» Might.', { bloodied: 'Gain 2 more Might and draw 1 card.', lastWord: null }]], 'upgraded texts match Lorekeeper 14:20');
+{ const { s, p } = fresh(); p.hp = 10; play(s, p, give(p, 'last_one_standing', true), null); eq(p.statuses.might, 5, 'Last One Standing+ Bloodied: 3 + 2 Might'); }
+{ const { s, p } = fresh(); play(s, p, give(p, 'ember_hide', true), null); eq([p.block, p.statuses.rage], [8, 2], 'Ember Hide+: 8 Block, Last Word unchanged'); }
 // damageRandom (for Parting Shot's Last Word): one hit on a random targetable enemy, no target on the card
 Object.assign(D.CARDS, { kwr_parting: blk({ cls: 'fighter', vanish: true, desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 3 }], lastWord: { desc: 'Deal {0} damage to a random enemy.', effects: [{ t: 'damageRandom', n: 8 }] } }) });
 ok(D.checkKeywordData({ kwr_parting: D.CARDS.kwr_parting }) === true, 'a Last Word with damageRandom passes the data check');
