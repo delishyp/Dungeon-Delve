@@ -231,7 +231,7 @@
   function powersHTML(u) {
     if (!u.powers || !u.powers.length || G.phase !== 'combat') return '';
     return `<div class="powers">${u.powers.map(c => { const d = E.cardDef(c), st = d.effects.find(f => f.t === 'status');
-      return `<span class="pwr-ic" data-tip="<b>${esc(d.name)}</b> (power, in play this fight): ${esc(E.cardText(null, null, c, null).replace(/«[+-]?|»/g, ''))}">${st ? statusIcon(st.status) : I('up', 'st')}</span>`; }).join('')}</div>`;
+      return `<span class="pwr-ic" data-tip="<b>${esc(d.name)}</b> (power, in play this fight): ${esc(E.cardText(null, null, c, null).replace(/«[+-]?|»/g, ''))}">${window.Icons.has('pw_' + c.id) ? I('pw_' + c.id, 'st', st && window.Icons.STATUS_COLOR[st.status]) : st ? statusIcon(st.status) : I('up', 'st')}</span>`; }).join('')}</div>`;
   }
 
   function potionsHTML(p) {
