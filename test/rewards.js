@@ -18,7 +18,10 @@ for (const hero of ['barbarian', 'fighter', 'wizard']) {
 // Hero card numbers (Nov 3 hero pass: each hero ~78% with the smart bot on the raised Floor 2).
 { const num = (id, i = 0) => D.CARDS[id].effects[i].n;
   ok(num('defend') === 6 && num('shield_bash') === 6 && num('trip_attack') === 7 && num('menacing_attack') === 8, 'Fighter: Shield Block 6, Shield Bash 6, Trip 7, Menacing 8');
-  ok(num('parry') === 5 && num('frenzied_strike') === 6 && num('reckless_flurry') === 5 && D.CARDS.reckless_flurry.effects[0].times === 3, 'Barbarian: Hide Armor 5, Frenzied Strike 6, Reckless Flurry 5x3');
+  // Barbarian number pass after the Rage rework (Nov 3): Greataxe 8, Frenzied Strike 7, Reckless Flurry 8x3, Shove 7, Mindless Rage 3.
+  ok(num('parry') === 5 && num('frenzied_strike') === 7 && num('reckless_flurry') === 8 && D.CARDS.reckless_flurry.effects[0].times === 3, 'Barbarian: Hide Armor 5, Frenzied Strike 7, Reckless Flurry 8x3');
+  ok(num('greataxe') === 8 && num('shove') === 7 && num('mindless_rage') === 3 && num('reckless_attack') === 12 && num('rage') === 3, 'Barbarian: Greataxe Chop 8, Shove 7, Mindless Rage 3, Reckless Attack 12, Rage 3');
+  ok(num('frenzied_strike') < num('greataxe') && num('headbutt') < num('greataxe'), 'Rage attacks hit for less than a normal attack (Anna 04:20)');
   // Wizard random-pick pass (Anna via Producer, Nov 3 05:07): commons more forgiving, starter trimmed so a starter-only deck
   // can't beat the later Floor 2 fights. Misty Step back to 4 Block.
   ok(num('misty_step') === 4 && D.CARDS.misty_step.cost === 0, 'Wizard: Misty Step 4 Block, cost 0');

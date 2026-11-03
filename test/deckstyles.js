@@ -31,7 +31,7 @@ function endTurn(s, p) { const r = E.dispatch(s, { type: 'END_TURN', player: p.u
     ok(E.attackDamage(e, p, 10) === (r ? 7 : 10), `10 against Rage ${r} rounds down to 7`);
     ok(E.attackDamage(p, e, 6) === 6, `hero with Rage ${r} still deals 6 (no Rage damage)`); }
   p.statuses.rage = 5; const { ev } = play(s, p, 'greataxe', false, e);
-  ok(hits(ev, e.uid)[0].amount === 6, 'Greataxe Chop with 5 Rage deals 6');
+  ok(hits(ev, e.uid)[0].amount === D.CARDS.greataxe.effects[0].n, 'Greataxe Chop with 5 Rage deals its printed damage (no Rage bonus)');
   p.statuses = { rage: 2 }; enemyHits(s, e, 8, 2); const ev2 = endTurn(s, p);
   ok(hits(ev2, p.uid).map(x => x.amount + x.blocked).join() === '6,6', 'enemy 8x2 into Rage = 6,6');
   ok(/25% less damage/.test(D.STATUSES.rage.tip) && !/extra damage/.test(D.STATUSES.rage.tip), 'Rage tooltip matches the rework');
@@ -91,7 +91,7 @@ for (const up of [false, true]) {
   play(s, p, 'last_tally', up); ok(!p.statuses.might, 'no Might on the turn it is played');
   for (let t = 1; t <= 12; t++) { enemyHits(s, e, 1, 1); endTurn(s, p); ok(p.statuses.might === t, `turn +${t}: ${p.statuses.might} Might`); }
   ok(p.statuses.might === 12, 'Might passes 5 (no cap)');
-  ok(hits(play(s, p, 'greataxe', false, e).ev, e.uid)[0].amount === 18, 'Greataxe Chop at 12 Might deals 18');
+  ok(hits(play(s, p, 'greataxe', false, e).ev, e.uid)[0].amount === D.CARDS.greataxe.effects[0].n + 12, 'Greataxe Chop at 12 Might deals printed + 12');
 }
 // ---------- Scar Tissue: Block when you take HP damage, once per enemy turn ----------
 for (const up of [false, true]) {
