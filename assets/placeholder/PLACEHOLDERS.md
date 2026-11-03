@@ -10,10 +10,17 @@ To swap one out: add the real `assets/card_<card id>.webp` (it wins automaticall
 | `placeholder_headbutt.webp` | `headbutt` | Headbutt: barbarian common attack card illustration (attack frame) |
 | `placeholder_wild_swing.webp` | `wild_swing` | Wild Swing: barbarian common attack card illustration (attack frame) |
 | `placeholder_goad.webp` | `goad` | Goad: barbarian uncommon attack card illustration (attack frame) |
-| `placeholder_bloodied_knuckles.webp` | `bloodied_knuckles` | Bloodied Knuckles: barbarian uncommon attack card illustration (attack frame) |
+| `placeholder_bloodied_knuckles.webp` | `bloodied_knuckles` | Split Knuckles: barbarian uncommon attack card illustration (attack frame) |
 | `placeholder_blood_up.webp` | `blood_up` | Blood Up: barbarian rare power card illustration (buff frame) |
 | `placeholder_enraged.webp` | `enraged` | Enraged: barbarian legendary attack card illustration (attack frame) |
 | `placeholder_last_tally.webp` | `last_tally` | The Last Tally: barbarian legendary power card illustration (buff frame) |
 | `placeholder_scar_tissue.webp` | `scar_tissue` | Scar Tissue: barbarian rare power card illustration (defense frame) |
 | `placeholder_bear_beneath.webp` | `bear_beneath` | The Bear Beneath: barbarian legendary power card illustration (defense frame) |
 | `placeholder_acid.webp` | `acid` | Acid: curse status card illustration (status frame) |
+| `placeholder_burn_through.webp` | `burn_through` | Burn Through: barbarian common skill card illustration (defense frame) |
+| `placeholder_kindling.webp` | `kindling` | Kindling: barbarian uncommon power card illustration (buff frame) |
+| `placeholder_whats_left.webp` | `whats_left` | What's Left: barbarian uncommon attack card illustration (attack frame) |
+| `placeholder_worn_grip.webp` | `worn_grip` | Worn Grip: barbarian common attack card illustration (attack frame) |
+| `placeholder_ember_hide.webp` | `ember_hide` | Ember Hide: barbarian common skill card illustration (defense frame) |
+| `placeholder_blood_in_mouth.webp` | `blood_in_mouth` | Blood in the Mouth: barbarian common attack card illustration (attack frame) |
+| `placeholder_last_one_standing.webp` | `last_one_standing` | Last One Standing: barbarian uncommon skill card illustration (buff frame) |

@@ -56,6 +56,8 @@
     smiling_mask:     { name: 'Mask of the Smiling Merchant', hook: 'passive', effects: [], desc: 'Shop prices are 20% lower.' },
     illithid_tadpole: { name: 'The Worm Behind the Eye', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane (+2 damage per hit). It whispers to you…' },
     tymora_coin:      { name: "Brennick's Penny", hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
+    // Burn It Down relic (keyword_use_v2 part 2), Barbarian only (Producer 11:41): never offered to another hero (relicInPool).
+    ash_bracer:       { name: 'Ash-Caked Bracer', cls: 'barbarian', hook: 'firstExhaustEachTurn', effects: [{ t: 'draw', n: 1 }], desc: 'The first time a card Exhausts each turn, draw 1 card.' },
     wyrm_scale:       { name: 'Red Wyrmling Scale', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'armor', n: 2, to: 'self' }, { t: 'status', status: 'thorns', n: 1, to: 'self' }], desc: 'Start each fight with 2 Armor and 1 Retaliate.' },
   });
 
@@ -331,7 +333,7 @@
 (function (G) {
   G.FRAME_OVERRIDE = {
     // Powers whose effect is a hook (no effect list to read the frame from): Barbarian deck styles B1-B3
-    blood_up: 'buff', last_tally: 'buff', scar_tissue: 'defense' };
+    blood_up: 'buff', last_tally: 'buff', scar_tissue: 'defense', kindling: 'buff' };
   G.FRAME_COLORS = { attack: 'red', defense: 'blue', buff: 'green', debuff: 'purple', utility: 'gold', curse: 'black', status: 'grey' };
   G.frameOf = function (def, id) {
     if (G.FRAME_OVERRIDE[id]) return G.FRAME_OVERRIDE[id];
@@ -385,12 +387,14 @@
         // Last Word only fires when the card Exhausts or Vanishes (Fading at 0 Exhausts); it runs with no target.
         if (k('lastWord')) {
           if (!(k('exhaust') || k('vanish') || k('fading'))) bad.push(id + ': Last Word needs Exhaust, Vanish or Fading');
-          if (k('lastWord').effects.some(f => ['damage', 'damageFromBlock', 'goad'].includes(f.t) || (f.t === 'status' && f.to === 'target'))) bad.push(id + ': a Last Word effect cannot need a single target');
+          if (k('lastWord').effects.some(f => ['damage', 'damageFromBlock', 'damagePerExhausted', 'goad'].includes(f.t) || (f.t === 'status' && f.to === 'target'))) bad.push(id + ': a Last Word effect cannot need a single target (use damageRandom)');
+          if (k('lastWord').effects.some(f => f.addTo != null)) bad.push(id + ': addTo is for Bloodied lines only');
           if (k('repeat')) bad.push(id + ': Last Word with Repeat is not defined yet');
         }
         if (k('bloodied')) {
           if (k('repeat') || k('replay')) bad.push(id + ': Bloodied with Repeat or Replay is not defined yet');
-          if (k('bloodied').effects.some(f => ['damage', 'damageFromBlock', 'goad'].includes(f.t) || (f.t === 'status' && f.to === 'target')) && (d.target || c.target) !== 'enemy') bad.push(id + ': a targeted Bloodied effect needs a targeted card');
+          if (k('bloodied').effects.some(f => ['damage', 'damageFromBlock', 'damagePerExhausted', 'goad'].includes(f.t) || (f.t === 'status' && f.to === 'target')) && (d.target || c.target) !== 'enemy') bad.push(id + ': a targeted Bloodied effect needs a targeted card');
+          for (const f of k('bloodied').effects) if (f.addTo != null && !(effects[f.addTo] && effects[f.addTo].t === f.t && typeof f.n === 'number')) bad.push(id + ': Bloodied addTo ' + f.addTo + ' must point at a ' + f.t + ' effect');
         }
         // Fading: "Fading cards have only one number" (keyword_use_v2 part 3), and it must be a playable, non-Power card.
         if (k('fading')) {

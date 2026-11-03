@@ -3,8 +3,10 @@
 image in its frame colour with the card name, saved as assets/placeholder/placeholder_<id>.webp, and is listed in
 assets/placeholder/PLACEHOLDERS.md. Run from the repo root: python3 tools/make_placeholders.py
 Placeholders are never a reference or starting point for real artwork. When real art lands as assets/card_<id>.webp
-it wins automatically (ui.js cardHTML); delete the placeholder and its line then."""
-import json, os, subprocess, textwrap
+it wins automatically (ui.js cardHTML); delete the placeholder and its line then.
+With card ids as arguments (python3 tools/make_placeholders.py worn_grip kindling ...) only those placeholders are
+(re)drawn and their rows replaced or appended; every other file and row is left exactly as it is."""
+import json, os, re, subprocess, sys, textwrap
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,7 +20,9 @@ FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf'
 FOR = {'attack': 'attack card', 'skill': 'skill card', 'power': 'power card', 'status': 'card'}
 os.makedirs(OUT, exist_ok=True)
 rows = []
+ONLY = set(sys.argv[1:])
 for c in cards:
+    if ONLY and c['id'] not in ONLY: continue
     if os.path.exists(os.path.join(ROOT, 'assets', 'card_' + c['art'] + '.webp')): continue
     W, H = 600, 800
     im = Image.new('RGB', (W, H), COL.get(c['frame'], (90, 90, 90)))
@@ -39,5 +43,13 @@ md = ["# Placeholder card art", "",
       "Palette: never use these as a reference or starting point for any artwork.",
       "To swap one out: add the real `assets/card_<card id>.webp` (it wins automatically), then delete the placeholder and its row.", "",
       "| File | Card id | What it is for |", "|---|---|---|"] + rows + [""]
+if ONLY:   # keep the existing file; replace the rows of the redrawn cards, append new ones
+    old = open(os.path.join(OUT, 'PLACEHOLDERS.md')).read().rstrip('\n').split('\n')
+    new = {re.search(r'`placeholder_(.+?)\.webp`', r).group(1): r for r in rows}
+    out = []
+    for ln in old:
+        m = re.match(r'\| `placeholder_(.+?)\.webp`', ln)
+        out.append(new.pop(m.group(1)) if m and m.group(1) in new else ln)
+    md = out + list(new.values()) + ['']
 open(os.path.join(OUT, 'PLACEHOLDERS.md'), 'w').write('\n'.join(md))
 print('\n'.join(rows))

@@ -114,6 +114,8 @@
   function emit(s, ev) { s.events.push(ev); }
   function log(s, msg) { s.log.push(msg); if (s.log.length > 60) s.log.shift(); }
   const hasRelic = (p, id) => p.relics.includes(id);
+  // Random relic pools (rewards, events, shop): no special relics, and a hero-only relic (cls) only for its hero.
+  const relicInPool = (p, r) => !D.RELICS[r].special && (!D.RELICS[r].cls || (p && D.RELICS[r].cls === p.heroId));
 
   // ---------- creation ----------
   function makePlayer(s, heroId, name) {
@@ -318,7 +320,7 @@
     if (o.maxHp) { sh.maxHp += o.maxHp; sh.hp += o.maxHp; add((o.maxHp > 0 ? '+' : '') + o.maxHp + ' max HP', o.maxHp < 0); }
     if (o.healPct) { const a = Math.max(0, Math.min(Math.round(sh.maxHp * o.healPct), sh.maxHp - sh.hp)); sh.hp += a; add('Heal ' + pctStr(o.healPct) + ' of max HP (+' + a + ' now)'); }
     if (o.relic) {
-      const left = Object.keys(D.RELICS).filter(r => !hasRelic(p, r) && !D.RELICS[r].special).length;
+      const left = Object.keys(D.RELICS).filter(r => !hasRelic(p, r) && relicInPool(p, r)).length;
       if (o.relic !== 'random' && !hasRelic(p, o.relic)) add('Relic: ' + D.RELICS[o.relic].name);
       else if (left) add('Random relic (1 of ' + left + (o.relic !== 'random' ? ', you already own ' + D.RELICS[o.relic].name : '') + ')');
       else add('+40 gold (no relics left)');
@@ -410,7 +412,7 @@
     }
     const relics = [];
     for (let i = 0; i < 3; i++) {
-      const left = Object.keys(D.RELICS).filter(r => !D.RELICS[r].special && !hasRelic(p, r) && !relics.some(x => x.id === r));
+      const left = Object.keys(D.RELICS).filter(r => relicInPool(p, r) && !hasRelic(p, r) && !relics.some(x => x.id === r));
       if (left.length) relics.push({ id: pick(s, left), price: price(P.relic), sold: false });
     }
     const potions = [];
@@ -462,7 +464,7 @@
 
   // ---------- relics ----------
   function randomRelic(s, p) {
-    const left = Object.keys(D.RELICS).filter(r => !hasRelic(p, r) && !D.RELICS[r].special);
+    const left = Object.keys(D.RELICS).filter(r => !hasRelic(p, r) && relicInPool(p, r));
     return left.length ? pick(s, left) : null;
   }
   function gainRelic(s, p, id) {
@@ -484,7 +486,7 @@
     s.enemies = enc.enemies.map(id => makeEnemy(s, id));
     for (const p of livingPlayers(s)) {
       p.draw = shuffle(s, p.deck.map(c => ({ ...c })));
-      p.hand = []; p.discard = []; p.exhaust = []; p.powers = []; p.block = 0; p.statuses = {}; p.fresh = {}; p.reward = null; p.turnFx = {}; p.enemyTurnFx = {};
+      p.hand = []; p.discard = []; p.exhaust = []; p.powers = []; p.fightExhausted = 0; p.block = 0; p.statuses = {}; p.fresh = {}; p.reward = null; p.turnFx = {}; p.enemyTurnFx = {};
     }
     log(s, `— ${enc.name} —`);
     emit(s, { kind: 'encounter', name: enc.name });
@@ -827,6 +829,10 @@
         case 'damageAll': for (let i = 0; i < times; i++) livingEnemies(s).forEach(e => dealDamage(s, e, attackDamage(p, e, attackBase(p, fx)), p, true)); break;
         case 'damageAllRaw': livingEnemies(s).forEach(e => dealDamage(s, e, fx.n, null, false)); break;
         case 'damageFromBlock': if (alive(tgt)) dealDamage(s, tgt, attackDamage(p, tgt, p.block), p, true); break;
+        // What's Left: one hit of n for each card Exhausted this fight ("X times" is the multi-hit wording, Producer 11:35)
+        case 'damagePerExhausted': if (alive(tgt)) dealDamage(s, tgt, attackDamage(p, tgt, attackBase(p, { ...fx, n: fx.n * (p.fightExhausted || 0) })), p, true); break;
+        // Parting Shot's Last Word: one attack hit on a random enemy that can be targeted (no target needed on the card)
+        case 'damageRandom': for (let i = 0; i < times; i++) { const l = targetableEnemies(s); if (!l.length) break; const e = pick(s, l); dealDamage(s, e, attackDamage(p, e, attackBase(p, fx)), p, true); } break;
         case 'block': gainBlock(s, p, fx.n); blockSoFar += fx.n; break;
         case 'heal': heal(s, p, fx.n); break;
         case 'maxHp': p.maxHp += fx.n; heal(s, p, fx.n); break;
@@ -872,7 +878,8 @@
     // Replay = a second play (Fading hook: notePlay runs once per play); Repeat X = the effect X times inside ONE play.
     // Replay on an Exhaust/Vanish card plays both times, then the card leaves once (Producer 11:34).
     const plays = playsOf(def), reps = repeatOf(def);
-    const bloodied = !!def.bloodied && isBloodied(p);   // checked when the card is played (before its effects)
+    const bloodied = !!def.bloodied && isBloodied(p);   // checked ONCE, when the card is played (before its effects)
+    if (bloodied) emit(s, { kind: 'bloodied', source: p.uid, card: c.id });
     for (let k = 0; k < plays; k++) {
       if (k > 0) {
         if (!alive(p) || !livingEnemies(s).length) break;
@@ -880,8 +887,10 @@
         emit(s, { kind: 'cardReplayed', source: p.uid, card: c.id, target: tgt && tgt.uid });
         log(s, `${def.name} plays again (Replay).`);
       }
-      for (let r = 0; r < reps; r++) runEffects(s, p, fadeFx(def, c, def.effects), tgt, c);   // Fading: this play uses the number left
-      if (bloodied) { emit(s, { kind: 'bloodied', source: p.uid, card: c.id }); runEffects(s, p, def.bloodied.effects, tgt, c); }
+      // Fading: this play uses the number left (a Replay at 1 plays its second time at 0, then Exhausts; Producer 13:25).
+      // Bloodied effects go with every Repeat and Replay play (Producer 13:25); one with addTo joins that effect's hit
+      // instead of adding a hit (Blood in the Mouth: one 14-damage hit, Might counts once; Lorekeeper 13:25).
+      for (let r = 0; r < reps; r++) runEffects(s, p, withBloodied(def, fadeFx(def, c, def.effects), bloodied), tgt, c);
       notePlay(s, p, c);
     }
     const fadedOut = !!def.fading && fadeLeft(def, c) <= 0;
@@ -902,8 +911,24 @@
     return { ok: true };
   }
 
-  // Every Exhaust goes through here, so a Last Word always fires (Exhaust keyword, a Fading card at 0, a shoved status card).
-  function exhaustCard(s, p, c) { p.exhaust.push(c); lastWord(s, p, c); }
+  function withBloodied(def, effects, on) {
+    if (!on) return effects;
+    const fx = effects.map(f => ({ ...f })), extra = [];
+    for (const b of def.bloodied.effects) { if (b.addTo != null && fx[b.addTo]) fx[b.addTo].n = (fx[b.addTo].n || 0) + b.n; else extra.push(b); }
+    return fx.concat(extra);
+  }
+  // Every Exhaust goes through here (Exhaust keyword, a Fading card at 0, a shoved status card): it counts for What's Left,
+  // triggers Kindling (each copy in play) and the Ash-Caked Bracer (first Exhaust each turn), then the card's Last Word.
+  // A Vanish is not an Exhaust (Anna 11:33), so none of these fire on it except Last Word.
+  function exhaustCard(s, p, c) {
+    p.exhaust.push(c); p.fightExhausted = (p.fightExhausted || 0) + 1;
+    if (s.phase === 'combat' && alive(p)) {
+      for (const pc of p.powers || []) { const d = cardDef(pc); if (d.power && d.power.onExhaust && alive(p)) { emit(s, { kind: 'powerTrigger', source: p.uid, card: pc.id }); runEffects(s, p, d.power.onExhaust, null, null); } }
+      p.turnFx = p.turnFx || {};
+      for (const r of p.relics) { const R = D.RELICS[r]; if (R.hook === 'firstExhaustEachTurn' && !p.turnFx['exh_' + r] && alive(p)) { p.turnFx['exh_' + r] = true; emit(s, { kind: 'relic', target: p.uid, relic: r }); runEffects(s, p, R.effects, null, null); } }
+    }
+    lastWord(s, p, c);
+  }
   // Last Word (how_to_play_v1): when this card Exhausts or Vanishes, its Last Word line happens (once, with no target).
   function lastWord(s, p, c) {
     const def = cardDef(c);
@@ -934,7 +959,7 @@
     const vals = effects.map((fx, i) => {
       let v = fx.n || 0, printed = (printedFx[i] && printedFx[i].n) || 0;
       if (fx.t === 'block') blockSoFar += fx.n;
-      if (fx.t === 'damage' || fx.t === 'damageAll') {
+      if ((fx.t === 'damage' || fx.t === 'damageAll' || fx.t === 'damageRandom') && fx.addTo == null) {
         v = inCombat ? attackDamage(p, tgt, attackBase(p, fx)) : attackBase({ statuses: {} }, fx);
       } else if (fx.t === 'damageFromBlock') {
         v = inCombat ? attackDamage(p, tgt, p.block + blockSoFar) : blockSoFar; printed = v;

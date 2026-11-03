@@ -148,7 +148,8 @@ const TIPS = {   // lore/text/how_to_play_v1.md section 3 (Lorekeeper), word for
 };
 for (const k in TIPS) eq(D.KEYWORDS[k], TIPS[k], k + ' tooltip wording');
 { const htp = path.join(__dirname, '../lore/text/how_to_play_v1.md');
-  if (fs.existsSync(htp)) { const t = fs.readFileSync(htp, 'utf8');
+  ok(fs.existsSync(htp), 'lore/text/how_to_play_v1.md is present (untracked, Lorekeeper owns lore/; copy lore/ into a scratch checkout before npm test)');
+  { const t = fs.readFileSync(htp, 'utf8');
     for (const k in TIPS) { const m = t.match(new RegExp('^- \\*\\*' + (k === 'Repeat' ? 'Repeat X' : k) + ':\\*\\* (.*)$', 'm')); ok(m && TIPS[k] === (k === 'Repeat' ? 'Repeat X' : k) + ': ' + m[1], k + ' tooltip matches how_to_play_v1.md'); } } }
 
 // ======== Fading, Last Word, Bloodied (Anna 11:54/12:19; how_to_play_v1 section 3; keyword_use_v2 part 3; Producer 11:56) ========
@@ -233,7 +234,95 @@ const TIPS2 = { Fading: "Fading: each time you play it this fight, its numbers d
   'Last Word': 'Last Word: when this card Exhausts or Vanishes, its Last Word line happens.', Bloodied: "Bloodied: the Bloodied line only counts while you're at half your HP or less." };
 for (const k in TIPS2) eq(D.KEYWORDS[k], TIPS2[k], k + ' tooltip wording');
 { const htp = path.join(__dirname, '../lore/text/how_to_play_v1.md');
-  if (fs.existsSync(htp)) { const t = fs.readFileSync(htp, 'utf8'); for (const k in TIPS2) { const m = t.match(new RegExp('^- \\*\\*' + k + ':\\*\\* (.*)$', 'm')); ok(m && TIPS2[k] === k + ': ' + m[1], k + ' tooltip matches how_to_play_v1.md'); } } }
+  ok(fs.existsSync(htp), 'lore/text/how_to_play_v1.md is present (untracked, Lorekeeper owns lore/)');
+  { const t = fs.readFileSync(htp, 'utf8'); for (const k in TIPS2) { const m = t.match(new RegExp('^- \\*\\*' + k + ':\\*\\* (.*)$', 'm')); ok(m && TIPS2[k] === k + ': ' + m[1], k + ' tooltip matches how_to_play_v1.md'); } } }
+
+// ======== Producer 13:25 rulings (engine behaviour; the combos stay blocked in the data check until a card needs them) ========
+// These test-only defs are added AFTER every checkKeywordData(D.CARDS) call above, on purpose.
+Object.assign(D.CARDS, {
+  kwr_fade_replay: atk({ fading: true, replay: true, effects: [{ t: 'damage', n: 3 }] }),
+  kwr_blood_rep2: atk({ repeat: 2, bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 5 }] } }),
+  kwr_blood_replay: atk({ replay: true, bloodied: { desc: 'Deal {0} more.', effects: [{ t: 'damage', n: 7, addTo: 0 }] } }),
+  kwr_blood_lose: blk({ replay: true, desc: 'Lose {0} HP. Gain {1} Block.', effects: [{ t: 'loseHp', n: 10 }, { t: 'block', n: 1 }], bloodied: { desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 5 }] } }),
+  kwr_lw_rep3: blk({ exhaust: true, repeat: 3, desc: 'Gain {0} Block. Exhaust.', lastWord: { desc: 'Gain {0} Might.', effects: [might1] } }),
+});
+for (const id of ['kwr_fade_replay', 'kwr_blood_rep2', 'kwr_blood_replay', 'kwr_lw_rep3']) ok(throws(() => D.checkKeywordData({ [id]: D.CARDS[id] })), id + ' is still blocked in the data check (no card needs it yet)');
+// (1) Replay on a Fading card at 1: plays both (second at 0), then Exhausts
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kwr_fade_replay'); c.fightPlays = 2; const h = e.hp; const { ev } = play(s, p, c, e);
+  eq(h - e.hp, 1 + 0, 'Fading at 1 + Replay: 1 damage, then a second play at 0'); eq(ev.filter(x => x.kind === 'cardReplayed').length, 1, 'the Replay still happens at 0');
+  eq(where(p, c), ['exhaust'], 'then it Exhausts'); eq(c.fightPlays, 4, 'two plays counted'); }
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kwr_fade_replay'); p.statuses.might = 2; c.fightPlays = 2; const h = e.hp; play(s, p, c, e);
+  eq(h - e.hp, (1 + 2) + (0 + 2), 'the Replay at 0 still adds Might (a real play)'); }
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'kwr_fade_replay'); const h = e.hp; play(s, p, c, e); eq(h - e.hp, 3 + 2, 'Fading 3 + Replay: 3 then 2 (drops by 2)'); eq(where(p, c), ['discard'], 'still above 0: discarded'); }
+// (2) Bloodied effects go with every Repeat and Replay play; HP checked once when played
+{ const { s, p } = fresh(), e = s.enemies[0]; p.hp = Math.floor(p.maxHp / 2); const c = give(p, 'kwr_blood_rep2'), h = e.hp; const { ev } = play(s, p, c, e);
+  eq(h - e.hp, (4 + 5) * 2, 'Bloodied + Repeat 2: the Bloodied hit goes with both repeats'); eq(ev.filter(x => x.kind === 'bloodied').length, 1, 'one Bloodied check'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; p.hp = Math.floor(p.maxHp / 2); p.statuses.might = 1; const c = give(p, 'kwr_blood_replay'); play(s, p, c, e);
+  eq(e.maxHp - e.hp, (4 + 7 + 1) * 2, 'Bloodied (addTo) + Replay: one 11+Might hit on each play'); }
+{ const { s, p } = fresh(); p.maxHp = 80; p.hp = 45; const c = give(p, 'kwr_blood_lose'); play(s, p, c, null); eq([p.hp, p.block], [25, 2], 'not Bloodied when played: the Replay does not re-check after the first play took HP'); }
+{ const { s, p } = fresh(); p.maxHp = 80; p.hp = 38; const c = give(p, 'kwr_blood_lose'); play(s, p, c, null); eq(p.block, (1 + 5) * 2, 'Bloodied when played: the extra Block goes with both plays'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; p.hp = p.maxHp; const c = give(p, 'kwr_blood_rep2'), h = e.hp; play(s, p, c, e); eq(h - e.hp, 4 * 2, 'not Bloodied: Repeat only'); }
+// (3) Last Word with Repeat X fires once
+{ const { s, p } = fresh(), c = give(p, 'kwr_lw_rep3'); const { ev } = play(s, p, c, null); eq([p.block, p.statuses.might], [15, 1], 'Repeat 3 Block, Last Word once'); eq(ev.filter(x => x.kind === 'lastWord').length, 1, 'one lastWord event'); }
+
+// ======== Lorekeeper 13:25 + Burn It Down + new keyword cards (Barbarian) ========
+eq(D.CARDS.bloodied_knuckles.name, 'Split Knuckles', 'Bloodied Knuckles is shown as Split Knuckles (id unchanged)');
+ok(!Object.values(D.CARDS).some(c => /\bBloodied\b/.test(c.name)), 'no card name uses the Bloodied keyword word');
+const NEW = ['burn_through', 'kindling', 'whats_left', 'worn_grip', 'ember_hide', 'blood_in_mouth', 'last_one_standing'];
+for (const id of NEW) { const c = D.CARDS[id]; ok(c && c.cls === 'barbarian', id + ' is a Barbarian card'); ok(fs.existsSync(path.join(__dirname, '../assets/placeholder/placeholder_' + id + '.webp')), id + ' has placeholder art');
+  ok(fs.readFileSync(path.join(__dirname, '../assets/placeholder/PLACEHOLDERS.md'), 'utf8').includes('`placeholder_' + id + '.webp`'), id + ' is listed in PLACEHOLDERS.md'); }
+eq(NEW.map(id => [D.CARDS[id].cost, D.CARDS[id].rarity, D.typeWord(D.CARDS[id], id)]), [[1, 'common', 'Defense'], [1, 'uncommon', 'Power'], [2, 'uncommon', 'Attack'], [1, 'common', 'Attack'], [1, 'common', 'Defense'], [1, 'common', 'Attack'], [1, 'uncommon', 'Buff']], 'costs, rarities and type words as in keyword_use_v2');
+// Blood in the Mouth: Bloodied = ONE 14-damage hit, Might counts once
+{ const { s, p } = fresh(), e = s.enemies[0]; p.hp = Math.floor(p.maxHp / 2); p.statuses.might = 3; const c = give(p, 'blood_in_mouth'); const { ev } = play(s, p, c, e);
+  eq(e.maxHp - e.hp, 14 + 3, 'Bloodied Blood in the Mouth: 14 + Might once'); eq(ev.filter(x => x.kind === 'hit').map(x => x.amount), [17], 'ONE hit of 17'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; e.statuses.prone = 2; p.hp = 10; const c = give(p, 'blood_in_mouth'); play(s, p, c, e); eq(e.maxHp - e.hp, Math.floor(14 * 1.5), 'one hit: Prone applies to 14 once (21)'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; const c = give(p, 'blood_in_mouth'); play(s, p, c, e); eq(e.maxHp - e.hp, 7, 'not Bloodied: 7'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; p.hp = 10; const c = give(p, 'blood_in_mouth', true); play(s, p, c, e); eq(e.maxHp - e.hp, 10 + 7, 'upgraded: 10 + 7 in one hit'); }
+eq([E.cardText(null, null, { id: 'blood_in_mouth' }), E.cardLines(null, null, { id: 'blood_in_mouth' }).bloodied], ['Deal 7 damage.', 'Deal 7 more.'], "card text stays 'Deal 7 damage.' / 'Bloodied: Deal 7 more.'");
+{ const { s, p } = fresh(), e = s.enemies[0]; p.statuses.might = 2; eq(E.cardLines(s, p, { id: 'blood_in_mouth', uid: 'b' }, e.uid).bloodied, 'Deal 7 more.', 'the Bloodied 7 is not shown with Might added (Might counts once)'); }
+// Last One Standing
+{ const { s, p } = fresh(); p.hp = 10; const before = p.hand.length; const c = give(p, 'last_one_standing'); play(s, p, c, null); eq([p.statuses.might, p.hand.length], [4, before + 1], 'Bloodied Last One Standing: 4 Might, draw 1'); }
+{ const { s, p } = fresh(); const c = give(p, 'last_one_standing'); play(s, p, c, null); eq(p.statuses.might, 2, 'not Bloodied: 2 Might'); }
+// Worn Grip: 8, 7, 6 ... then Exhausts at 0
+{ const { s, p } = fresh(), e = s.enemies[0], c = give(p, 'worn_grip'), hits = []; for (let i = 0; i < 8; i++) { if (i) p.hand.push(p.discard.splice(p.discard.indexOf(c), 1)[0]); const h = e.hp; play(s, p, c, e); hits.push(h - e.hp); }
+  eq(hits, [8, 7, 6, 5, 4, 3, 2, 1], 'Worn Grip fades 8..1'); eq(where(p, c), ['exhaust'], 'then Exhausts'); }
+// Ember Hide, Burn Through
+{ const { s, p } = fresh(), c = give(p, 'ember_hide'); play(s, p, c, null); eq([p.block, p.statuses.rage, where(p, c)[0]], [5, 2, 'exhaust'], 'Ember Hide: 5 Block, Exhaust, Last Word 2 Rage'); }
+{ const { s, p } = fresh(), c = give(p, 'burn_through'); play(s, p, c, null); eq([p.block, where(p, c)[0], p.fightExhausted], [6, 'exhaust', 1], 'Burn Through: 6 Block, Exhaust, counted'); }
+// Kindling: every Exhaust gives 1 Rage per copy; not on Vanish; Fading-out and Last Word cards count
+{ const { s, p } = fresh(), k = give(p, 'kindling'); play(s, p, k, null); ok(p.powers.includes(k), 'Kindling stays in play');
+  play(s, p, give(p, 'burn_through'), null); eq(p.statuses.rage, 1, 'Kindling: an Exhaust gives 1 Rage');
+  play(s, p, give(p, 'ember_hide'), null); eq(p.statuses.rage, 1 + 1 + 2, 'Kindling + Ember Hide Last Word: 1 + 2 Rage');
+  const w = give(p, 'worn_grip'); w.fightPlays = 7; play(s, p, w, s.enemies[0]); eq(p.statuses.rage, 5, 'a Fading card at 0 Exhausts and triggers Kindling');
+  play(s, p, give(p, 'kindling'), null); play(s, p, give(p, 'burn_through'), null); eq(p.statuses.rage, 7, 'two Kindlings: 2 Rage per Exhaust');
+  const r0 = p.statuses.rage; give(p, 'kw_van'); E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); ok(p.exhaust.some(x => x.id === 'kw_van'), 'a card vanished');
+  ok((p.statuses.rage || 0) <= r0, 'Vanish is not an Exhaust: no Kindling Rage'); eq(p.fightExhausted, 4, 'Vanish not counted as Exhausted'); }
+{ const { s, p } = fresh(); play(s, p, give(p, 'burn_through'), null); eq(p.statuses.rage || 0, 0, 'no Kindling, no Rage'); }
+// What's Left: one hit of 3 per card Exhausted this fight
+{ const { s, p } = fresh(), e = s.enemies[0]; let h = e.hp; play(s, p, give(p, 'whats_left'), e); eq(h - e.hp, 0, "What's Left with nothing Exhausted: 0");
+  for (let i = 0; i < 3; i++) play(s, p, give(p, 'burn_through'), null); p.statuses.might = 2; h = e.hp; play(s, p, give(p, 'whats_left'), e); eq(h - e.hp, 9 + 2, "What's Left after 3 Exhausts: one 9 hit + Might once");
+  E.startEncounter(s, 'lone_goblin'); E.takeEvents(s); eq(p.fightExhausted, 0, 'the count resets each fight'); }
+{ const { s, p } = fresh(), e = s.enemies[0]; play(s, p, give(p, 'burn_through'), null); const h = e.hp; play(s, p, give(p, 'whats_left', true), e); eq([h - e.hp, E.cardDef({ id: 'whats_left', up: true }).cost], [3, 1], "What's Left+: costs 1 (normal upgrade)"); }
+{ const { s, p } = fresh(); play(s, p, give(p, 'burn_through'), null); play(s, p, give(p, 'burn_through'), null); const s2 = JSON.parse(JSON.stringify(s)); eq(s2.players[0].fightExhausted, 2, 'Exhausted count survives a save'); }
+// Ash-Caked Bracer: first Exhaust each turn draws 1; Barbarian-only in every relic pool
+{ const { s, p } = fresh(); p.relics.push('ash_bracer'); p.draw.push({ uid: 'd1', id: 'strike' }, { uid: 'd2', id: 'strike' }, { uid: 'd3', id: 'strike' }); const n0 = p.hand.length;
+  play(s, p, give(p, 'burn_through'), null); eq(p.hand.length, n0 + 1 - 0, 'Bracer: first Exhaust draws 1'); play(s, p, give(p, 'burn_through'), null); eq(p.hand.length, n0 + 1, 'second Exhaust this turn draws nothing');
+  E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); if (s.phase === 'combat') { p.energy = 99; const n1 = p.hand.length; play(s, p, give(p, 'burn_through'), null); eq(p.hand.length, n1 + 1, 'next turn the first Exhaust draws again'); } }
+eq(D.RELICS.ash_bracer.cls, 'barbarian', 'Ash-Caked Bracer is Barbarian-only');
+{ const pools = {}; for (const hero of Object.keys(D.HEROES)) { pools[hero] = 0;
+    for (let seed = 1; seed <= 200; seed++) { const s = E.newGame({ seed, heroes: [hero] }), p = s.players[0]; p.gold = 999; const f = findChoice(o => o.shop); runEvent(s, f); if (s.phase === 'event') E.dispatch(s, { type: 'EVENT_CONTINUE', player: p.uid }); if (s.shop.relics.some(x => x.id === 'ash_bracer')) pools[hero]++; } }
+  ok(pools.barbarian > 0, 'the Barbarian shop offers the Bracer sometimes (' + pools.barbarian + '/200)'); ok(pools.fighter === 0 && pools.wizard === 0, 'Fighter and Wizard shops never offer it ' + JSON.stringify(pools)); }
+{ const got = {}; for (const hero of Object.keys(D.HEROES)) { got[hero] = 0; for (let seed = 1; seed <= 200; seed++) { const s = E.newGame({ seed, heroes: [hero] }), p = s.players[0];
+    p.relics = Object.keys(D.RELICS).filter(r => r !== 'ash_bracer' && !D.RELICS[r].special && r !== Object.keys(D.RELICS).filter(x => !D.RELICS[x].special && !D.RELICS[x].cls)[seed % 3]);
+    E.startEncounter(s, 'lone_goblin'); E.takeEvents(s); s.node = 'elite'; s.enemies.forEach(e => { e.hp = 0; }); E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); if (p.relics.includes('ash_bracer')) got[hero]++; } }
+  ok(got.barbarian > 0 && got.fighter === 0 && got.wizard === 0, 'elite relic rewards: Bracer only for the Barbarian ' + JSON.stringify(got)); }
+// damageRandom (for Parting Shot's Last Word): one hit on a random targetable enemy, no target on the card
+Object.assign(D.CARDS, { kwr_parting: blk({ cls: 'fighter', vanish: true, desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 3 }], lastWord: { desc: 'Deal {0} damage to a random enemy.', effects: [{ t: 'damageRandom', n: 8 }] } }) });
+ok(D.checkKeywordData({ kwr_parting: D.CARDS.kwr_parting }) === true, 'a Last Word with damageRandom passes the data check');
+{ const tally = {}; for (let seed = 1; seed <= 40; seed++) { const { s, p } = fight('goblin_pack', seed); p.hp = p.maxHp; give(p, 'kwr_parting'); const hp0 = s.enemies.map(e => e.hp); E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s);
+    const hit = s.enemies.map((e, i) => hp0[i] - e.hp); const k = hit.findIndex(x => x >= 8); ok(hit.filter(x => x >= 8).length === 1 || s.phase !== 'combat', 'exactly one enemy takes the 8 (seed ' + seed + ')'); tally[k] = (tally[k] || 0) + 1; }
+  ok(Object.keys(tally).length >= 2, 'the target is random across seeds ' + JSON.stringify(tally)); }
+{ const { s, p } = fresh(); p.statuses.might = 2; eq(E.cardLines(s, p, { id: 'kwr_parting', uid: 'pp' }).lastWord, 'Deal «+10» damage to a random enemy.', 'damageRandom line shows live Might'); }
 
 // ---- page: keyword lines with tooltips on the card face, removal grids skip Eternal ----
 (async () => {
