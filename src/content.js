@@ -89,12 +89,19 @@
     goblin: 130, goblin_cutter: 140, goblin_archer: 140, goblin_shaman: 140, kobold: 120, giant_rat: 90, skeleton: 175, gnoll: 195,
     bugbear: 215, ogre: 250, owlbear: 270, ghoul: 170, drow: 190, drow_mage: 195, troll: 265, gelatinous_cube: 220,
     mind_flayer: 230, sewn: 255, mimic: 190, lesser_mimic: 150, beholder: 290, wyrmling: 200,
-    crier: 409 };   // the Crier has only a boss-canvas file (below); 409 = 1400 canvas px at hero scale, used if ever drawn legacy-style
+    crier: 409, toll: 409, brood: 409 };   // boss-canvas files only (below); 409 = 1400 canvas px at hero scale   // the Crier has only a boss-canvas file (below); 409 = 1400 canvas px at hero scale, used if ever drawn legacy-style
   // Boss-canvas files (Palette handoff Nov 3, STYLE_GUIDE s7): 1400x1400, feet (700,1391), 1 canvas px = 1 hero px. They are drawn
   // at one fixed scale (the hero pose scale), not scaled to fit, so the bosses keep their relative sizes. `top` is the first
   // opaque row: the layout box starts there, so the intent and hit effects sit on the body, not on empty canvas.
   D.SPRITE_CANVAS = { enemy_beholder_idle: { size: 1400, top: 52 }, enemy_crier_idle: { size: 1400, top: 602 },
-    enemy_owlbear_idle: { size: 1400, top: 332 } };
+    enemy_owlbear_idle: { size: 1400, top: 332 },
+    // Floor 2 trial bosses (Anna 15:28): the Toll's `shut` state and the Brood's `sealed` state. Neither has enemy data yet, so
+    // they are drawn once a 'toll' / 'brood' monster exists; their states (breath/count, pulse/split) are code effects (BOSS_FX).
+    enemy_toll_idle: { size: 1400, top: 332 }, enemy_brood_idle: { size: 1400, top: 492 } };
+  // Code effects drawn over a boss sprite (no extra art): idle only for now, since the Toll and the Brood have no fight
+  // data to hook their state changes to (Producer decide). toll: dust breathing out of the gate's gap (pose `breath`);
+  // brood: the pods breathing spore dust (pose `pulse`). The `split` and `count` moments need fight events first.
+  D.BOSS_FX = { toll: 'dust', brood: 'pulse' };
 
   // ---------- map ----------
   // 16 rows with 3 full '?' rows (Producer 10:56, design/event_variety_plan.md option D): ~7.8 fights + elites per path as before.

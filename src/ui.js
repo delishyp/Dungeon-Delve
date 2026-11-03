@@ -437,9 +437,10 @@
     const h = Math.round((cv ? cv.size * HERO_POSE_H / 900 : !isEnemy && pset ? HERO_POSE_H : D.SPRITE_H[isEnemy ? baseMon(u.monsterId) : u.heroId] || 170) * k);
     const cut = cv ? Math.round(cv.top * HERO_POSE_H / 900 * k) : 0;
     const goneCls = dead ? (ui.deadShown[u.uid] ? 'dead gone' : '') : '';
+    const bfx = isEnemy && D.BOSS_FX && D.BOSS_FX[baseMon(u.monsterId)];
     return `<div class="unit ${isEnemy ? 'enemy' : 'player'} ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${goneCls} ${targetable ? 'targetable' : ''} ${guarded ? 'untargetable' : ''}" data-uid="${u.uid}" style="--sh:${h}px${cut ? `;--cut:${cut}px` : ''}"${cv ? ` data-cutf="${(cv.top / cv.size).toFixed(4)}"` : ''}>
       ${isEnemy && !dead ? intentHTML(u) : ''}
-      <div class="sprite-wrap"><div class="idle" style="${idleStyle(u, def.boss)}"><img class="sprite" src="${pset ? pset[curPose(u.uid)] : isEnemy ? (img(key) || monsterPic(u.monsterId)) : img(key)}" alt="${esc(u.name)}" draggable="false"></div><div class="shadow"></div></div>
+      <div class="sprite-wrap"><div class="idle" style="${idleStyle(u, def.boss)}"><img class="sprite" src="${pset ? pset[curPose(u.uid)] : isEnemy ? (img(key) || monsterPic(u.monsterId)) : img(key)}" alt="${esc(u.name)}" draggable="false"></div>${bfx ? `<div class="bossfx fx-${bfx}" aria-hidden="true"><i></i><i></i><i></i></div>` : ''}<div class="shadow"></div></div>
       <div class="plate"><div class="uname">${esc(u.name)}${def.elite ? ' <span class="tag">Elite</span>' : ''}${def.boss ? ' <span class="tag">Boss</span>' : ''}</div>
       <div class="hpbar ${u.block ? 'blocked' : ''}">${u.block ? `<div class="blockbadge" data-tip="${esc(D.KEYWORDS.Block)}">${u.block}</div>` : ''}
         <div class="fill" style="width:${pct}%"></div><div class="txt">${u.hp} / ${u.maxHp}</div></div>

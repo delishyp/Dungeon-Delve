@@ -9,6 +9,9 @@ const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), `${m}: got $
 const md5 = (f) => crypto.createHash('md5').update(fs.readFileSync(path.join(__dirname, '../assets', f))).digest('hex');
 eq([md5('enemy_beholder_idle.webp'), md5('enemy_crier_idle.webp'), md5('enemy_owlbear_idle.webp')],
   ['9de88837a6b124f787f1475b107e2bfd', 'a66f0f0ab9c58f0fc45b4eb6e3b7f380', '9b1bf2602662ee06f0254e074a2122d8'], 'Palette handoff files, byte for byte (Beast: the repaint, not 56319da7)');
+eq([md5('enemy_toll_idle.webp'), md5('enemy_brood_idle.webp')], ['8ad6c5a45e35e4c8ff88119cbb059747', 'de536106bae92432c581eecdb7ab9a98'], 'Toll (shut) and Brood (sealed) files, byte for byte (Brood: not a277d410)');
+eq(D.BOSS_FX, { toll: 'dust', brood: 'pulse' }, 'Toll dust and Brood pulse are code effects');
+ok(!D.MONSTERS.toll && !D.MONSTERS.brood, 'no Toll/Brood enemy data yet (Producer decide), so only the sprites and idle effects are wired');
 ok(fs.existsSync(path.join(__dirname, '../assets/beholder.webp')) && fs.existsSync(path.join(__dirname, '../assets/owlbear.webp')), 'legacy beholder.webp and owlbear.webp kept for rollback');
 eq([D.MONSTERS.beholder.sprite, D.MONSTERS.owlbear.sprite], ['enemy_beholder_idle', 'enemy_owlbear_idle'], 'boss slots point at the new files');
 eq([D.MONSTERS.beholder.name, D.ENCOUNTERS.beholder.name], ['Vessa the Unsleeping', 'Vessa the Unsleeping'], 'Vessa\'s name is on (LORE: the Watcher was a placeholder until her art existed)');
@@ -35,12 +38,12 @@ ok(!/owlbear: \[[^\]]*(wing|half-bald|rises, huge)/i.test(src), 'no wings, half-
     await pg.goto('file://' + path.resolve(__dirname, '../index.html') + '#demo-combat-barbarian');
     await pg.waitForFunction(() => window.__game && window.__game.state && window.__game.state.phase === 'combat' && !window.__game.ui.busy && !window.__game.ui.story, { timeout: 60000 });
     const r = await pg.evaluate(async () => {
-      const g = window.__game, D = window.GameData, A = window.ASSETS, e = g.state.enemies[0], out = { A: { b: A.beholder, o: A.owlbear, nb: A.enemy_beholder_idle, no: A.enemy_owlbear_idle, nc: A.enemy_crier_idle } };
-      D.MONSTERS.crier = D.MONSTERS.crier || Object.assign({}, D.MONSTERS.goblin, { name: 'The Crier', boss: true });   // test-only stand-in: no Crier data yet
+      const g = window.__game, D = window.GameData, A = window.ASSETS, e = g.state.enemies[0], out = { A: { b: A.beholder, o: A.owlbear, nb: A.enemy_beholder_idle, no: A.enemy_owlbear_idle, nc: A.enemy_crier_idle, nt: A.enemy_toll_idle, nr: A.enemy_brood_idle } };
+      for (const [id, name] of [['crier', 'The Crier'], ['toll', 'The Toll of the Narrows'], ['brood', 'The Brood']]) D.MONSTERS[id] = D.MONSTERS[id] || Object.assign({}, D.MONSTERS.goblin, { name, boss: true });   // test-only stand-ins: no data yet
       const hero = document.querySelector('.unit.player .sprite'); await hero.decode?.(); out.heroScale = hero.offsetHeight / 900;
-      for (const id of ['beholder', 'owlbear', 'crier']) { e.monsterId = id; e.intent = { move: Object.keys(D.MONSTERS[id].moves)[0], target: g.state.players[0].uid }; g.render();
+      for (const id of ['beholder', 'owlbear', 'crier', 'toll', 'brood']) { e.monsterId = id; e.intent = { move: Object.keys(D.MONSTERS[id].moves)[0], target: g.state.players[0].uid }; g.render();
         const sp = document.querySelector('.unit.enemy .sprite'), u = sp.closest('.unit'), it = u.querySelector('.intent'), r = sp.getBoundingClientRect(), ir = it && it.getBoundingClientRect();
-        out[id] = { src: sp.getAttribute('src') || '', h: sp.offsetHeight, cutf: +(u.dataset.cutf || 0), introw: ir ? ir.bottom - (r.top + r.height * +(u.dataset.cutf || 0)) : null }; }
+        out[id] = { src: sp.getAttribute('src') || '', h: sp.offsetHeight, cutf: +(u.dataset.cutf || 0), introw: ir ? ir.bottom - (r.top + r.height * +(u.dataset.cutf || 0)) : null, fx: [...u.querySelectorAll('.bossfx')].map(x => x.className + '|' + getComputedStyle(x.firstElementChild).animationName) }; }
       return out;
     });
     await pg.close(); return r;
@@ -58,8 +61,9 @@ ok(!/owlbear: \[[^\]]*(wing|half-bald|rises, huge)/i.test(src), 'no wings, half-
     eq([c.all.has, c.hidden.has, c.dev.has], [true, false, true], 'compendium: a switched-out card is hidden outside dev mode');
     eq([c.all.cards - c.hidden.cards, c.all.relics - c.hidden.relics, c.dev.cards - c.all.cards, c.dev.relics - c.all.relics], [1, 1, 0, 0], 'compendium totals leave it out too');
     await pg.close(); }
-  eq([on.beholder.src === on.A.nb, on.owlbear.src === on.A.no, on.crier.src === on.A.nc], [true, true, true], 'the new files are drawn');
-  for (const id of ['beholder', 'owlbear', 'crier']) {
+  eq([on.beholder.src === on.A.nb, on.owlbear.src === on.A.no, on.crier.src === on.A.nc, on.toll.src === on.A.nt, on.brood.src === on.A.nr], [true, true, true, true, true], 'the new files are drawn');
+  eq([on.toll.fx, on.brood.fx, on.beholder.fx], [['bossfx fx-dust|tollDust'], ['bossfx fx-pulse|broodPulse'], []], 'Toll dust / Brood pulse layers, nothing on the others');
+  for (const id of ['beholder', 'owlbear', 'crier', 'toll', 'brood']) {
     ok(Math.abs(on[id].h / 1400 - on.heroScale) < 0.01, `${id}: boss canvas drawn at the hero scale (${(on[id].h / 1400).toFixed(3)} vs ${on.heroScale.toFixed(3)} px per canvas px)`);
     ok(on[id].cutf > 0 && on[id].introw != null && on[id].introw <= 15 && on[id].introw >= -40, `${id}: the intent sits on the body's top edge, no more than 15 px into it, at most 40 px above it (${on[id].introw && on[id].introw.toFixed(1)} px)`);
   }

@@ -41,6 +41,21 @@ button{font-family:inherit;cursor:pointer}
 .sprite-wrap{position:relative;display:flex;justify-content:center;align-items:flex-end;height:calc(var(--sh) * var(--ss));transform-origin:50% 100%}
 /* boss-canvas sprite (D.SPRITE_CANVAS): the empty rows above the body are cut from the layout box (they still draw) */
 .unit[style*="--cut"] .sprite-wrap{margin-top:calc(var(--cut) * var(--ss) * -1)}
+/* Boss state effects in code (D.BOSS_FX), drawn over the body part of the sprite-wrap; light, pointer-transparent */
+.bossfx{position:absolute;left:0;right:0;bottom:0;top:calc(var(--cut, 0px) * var(--ss));pointer-events:none;overflow:visible}
+.bossfx i{position:absolute;border-radius:50%;opacity:0}
+/* the Toll: dust breathing out of the gate's gap in a slow pulse */
+.bossfx.fx-dust i{left:50%;bottom:18%;width:34%;height:22%;margin-left:-17%;background:radial-gradient(closest-side,#c9b99a66,#8a7a6033 55%,transparent);filter:blur(6px);animation:tollDust 6.5s ease-out infinite}
+.bossfx.fx-dust i:nth-child(2){animation-delay:-2.2s;width:26%;margin-left:-9%}
+.bossfx.fx-dust i:nth-child(3){animation-delay:-4.4s;width:22%;margin-left:-15%}
+@keyframes tollDust{0%{opacity:0;transform:translate(0,0) scale(.6)}25%{opacity:.75}100%{opacity:0;transform:translate(-18%,-55%) scale(1.5)}}
+/* the Brood: the pods breathe out faint spore dust */
+.bossfx.fx-pulse i{left:20%;right:20%;top:8%;height:70%;background:radial-gradient(closest-side,#b8c0a455,#7d856a22 60%,transparent);filter:blur(10px);animation:broodPulse 4.8s ease-in-out infinite}
+.bossfx.fx-pulse i:nth-child(2){left:8%;right:52%;top:40%;height:45%;animation-delay:-1.6s}
+.bossfx.fx-pulse i:nth-child(3){left:52%;right:8%;top:40%;height:45%;animation-delay:-3.2s}
+@keyframes broodPulse{0%,100%{opacity:.1;transform:scale(.92)}50%{opacity:.7;transform:scale(1.05)}}
+body.reduced .bossfx i{animation:none;opacity:.25}
+@media (prefers-reduced-motion: reduce){.bossfx i{animation:none;opacity:.25}}
 .idle{height:100%;transform-origin:50% 100%;animation:breathe var(--idur,2.8s) ease-in-out infinite}
 .boss .idle{animation-name:breathe-big}
 .sprite{height:100%;width:auto;max-width:calc(var(--sh) * var(--ss) * 1.25);object-fit:contain;filter:drop-shadow(0 8px 10px #000c);pointer-events:none;-webkit-user-drag:none}
