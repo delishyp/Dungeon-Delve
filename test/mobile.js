@@ -62,7 +62,7 @@ async function layoutChecks(page, label) {
     await page.goto(BASE + '#fast');
     await page.evaluate(() => localStorage.clear()); await page.reload();
     await page.tap('[data-act="classes"]'); await sleep(100);
-    await page.tap('[data-act="pick"][data-cls="wizard"]'); await sleep(150);
+    await page.tap('[data-act="herosel"][data-cls="wizard"]'); await sleep(150); await page.tap('[data-act="pick"][data-cls="wizard"]'); await sleep(150);
     check(!!(await page.$('.storyover')), 'class intro narration appears after picking a class');
     let taps = 0;
     while (await page.$('.storyover') && taps++ < 20) { await page.touchscreen.tap(195, 420); await sleep(80); }

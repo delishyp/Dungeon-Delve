@@ -994,17 +994,22 @@
     for (const id in D.RELICS) if (js.includes('"' + id + '"')) ST.seen.mark('relics', id);
   }
   function toTitle() { G = null; ui.screen = 'title'; ui.paused = false; ui.pile = null; ui.selected = null; ui.story = null; ui.busy = false; ui.holdCombat = false; render(); }
+  // Choose Your Hero (Anna 15:43 via Producer): each hero shown large (their idle sprite), the selected one highlighted, with
+  // HP, blurb, mechanic and the real starting deck drawn with the card renderer. Clicking a hero selects it; Begin starts.
   function classesHTML() {
-    const cards = Object.entries(D.HEROES).map(([id, h]) => {
-      const counts = {};
-      h.deck.forEach(c => counts[D.CARDS[c].name] = (counts[D.CARDS[c].name] || 0) + 1);
-      return `<div class="classcard" data-act="pick" data-cls="${id}"><div class="cp"><img src="${img(id)}" alt=""></div><h3>${h.name}</h3>
-        <div class="hp">${I('heart')} ${h.maxHp} HP</div><div class="bl">${esc(h.blurb)}</div>
-        <div class="mech">${withKeywords(h.mechanic)}</div>
-        <div class="dk">Starting deck: ${Object.entries(counts).map(([n, k]) => `${k}× ${esc(n)}`).join(', ')}</div></div>`;
-    }).join('');
-    return `<div class="overlay" style="background-image:linear-gradient(#0e0b10dd,#0e0b10f4),url(${img('bg_menu')})"><h1>Choose Your Hero</h1><div class="classes">${cards}</div>
-      <button class="btn ghost" data-act="title">Back</button></div>`;
+    const ids = Object.keys(D.HEROES), sel = ids.includes(ui.heroSel) ? ui.heroSel : ids[0], h = D.HEROES[sel];
+    const pic = (id) => img('hero_' + id + '_idle') || img(id);
+    const tiles = ids.map(id => { const H = D.HEROES[id];
+      return `<button class="cs-hero ${id === sel ? 'on' : ''}" data-act="herosel" data-cls="${id}" aria-pressed="${id === sel}">
+        <div class="cs-pic"><img src="${pic(id)}" alt="" draggable="false"></div><div class="cs-name">${esc(H.name)}</div>
+        <div class="cs-hp">${I('heart')} ${H.maxHp} HP</div></button>`; }).join('');
+    const deck = h.deck.map((id, i) => cardHTML({ id, uid: 'cs_' + sel + '_' + i }, { cls: 'cs-card' })).join('');
+    return `<div class="overlay charsel" style="background-image:linear-gradient(#0e0b10aa,#0e0b10e8 70%),url(${img('bg_warrens')})"><h1>Choose Your Hero</h1>
+      <div class="cs-row">${tiles}</div>
+      <div class="cs-detail"><div class="cs-text"><h2>${esc(h.name)} <span class="cs-hp">${I('heart')} ${h.maxHp} HP</span></h2>
+        <div class="cs-bl">${esc(h.blurb)}</div><div class="cs-mech">${withKeywords(h.mechanic)}</div></div>
+        <div class="cs-deck"><div class="cs-dkt">Starting deck · ${h.deck.length} cards</div><div class="cs-cards">${deck}</div></div></div>
+      <div class="cs-actions"><button class="btn ghost" data-act="title">Back</button><button class="btn cs-go" data-act="pick" data-cls="${sel}">Begin as the ${esc(h.name)}</button></div></div>`;
   }
   function endHTML(win) {
     const p = P();
@@ -1534,6 +1539,7 @@
     else if (a === 'savequit') { saveGame(); toTitle(); }
     else if (a === 'abandon') askConfirm({ title: 'Abandon this run?', text: 'Your hero and progress on this run will be lost.', yes: 'Abandon run', danger: true, onYes: () => { try { localStorage.removeItem(SAVE_KEY); } catch (err) {} toTitle(); } });
     else if (a === 'pick') startGame(d.cls);
+    else if (a === 'herosel') { ui.heroSel = d.cls; render(); }
     else if (a === 'card') clickCard(d.card);
     else if (a === 'end') endTurnPressed();
     else if (a === 'reward') go({ type: 'CHOOSE_REWARD', card: d.reward || null });
@@ -1634,7 +1640,7 @@
     const u = e.target.closest && e.target.closest('.unit.enemy');
     const nt = u && u.dataset.uid && !u.classList.contains('dead') ? u.dataset.uid : null;
     if (G && G.phase === 'combat' && nt !== ui.hoverTarget) { ui.hoverTarget = nt; refreshHandText(); }
-    const hb = e.target.closest && e.target.closest('.menubtn,.btn,.stabs button,.seg button,.toggle,.cfilters button,.tbbtn,.classcard');
+    const hb = e.target.closest && e.target.closest('.menubtn,.btn,.stabs button,.seg button,.toggle,.cfilters button,.tbbtn,.classcard,.cs-hero');
     if (hb && hb !== ui.lastHover && !hb.disabled) sfx('hover');
     ui.lastHover = hb;
     const t = e.target.closest && e.target.closest('[data-tip]');
@@ -1822,7 +1828,7 @@
         for (const cls of Object.keys(D.HEROES)) {
           for (let run = 0; run < 3; run++) {
             q('[data-act="classes"]') ? q('[data-act="classes"]').click() : (ui.screen = 'classes', render());
-            await tick(); q(`[data-act="pick"][data-cls="${cls}"]`).click(); await tick(); await settle();
+            await tick(); q(`[data-act="herosel"][data-cls="${cls}"]`).click(); await tick(); q(`[data-act="pick"][data-cls="${cls}"]`).click(); await tick(); await settle();
             if (run > 0) { G.players[0].maxHp = G.players[0].hp = 999; }   // runs 1-2 reach the final boss
             let steps = 0, turnNo = 0;
             while (G.phase !== 'victory' && G.phase !== 'defeat' && steps++ < 3000) {
@@ -1857,7 +1863,7 @@
             results.push(`${cls}:${G.phase}@F${G.floor + 1}`);
             if (run === 0) {
               // save / continue round-trip
-              ui.screen = 'classes'; render(); q(`[data-act="pick"][data-cls="${cls}"]`).click(); await tick(); await settle();
+              ui.screen = 'classes'; render(); q(`[data-act="herosel"][data-cls="${cls}"]`).click(); await tick(); q(`[data-act="pick"][data-cls="${cls}"]`).click(); await tick(); await settle();
               q('.mapnode.reachable').click(); await tick(); await settle();
               const before = JSON.stringify(G);
               ui.screen = 'title'; G = null; render();
