@@ -322,11 +322,11 @@
       }, ai: { opener: 'disguise', pattern: ['adhesive', 'chomp', 'disguise'] } },
     beholder: { name: 'The Watcher', hp: [140, 140], boss: true,
       moves: {
-        fear:     { name: 'Fear Ray', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'frightened', n: 3, to: 'target' }] },
-        rays:     { name: 'Eye Rays', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 4 }] },
-        paralyze: { name: 'Paralyzing Ray', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
-        disint:   { name: 'Disintegration Ray', intent: 'attack', effects: [{ t: 'attack', n: 22 }] },
-        antimagic:{ name: 'Antimagic Cone', intent: 'buff', effects: [{ t: 'block', n: 20 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
+        fear:     { name: 'I Saw That', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'frightened', n: 3, to: 'target' }] },
+        rays:     { name: 'Every Eye Opens', intent: 'attack', effects: [{ t: 'attack', n: 4, times: 4 }] },
+        paralyze: { name: 'Held in Her Stare', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
+        disint:   { name: 'Seen Through', intent: 'attack', effects: [{ t: 'attack', n: 22 }] },
+        antimagic:{ name: 'She Watches', intent: 'buff', effects: [{ t: 'block', n: 20 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
       }, ai: { pattern: ['fear', 'rays', 'disint', 'paralyze', 'antimagic'] } },
   };
 
