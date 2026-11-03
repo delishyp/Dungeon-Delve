@@ -62,6 +62,18 @@
   const alive = (e) => !!e && e.hp > 0;
   const livingEnemies = (s) => s.enemies.filter(alive);
   const livingPlayers = (s) => s.players.filter(alive);
+  // A monster with `guardedBy: <id>` can't be picked by single-target cards while one of those minions lives
+  // (the Surgeon while a Sewn stands). Attacks that hit ALL enemies still hit it.
+  const guardedNow = (s, e) => { const g = D.MONSTERS[e.monsterId].guardedBy; return !!g && s.enemies.some(x => x !== e && alive(x) && x.monsterId === g); };
+  const isTargetable = (s, e) => alive(e) && e.side === 'enemy' && !guardedNow(s, e);
+  const targetableEnemies = (s) => s.enemies.filter(e => isTargetable(s, e));
+  // Keeps the visible "Held Together" status in step with the rule above.
+  function syncGuards(s) {
+    for (const e of s.enemies) {
+      if (!D.MONSTERS[e.monsterId].guardedBy) continue;
+      if (alive(e) && guardedNow(s, e)) e.statuses.held = 1; else delete e.statuses.held;
+    }
+  }
   function find(s, id) { return s.players.find(p => p.uid === id) || s.enemies.find(e => e.uid === id) || null; }
   function getPlayer(s, id) { return id ? s.players.find(p => p.uid === id) : s.players[0]; }
   function emit(s, ev) { s.events.push(ev); }
@@ -384,6 +396,7 @@
     log(s, `— ${enc.name} —`);
     emit(s, { kind: 'encounter', name: enc.name });
     s.enemies.forEach(e => chooseIntent(s, e));
+    syncGuards(s);
     startPlayersTurn(s);
   }
 
@@ -409,14 +422,35 @@
     const loss = amount - blocked;
     tgt.hp = Math.max(0, tgt.hp - loss);
     emit(s, { kind: 'hit', target: tgt.uid, source: src && src.uid, amount: loss, blocked, hp: tgt.hp, block: tgt.block });
-    if (tgt.hp === 0) { emit(s, { kind: 'death', target: tgt.uid }); log(s, `${tgt.name} falls!`); }
+    if (tgt.hp === 0) died(s, tgt);
     if (isAttack && src && alive(src) && tgt.statuses.thorns) dealDamage(s, src, tgt.statuses.thorns, null, false);
   }
   function loseHp(s, tgt, n, why) {
     if (!alive(tgt)) return;
     tgt.hp = Math.max(0, tgt.hp - n);
     emit(s, { kind: 'hit', target: tgt.uid, amount: n, blocked: 0, why, hp: tgt.hp, block: tgt.block });
-    if (tgt.hp === 0) { emit(s, { kind: 'death', target: tgt.uid }); log(s, `${tgt.name} falls!`); }
+    if (tgt.hp === 0) died(s, tgt);
+  }
+  function died(s, tgt, why) {
+    emit(s, { kind: 'death', target: tgt.uid, why: why || null }); log(s, `${tgt.name} falls!`);
+    if (tgt.side !== 'enemy') return;
+    const m = D.MONSTERS[tgt.monsterId];
+    // a summoner dies: its minions fall apart with it
+    if (m.minion) for (const x of s.enemies) if (alive(x) && x.monsterId === m.minion) {
+      x.hp = 0; x.block = 0; died(s, x, 'unravel');
+      emit(s, { kind: 'unravel', source: tgt.uid, target: x.uid });
+    }
+    // a minion dies: a summoner left with none is Exposed; its next move is forced (shown as a normal intent)
+    if (why !== 'unravel') for (const x of s.enemies) {
+      const xm = D.MONSTERS[x.monsterId];
+      if (!alive(x) || xm.minion !== tgt.monsterId || !xm.ai.exposedMove) continue;
+      if (s.enemies.some(y => alive(y) && y.monsterId === tgt.monsterId)) continue;
+      x.exposed = true;
+      // during the player's turn the intent changes at once; during the enemy turn it takes effect from the next intent
+      if (!s.enemyActing) x.intent = { move: xm.ai.exposedMove, target: x.intent && x.intent.target, exposed: true };
+      emit(s, { kind: 'exposed', source: x.uid, minion: tgt.uid });
+    }
+    syncGuards(s);
   }
   function gainBlock(s, t, n) { if (n <= 0) return; t.block += n; emit(s, { kind: 'block', target: t.uid, amount: n, hp: t.hp, block: t.block }); }
   function heal(s, t, n) {
@@ -488,7 +522,15 @@
 
   function enemyTurn(s) {
     emit(s, { kind: 'enemyTurn' });
-    for (const e of s.enemies) {
+    s.enemyActing = true;
+    try { enemyActs(s); } finally { delete s.enemyActing; }
+    if (s.phase === 'combat') s.enemies.filter(alive).forEach(e => chooseIntent(s, e));
+  }
+  function enemyActs(s) {
+    // summoned minions stand in front but act after the others (so a guard they give lasts through the hero's turn);
+    // the list is a snapshot, so one sewn this turn doesn't act until the next
+    const order = s.enemies.filter(e => !e.summoned).concat(s.enemies.filter(e => e.summoned));
+    for (const e of order) {
       if (!alive(e)) continue;
       e.block = 0;
       if (e.statuses.armor) gainBlock(s, e, e.statuses.armor);
@@ -499,13 +541,20 @@
       if (e.statuses.regen && alive(e)) heal(s, e, e.statuses.regen);
       decayStatuses(e);
     }
-    s.enemies.filter(alive).forEach(e => chooseIntent(s, e));
   }
 
   function chooseIntent(s, e) {
     const m = D.MONSTERS[e.monsterId];
     let move;
-    if (e.moveCount === 0 && m.ai.opener) move = m.ai.opener;
+    if (m.ai.summoner) {
+      // Summoner (the Surgeon): opener sews; while a minion stands, alternate the `whileUp` moves (never sews);
+      // the move after the last minion dies is `exposedMove`; after that, with none standing, sew again.
+      const A = m.ai, up = s.enemies.some(x => alive(x) && x.monsterId === m.minion);
+      if (e.moveCount === 0) move = A.opener;
+      else if (e.exposed) { e.intent = { move: A.exposedMove, target: (livingPlayers(s)[0] || {}).uid || null, exposed: true }; return; }
+      else if (up) { const i = A.whileUp.indexOf(e.lastMove); move = A.whileUp[(i + 1) % A.whileUp.length]; }
+      else move = A.summonMove;
+    } else if (e.moveCount === 0 && m.ai.opener) move = m.ai.opener;
     else if (m.ai.pattern) {
       const idx = (e.moveCount - (m.ai.opener ? 1 : 0)) % m.ai.pattern.length;
       move = m.ai.pattern[idx];
@@ -522,7 +571,7 @@
     const mv = D.MONSTERS[e.monsterId].moves[e.intent.move];
     let tgt = find(s, e.intent.target);
     if (!alive(tgt)) tgt = livingPlayers(s)[0];
-    emit(s, { kind: 'enemyAct', source: e.uid, name: mv.name });
+    emit(s, { kind: 'enemyAct', source: e.uid, name: mv.name, move: e.intent.move });
     log(s, `${e.name} uses ${mv.name}.`);
     for (const fx of mv.effects) {
       if (fx.t === 'attack') {
@@ -530,6 +579,10 @@
       } else if (fx.t === 'block') gainBlock(s, e, fx.n);
       else if (fx.t === 'healAllies') livingEnemies(s).forEach(a => heal(s, a, fx.n));
       else if (fx.t === 'healSelf') heal(s, e, fx.n);
+      else if (fx.t === 'summon') summon(s, e, fx);
+      else if (fx.t === 'healMinions') livingEnemies(s).filter(a => a.monsterId === fx.monster).forEach(a => heal(s, a, fx.n));
+      else if (fx.t === 'blockLeader') livingEnemies(s).filter(a => a.monsterId === fx.leader).forEach(a => gainBlock(s, a, fx.n));
+      else if (fx.t === 'wait') { /* still being sewn together: does nothing this turn */ }
       else if (fx.t === 'addCards') {   // combat-only junk: hand up to the cap, the rest to the discard pile; never the deck
         if (!alive(tgt)) continue;
         for (let i = 0; i < fx.n; i++) {
@@ -543,7 +596,22 @@
         ts.forEach(t => addStatus(s, t, fx.status, fx.n, t === e));
       }
     }
+    if (e.intent.exposed) e.exposed = false;
     e.lastMove = e.intent.move; e.moveCount++;
+  }
+  // Brings in a minion (at most `max` alive at once). It goes in front of its summoner, reusing a fallen
+  // minion's slot so the row doesn't fill with empty places, and starts on its opener (the waiting turn).
+  function summon(s, e, fx) {
+    const max = fx.max || 1;
+    if (s.enemies.filter(a => alive(a) && a.monsterId === fx.monster).length >= max) return;
+    const n = makeEnemy(s, fx.monster);
+    const dead = s.enemies.findIndex(a => !alive(a) && a.monsterId === fx.monster);
+    if (dead >= 0) s.enemies[dead] = n; else s.enemies.splice(s.enemies.indexOf(e), 0, n);
+    n.summoned = true;
+    emit(s, { kind: 'summon', source: e.uid, target: n.uid, monster: fx.monster });
+    log(s, `${e.name} sews up ${n.name}.`);
+    chooseIntent(s, n);
+    syncGuards(s);
   }
 
   // What the UI shows over an enemy's head.
@@ -562,7 +630,11 @@
       if (fx.t === 'attack') { out.damage = attackDamage(e, tgt, fx.n); out.times = fx.times || 1; }
       if (fx.t === 'block') out.block += fx.n;
       if (fx.t === 'status') { if (D.STATUSES[fx.status].debuff) out.debuff = true; else out.buff = true; }
-      if (fx.t === 'healAllies' || fx.t === 'healSelf') out.buff = true;
+      if (fx.t === 'healAllies' || fx.t === 'healSelf' || fx.t === 'healMinions' || fx.t === 'blockLeader') out.buff = true;
+      if (fx.t === 'healMinions') out.healMinions = (s.enemies.some(a => alive(a) && a.monsterId === fx.monster)) ? fx.n : 0;
+      if (fx.t === 'blockLeader') out.blockLeader = fx.n;
+      if (fx.t === 'summon') out.summon = D.MONSTERS[fx.monster].name;
+      if (fx.t === 'wait') out.wait = true;
       if (fx.t === 'addCards') { out.debuff = true; out.cards = (out.cards || 0) + fx.n; out.cardName = D.CARDS[fx.card].name; }
     }
     return out;
@@ -609,8 +681,9 @@
     let tgt = null;
     if (def.target === 'enemy') {
       tgt = find(s, targetUid);
+      if (tgt && tgt.side === 'enemy' && alive(tgt) && !isTargetable(s, tgt)) return err(D.STATUSES.held.tip);
       if (!tgt || tgt.side !== 'enemy' || !alive(tgt)) {
-        const l = livingEnemies(s);
+        const l = targetableEnemies(s);
         if (l.length === 1) tgt = l[0]; else return err('Choose a target');
       }
     }
@@ -775,7 +848,7 @@
   function takeEvents(s) { const ev = s.events; s.events = []; return ev; }
 
   const Engine = { startEncounter, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
-    attackDamage, livingEnemies, livingPlayers, find, getPlayer, reachable, choiceAllowed, canUpgrade };
+    attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -76,7 +76,7 @@
   // ---------- cards ----------
   function liveTarget() {
     if (ui.hoverTarget) return ui.hoverTarget;
-    const l = G && G.phase === 'combat' ? E.livingEnemies(G) : [];
+    const l = G && G.phase === 'combat' ? E.targetableEnemies(G) : [];
     return l.length === 1 ? l[0].uid : null;
   }
   function cardHTML(c, opts = {}) {
@@ -104,7 +104,7 @@
   function statusesHTML(u) {
     return Object.entries(u.statuses).map(([k, n]) => {
       const st = D.STATUSES[k];
-      return `<span class="status ${st.debuff ? 'debuff' : 'buff'}" data-tip="<b>${esc(st.name)}</b>: ${esc(st.tip)}">${statusIcon(k)}<b>${n}</b></span>`;
+      return `<span class="status ${st.debuff ? 'debuff' : 'buff'} st-${k}" data-tip="<b>${esc(st.name)}</b>: ${esc(st.tip)}">${statusIcon(k)}${st.noCount ? `<b class="stname">${esc(st.name)}</b>` : `<b>${n}</b>`}</span>`;
     }).join('');
   }
   const relicTip = (id) => { const r = D.RELICS[id]; return `<b>${esc(r.name)}</b><br>${esc(r.desc)}`; };
@@ -119,7 +119,12 @@
     if (i.block) { ic += I('shield', 'in-blk'); parts.push(`gain ${i.block} Block`); }
     if (i.cards) { ic += I('curse', 'in-deb'); text += ` +${i.cards}`; parts.push(`put ${i.cards} ${esc(i.cardName)} cards in your hand`); }
     else if (i.debuff) { ic += I('skull', 'in-deb'); parts.push('weaken you'); }
-    if (i.buff) { ic += I('up', 'in-buf'); parts.push('empower itself or its allies'); }
+    if (i.summon) { ic += I('needle', 'in-sum'); text += ' +1'; parts.push(`sew up a new ${esc(i.summon)}`); }
+    if (i.wait) { ic += I('hourglass', 'in-wait'); parts.push('do nothing: it is still being sewn together and acts next turn'); }
+    if (i.blockLeader) parts.push(`give its maker ${i.blockLeader} Block`);
+    if (i.healMinions) parts.push(`heal its Sewn ${i.healMinions} HP`);
+    if (i.buff && !i.blockLeader && !i.healMinions) { ic += I('up', 'in-buf'); parts.push('empower itself or its allies'); }
+    else if (i.blockLeader || i.healMinions) ic += I('up', 'in-buf');
     return `<div class="intent ${i.kind}" data-tip="${esc(e.name)} intends to use <b>${esc(i.name)}</b>: ${parts.join(', ')}.">${ic} ${text}</div>`;
   }
 
@@ -205,11 +210,12 @@
     const key = isEnemy ? (def.sprite || u.monsterId) : u.heroId, pset = poseSet(u);
     const sel = ui.selected && P().hand.find(c => c.uid === ui.selected);
     const dead = u.hp <= 0;
-    const targetable = isEnemy && !dead && sel && E.needsTarget(sel);
+    const guarded = isEnemy && !dead && !E.isTargetable(G, u);
+    const targetable = isEnemy && !dead && !guarded && sel && E.needsTarget(sel);
     const pct = Math.max(0, 100 * u.hp / u.maxHp);
     const h = Math.round((!isEnemy && pset ? HERO_POSE_H : D.SPRITE_H[isEnemy ? u.monsterId : u.heroId] || 170) * (innerWidth >= 1000 && !TOUCH ? 1.25 : 1));   // desktop: bigger, StS-like figures
     const goneCls = dead ? (ui.deadShown[u.uid] ? 'dead gone' : '') : '';
-    return `<div class="unit ${isEnemy ? 'enemy' : 'player'} ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${goneCls} ${targetable ? 'targetable' : ''}" data-uid="${u.uid}" style="--sh:${h}px">
+    return `<div class="unit ${isEnemy ? 'enemy' : 'player'} ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${goneCls} ${targetable ? 'targetable' : ''} ${guarded ? 'untargetable' : ''}" data-uid="${u.uid}" style="--sh:${h}px">
       ${isEnemy && !dead ? intentHTML(u) : ''}
       <div class="sprite-wrap"><div class="idle" style="${idleStyle(u, def.boss)}"><img class="sprite" src="${pset ? pset[curPose(u.uid)] : img(key)}" alt="${esc(u.name)}" draggable="false"></div><div class="shadow"></div></div>
       <div class="plate"><div class="uname">${esc(u.name)}${def.elite ? ' <span class="tag">Elite</span>' : ''}${def.boss ? ' <span class="tag">Boss</span>' : ''}</div>
@@ -262,7 +268,7 @@
         <div class="playzone"><span>Release to play</span></div>
         <div class="side heroes">${G.players.map(u => unitHTML(u, false)).join('')}</div>
         <div class="side enemies" style="--ne:${G.enemies.length}">${G.enemies.map(u => unitHTML(u, true)).join('')}</div>
-        ${sel && (!E.needsTarget(sel) || E.livingEnemies(G).length === 1) ? `<button class="playbtn" data-act="play">${arrow()} Play ${esc(E.cardDef(sel).name)}</button>` : ''}
+        ${sel && (!E.needsTarget(sel) || E.targetableEnemies(G).length === 1) ? `<button class="playbtn" data-act="play">${arrow()} Play ${esc(E.cardDef(sel).name)}</button>` : ''}
         ${sel && E.needsTarget(sel) ? `<div class="hint">${TOUCH ? 'Tap a monster' : 'Click a monster'} to target ${esc(E.cardDef(sel).name)} · ${TOUCH ? 'tap the card again' : 'right-click / Esc'} to cancel</div>` : ''}
         <div class="log">${G.log.slice(-4).map(esc).join('<br>')}</div>
       </div>
@@ -946,7 +952,25 @@
       const mv = D.MONSTERS[E.find(G, ev.source).monsterId].moves;
       if (Object.values(mv).some(m => m.name === ev.name && m.effects.some(f => f.t === 'attack'))) { lunge(ev.source); setPose(ev.source, 'attack'); beat([ev.source].concat(G.players.filter(p => p.hp > 0).map(p => p.uid))); }
       const m = document.createElement('div'); m.className = 'movename'; m.textContent = ev.name; el.appendChild(m);
+      enemyTurnLine(ev);
     }
+    else if (ev.kind === 'summon') sfx('buff');
+    else if (ev.kind === 'exposed') { const L = enemyLines(ev.source); if (L && L.exposed) setTimeout(() => speech(ev.source, pickOne(L.exposed)), ui.fast ? 0 : 250); }
+  }
+  // ---------- enemy lines (content.js STORY.enemyLines) ----------
+  const enemyLines = (uid) => { const u = E.find(G, uid); return u && D.STORY.enemyLines && D.STORY.enemyLines[u.monsterId]; };
+  const storyLines = (arr, id) => (arr || []).map(t => ({ text: t, who: /^[A-Z][A-Z ]*:/.test(t) ? id : null }));
+  ui.tauntBag = {};
+  function enemyTurnLine(ev) {   // a move with its own line (Fresh Stitches) says that; otherwise a taunt, no repeat until all are used
+    const L = enemyLines(ev.source); if (!L) return;
+    const u = E.find(G, ev.source);
+    let line = L.moveLines && L.moveLines[ev.move] ? pickOne(L.moveLines[ev.move]) : null;
+    if (!line && L.turnTaunts && L.turnTaunts.length) {
+      let bag = ui.tauntBag[u.monsterId];
+      if (!bag || !bag.length) bag = ui.tauntBag[u.monsterId] = L.turnTaunts.slice().sort(() => Math.random() - 0.5);
+      line = bag.pop();
+    }
+    if (line) speech(ev.source, line);
   }
   // A card with its own recorded sound (e.g. Fireball) replaces the generic card + hit sounds, and its hits land on the sound's impact.
   const CARD_SOUNDS = { fireball: { sound: 'spell_fireball', impact: 380 } };
@@ -969,6 +993,11 @@
   async function afterCombatStory() {
     // boss defeat speech, then victory / defeat epilogue
     if (G.node === 'boss' && (G.phase === 'reward' || G.phase === 'victory')) await tell(bossLines(D.ENCOUNTERS[G.encounter].enemies[0], 'bossDefeat'));
+    else if (G.phase === 'reward' || G.phase === 'victory') {
+      const id = D.ENCOUNTERS[G.encounter] && D.ENCOUNTERS[G.encounter].enemies[0], L = id && D.STORY.enemyLines && D.STORY.enemyLines[id];
+      if (L && L.defeat) await tell(storyLines(L.defeat.concat(ui.unraveled && L.unravel ? L.unravel : []), id));
+    }
+    ui.unraveled = false;
     if (G.phase === 'victory') await tell(D.STORY.victory[P().heroId]);
     if (G.phase === 'defeat') await tell(D.STORY.defeat);
   }
@@ -979,6 +1008,7 @@
     const res = E.dispatch(G, action);
     if (!res.ok) return res;
     const events = E.takeEvents(G);
+    if (events.some(e => e.kind === 'unravel')) ui.unraveled = true;
     const endedFight = events.some(e => e.kind === 'encounterWon' || e.kind === 'victory' || e.kind === 'defeat');
     ui.hoverTarget = null; ui.potionMenu = null;
     if (P() && P().gold !== g0) setTimeout(() => sfx('gold'), 150);
@@ -1006,6 +1036,7 @@
     if (action.type === 'CHOOSE_NODE' || action.type === 'EVENT_CONTINUE') {
       ui.upgrading = false; ui.shopRemoving = false; ui.deadShown = {};
       if (G.phase === 'combat' && G.node === 'boss') { render(); await tell(bossLines(D.ENCOUNTERS[G.encounter].enemies[0], 'bossIntro')); }
+      else if (G.phase === 'combat') { const id = D.ENCOUNTERS[G.encounter].enemies[0], L = D.STORY.enemyLines && D.STORY.enemyLines[id]; if (L && L.intro) { render(); await tell(storyLines(L.intro, id)); } }
       render();
       if (G.phase === 'combat') { banner(D.ENCOUNTERS[G.encounter].name); playEvents(events); combatIntro(); }
       return res;
@@ -1031,10 +1062,16 @@
     if (!c || ui.busy) return;
     if (!E.canPlay(G, p, c)) { anim($app.querySelector('.energy'), 'shake'); sfx('error'); return; }
     if (ui.selected === cuid) { ui.selected = null; render(); return; }
-    const foes = E.livingEnemies(G);
+    const foes = E.targetableEnemies(G);
     if (TOUCH) { ui.selected = cuid; render(); return; }
     if (E.needsTarget(c) && foes.length > 1) { ui.selected = cuid; render(); return; }
     act({ type: 'PLAY_CARD', player: me, card: cuid, target: foes[0] && foes[0].uid });
+  }
+  // A click or drop on an enemy that can't be targeted right now (the Surgeon while a Sewn stands)
+  function refuseTarget(uid) {
+    const u = E.find(G, uid), st = u && Object.keys(u.statuses).map(k => D.STATUSES[k]).find(x => x && x.noCount);
+    flashHint(st ? st.tip : 'That one cannot be targeted right now.');
+    anim(wrapOf(uid), 'refuse'); sfx('error');
   }
   function flashHint(t) {
     const h = document.createElement('div'); h.className = 'toast'; h.textContent = t; $fx.appendChild(h); setTimeout(() => h.remove(), ui.fast ? 50 : 2200);
@@ -1109,7 +1146,7 @@
       if (ui.selected && ui.selected !== d.cuid) { ui.selected = null; $app.querySelectorAll('.hand .card.selected').forEach(x => x.classList.remove('selected')); }
       el.classList.add('dragging'); document.body.classList.add('is-dragging');
       const et = $app.querySelector('.endturn'); if (et) { et.classList.add('guarded'); et.textContent = 'Cancel card'; }
-      if (d.targeted) { el.classList.add('aiming'); E.livingEnemies(G).forEach(u => unitEl(u.uid)?.classList.add('targetable')); }
+      if (d.targeted) { el.classList.add('aiming'); E.targetableEnemies(G).forEach(u => unitEl(u.uid)?.classList.add('targetable')); }
     }
     if (e.cancelable) e.preventDefault();
     const above = d.y < playLine();
@@ -1120,7 +1157,9 @@
       // the card lifts in place; a curved arrow follows the finger and snaps to a hovered monster
       const r = el.getBoundingClientRect();
       const sx = r.left + r.width / 2, sy = r.top + 6;
-      const tgt = enemyAt(d.x, d.y);
+      const hov = enemyAt(d.x, d.y), tgt = hov && !hov.classList.contains('untargetable') ? hov : null;
+      $app.querySelectorAll('.unit.enemy.no-target').forEach(u => { if (u !== hov) u.classList.remove('no-target'); });
+      if (hov && !tgt) hov.classList.add('no-target');
       $app.querySelectorAll('.unit.enemy.drop-target').forEach(u => { if (u !== tgt) u.classList.remove('drop-target'); });
       let ex = d.x, ey = d.y;
       if (tgt) {
@@ -1142,6 +1181,7 @@
     if (el) { el.classList.remove('dragging', 'aiming'); el.style.transform = ''; }
     $app.querySelector('.field')?.classList.remove('pz-active');
     $app.querySelectorAll('.unit.enemy.drop-target').forEach(u => u.classList.remove('drop-target'));
+    $app.querySelectorAll('.unit.enemy.no-target').forEach(u => u.classList.remove('no-target'));
     if (!ui.selected) $app.querySelectorAll('.unit.enemy.targetable').forEach(u => u.classList.remove('targetable'));
     const et = $app.querySelector('.endturn'); if (et && !ui.selected) { et.classList.remove('guarded'); et.textContent = 'End Turn'; }
     return d;
@@ -1153,7 +1193,8 @@
     const tgtEl = d0.targeted ? enemyAt(d0.x, d0.y) : null;
     const above = d0.y < playLine();
     const d = cancelDrag();
-    const foes = E.livingEnemies(G);
+    const foes = E.targetableEnemies(G);
+    if (d.targeted && tgtEl && tgtEl.classList.contains('untargetable')) { refuseTarget(tgtEl.dataset.uid); ui.hoverTarget = null; refreshHandText(); return; }
     if (d.targeted) {
       const t = tgtEl ? tgtEl.dataset.uid : (above && foes.length === 1 ? foes[0].uid : null);
       if (t) { ui.selected = null; act({ type: 'PLAY_CARD', player: me, card: d.cuid, target: t }); return; }
@@ -1175,6 +1216,8 @@
     if (!t) {
       const info = e.target.closest('[data-tip]');
       const unitTarget = e.target.closest('.unit.enemy.targetable');
+      const guardedEl = e.target.closest('.unit.enemy.untargetable');
+      if (ui.selected && guardedEl) { const c = P().hand.find(x => x.uid === ui.selected); if (c && E.needsTarget(c)) { refuseTarget(guardedEl.dataset.uid); e.stopPropagation(); return; } }
       if (ui.selected && !unitTarget) { ui.selected = null; render(); e.stopPropagation(); return; }
       if (TOUCH && info && !unitTarget) showTipFor(info);
       return;
@@ -1185,7 +1228,7 @@
     if (a === 'story') advanceStory(false);
     else if (a === 'skipstory') { e.stopPropagation(); advanceStory(true); }
     else if (a === 'continue') continueGame();
-    else if (a === 'play') { const foes = E.livingEnemies(G); go({ type: 'PLAY_CARD', card: ui.selected, target: foes[0] && foes[0].uid }); }
+    else if (a === 'play') { const foes = E.targetableEnemies(G); go({ type: 'PLAY_CARD', card: ui.selected, target: foes[0] && foes[0].uid }); }
     else if (a === 'classes') { ui.screen = 'classes'; ui.modal = null; render(); }
     else if (a === 'title') { if (ui.screen === 'game') toTitle(); else { ui.screen = 'title'; render(); } }
     else if (a === 'newrun') askConfirm({ title: 'Start a new run?', text: 'Your current run (' + saveSummary(loadSave()) + ') will be lost.', yes: 'Start over', danger: true, onYes: () => { ui.screen = 'classes'; render(); } });
@@ -1482,7 +1525,7 @@
             if (!P().hand.some(x => x.uid === c.uid) || P().energy !== e0) throw new Error('drag released in the hand still played the card');
             seen.dragCancel++;
           }
-          const foe = q('.unit.enemy:not(.dead) .sprite'), fr = foe && foe.getBoundingClientRect();
+          const foe = q('.unit.enemy:not(.dead):not(.untargetable) .sprite'), fr = foe && foe.getBoundingClientRect();
           const to = E.needsTarget(c) && fr ? [fr.left + fr.width / 2, fr.top + fr.height / 2] : [innerWidth / 2, playLine() - 120];
           await dragCard(cardEl(c.uid) || el, to[0], to[1]);
           seen.drag++;

@@ -695,3 +695,12 @@ body.is-modal #fx .speech,body.is-modal #fx .dmcaption{display:none}
 .medal.painted>img{width:100%;height:100%;display:block;filter:none}
 }
 .topbar .title{display:none}
+
+/* Surgeon (Nov 3): guarded enemies, summon / waiting intents */
+.intent.summon{color:#e8d9b0}.intent.wait{color:#b9b0a0}.in-sum{color:#e8d9b0}.in-wait{color:#b9b0a0}
+.status.st-held{gap:4px;padding-right:8px;border-color:#b89a5a}.status .stname{font-size:12px;font-weight:600;letter-spacing:.02em}
+.unit.enemy.untargetable .sprite{filter:saturate(.75) brightness(.9) drop-shadow(0 8px 10px #000c)}
+.unit.enemy.no-target{cursor:not-allowed}.unit.enemy.no-target .sprite{filter:drop-shadow(0 0 8px #9aa) grayscale(.4) drop-shadow(0 8px 10px #000c)}
+.refuse{animation:refuseShake .32s}
+@keyframes refuseShake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}100%{transform:none}}
+@media (prefers-reduced-motion: reduce){.refuse{animation:none}}

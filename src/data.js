@@ -11,6 +11,12 @@
  *  damageFromBlock            – hit chosen enemy for your current Block
  *  block {n} | heal {n} | draw {n} | energy {n} | cleanse
  *  status {status, n, to: 'target'|'all'|'self'}
+ *
+ * Monster move effects: attack {n, times} | block {n} | status | healAllies | healSelf | addCards
+ *  summon {monster, max} – sew a minion in front (at most `max` alive) | healMinions {monster, n}
+ *  blockLeader {leader, n} – give Block to the summoner | wait – does nothing (a freshly sewn minion)
+ * Monster flags: minion (its summoned id; minions die with it), guardedBy (untargetable by single-target
+ *  cards while one of those is alive), ai.summoner (see Engine chooseIntent).
  * ============================================================ */
 (function (root) {
   const STATUSES = {
@@ -32,6 +38,8 @@
                   tip: 'Retaliate: whenever an enemy hits you with an attack, it takes this much damage.' },
     regen:      { name: 'Regenerate', debuff: false, decays: false,
                   tip: 'Regenerate: heals this much HP at the end of its turn.' },
+    held:       { name: 'Held Together', debuff: false, decays: false, noCount: true,
+                  tip: "He can't be targeted while a Sewn stands." },
   };
 
   const KEYWORDS = {
@@ -307,13 +315,20 @@
         pseudo: { name: 'Pseudopod', intent: 'attack', effects: [{ t: 'attack', n: 12 }] },
         quiver: { name: 'Quiver', intent: 'defend', effects: [{ t: 'block', n: 15 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
       }, ai: { pattern: ['pseudo', 'engulf', 'quiver'] } },
-    mind_flayer: { name: 'The Pale Listener', hp: [92, 96], elite: true,
+    // The Surgeon (Floor 2 elite; key kept as mind_flayer so saves and encounter tables still work). Lines: content.js STORY.enemyLines.
+    mind_flayer: { name: 'The Surgeon', hp: [66, 66], elite: true, sprite: 'mind_flayer', minion: 'sewn', guardedBy: 'sewn',
       moves: {
-        blast:   { name: 'Mind Blast', intent: 'attack_debuff', effects: [{ t: 'attack', n: 7 }, { t: 'status', status: 'frightened', n: 2, to: 'target' }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
-        tentacle:{ name: 'Tentacles', intent: 'attack', effects: [{ t: 'attack', n: 6, times: 2 }] },
-        extract: { name: 'Extract Brain', intent: 'attack', effects: [{ t: 'attack', n: 20 }] },
-        dominate:{ name: 'Dominate', intent: 'buff', effects: [{ t: 'block', n: 14 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
-      }, ai: { opener: 'blast', pattern: ['tentacle', 'extract', 'dominate', 'blast'] } },
+        stitch:   { name: 'Fresh Stitches', intent: 'summon', effects: [{ t: 'summon', monster: 'sewn', max: 1 }] },
+        incision: { name: 'The Incision', intent: 'attack_debuff', effects: [{ t: 'attack', n: 12 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
+        steady:   { name: 'Steady Hands', intent: 'defend', effects: [{ t: 'block', n: 10 }, { t: 'healMinions', monster: 'sewn', n: 6 }] },
+      }, ai: { summoner: true, opener: 'stitch', whileUp: ['incision', 'steady'], exposedMove: 'incision', summonMove: 'stitch' } },
+    sewn: { name: 'The Sewn', hp: [30, 30], sprite: 'ogre',
+      moves: {
+        wait:  { name: 'Still Knitting', intent: 'wait', effects: [{ t: 'wait' }] },
+        heavy: { name: 'Heavy Hands', intent: 'attack', effects: [{ t: 'attack', n: 12 }] },
+        guard: { name: 'Stand Guard', intent: 'buff', effects: [{ t: 'blockLeader', leader: 'mind_flayer', n: 6 }] },
+        lurch: { name: 'Lurch', intent: 'attack', effects: [{ t: 'attack', n: 7, times: 2 }] },
+      }, ai: { opener: 'wait', pattern: ['heavy', 'guard', 'lurch'] } },
     mimic: { name: 'Mimic', hp: [86, 90], elite: true,
       moves: {
         adhesive: { name: 'Adhesive Grip', intent: 'attack_debuff', effects: [{ t: 'attack', n: 8 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },
@@ -345,7 +360,7 @@
     drow_patrol:  { name: 'Drow Patrol', enemies: ['drow', 'drow_mage'], scene: 'Deep Tunnels' },
     troll:        { name: 'Cave Troll', enemies: ['troll'], scene: 'Troll Bridge' },
     cube:         { name: 'Gelatinous Cube', enemies: ['gelatinous_cube'], scene: 'Suspiciously Clean Hall' },
-    mind_flayer:  { name: 'The Pale Listener', enemies: ['mind_flayer'], scene: 'The Listening Hall', elite: true },
+    mind_flayer:  { name: 'The Surgeon', enemies: ['mind_flayer'], scene: 'The Stitching Room', elite: true },
     mimic:        { name: 'Treasure Mimic', enemies: ['mimic'], scene: 'Treasure Vault?', elite: true },
     beholder:     { name: 'The Watcher', enemies: ['beholder'], scene: 'The Watching Cavern', boss: true },
   };

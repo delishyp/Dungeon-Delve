@@ -40,7 +40,7 @@ function botTurn(s, p) {
     playable.sort((a, b) => score(b) - score(a));
     const c = playable[0];
     if (score(c) <= 0.5 && E.cardDef(c).cost > 0) break;
-    const target = E.livingEnemies(s).sort((a, b) => a.hp - b.hp)[0];
+    const target = E.targetableEnemies(s).sort((a, b) => a.hp - b.hp)[0];
     const r = E.dispatch(s, { type: 'PLAY_CARD', player: p.uid, card: c.uid, target: target && target.uid });
     if (!r.ok) throw new Error('bot play failed: ' + r.error);
   }

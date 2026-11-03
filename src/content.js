@@ -78,7 +78,7 @@
   D.SPRITE_H = { fighter: 210, barbarian: 220, wizard: 205,
     goblin: 130, goblin_cutter: 140, goblin_archer: 140, goblin_shaman: 140, kobold: 120, giant_rat: 90, skeleton: 175, gnoll: 195,
     bugbear: 215, ogre: 250, owlbear: 270, ghoul: 170, drow: 190, drow_mage: 195, troll: 265, gelatinous_cube: 220,
-    mind_flayer: 230, mimic: 190, lesser_mimic: 150, beholder: 290, wyrmling: 200 };
+    mind_flayer: 230, sewn: 255, mimic: 190, lesser_mimic: 150, beholder: 290, wyrmling: 200 };
 
   // ---------- map ----------
   D.MAP = { rows: 13, cols: 7, paths: 6, depthHp: 0.25, floorHp: 0.1,
@@ -259,8 +259,22 @@
       bugbear: ['"Didn\'t see me, did ya?"'], ogre: ['"Ogre SMASH little snack!"', '"You look crunchy."'],
       ghoul: ['"Fresh meat…"', '*wet, hungry hissing*'], drow: ['"Light... it hurts... put it OUT."'],
       drow_mage: ['"You will make a fine sacrifice."'], troll: ['"Troll hungry. Troll eat you. Troll heal."'],
-      gelatinous_cube: ['*blorp*', '*the cube quivers expectantly*'], mind_flayer: ['"Your mind… looks delicious."', '"Hold still. I only want to look inside."'],
+      gelatinous_cube: ['*blorp*', '*the cube quivers expectantly*'],
       mimic: ['"Surprise!"', '*chomp chomp*'], lesser_mimic: ['"Surprise!"'], wyrmling: ['"MY gold! MINE!"', '"I\'m not small, I\'m FEROCIOUS!"'],
+    },
+    // Lines for enemies that talk during the fight (elites and bosses). Story lines: "NAME: ..." is spoken by the
+    // enemy, anything else is the narrator. Lorekeeper owns the wording (lore/text/surgeon_v1.md, Lines v2).
+    enemyLines: {
+      mind_flayer: {
+        intro: ["He doesn't look up from his table until he's tied off the thread.", 'THE SURGEON: "Stand in the light. I need to see the joints."'],
+        turnTaunts: ['"Long bones. Those will carry weight."', '"The left shoulder is better than the right."', '"Leave the hands whole. I\'ll want them as they are."',
+          '"Thick skin. It will take a stitch."', '"Don\'t struggle. It bruises the stock."', '"Strong heart. That goes in the next one."',
+          '"An old break in the forearm. Still usable."', '"Turn a little. There."'],
+        moveLines: { stitch: ['"Up."', '"Stand. We\'re not finished."', '"Hold it still for me."'] },
+        exposed: ['"Then I\'ll do it myself."'],
+        defeat: ['THE SURGEON: "Leave the needles. Someone will finish the work."'],
+        unravel: ['With no one to hold the thread, it comes apart at every seam.'],
+      },
     },
     bossIntro: {
       owlbear: ["The nest is woven from bones, and most of them are small.", "A huge grey shape rises over it: an owlbear, half-bald, with milky eyes.", "The Beast of Saint Brennick spreads her wings. Small skeletons slip out from under them."],
