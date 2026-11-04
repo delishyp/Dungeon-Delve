@@ -63,7 +63,7 @@ api() {  # api METHOD URL [datafile] [content-type]   (auth header goes to curl 
     ${3:+--data-binary @"$3"} ${4:+-H "Content-Type: $4"}
 }
 # -- source to main (the release tag points at it). git gets the token from env via a credential helper.
-[ -d .git ] || { echo "no git repo"; exit 1; }
+[ -e .git ] || { echo "no git repo"; exit 1; }   # -e: in a git worktree .git is a file, not a folder
 if [ -z "$ONLY" ]; then   # full build: commit exactly the source paths this build was made from
   git add -A -- $(for p in $SRC_PATHS; do [ -e "$p" ] && echo "$p"; done)
   git diff --cached --quiet || git -c user.name="Dungeon Delve" -c user.email="dungeon-delve@users.noreply.github.com" commit -qm "Release v$V"

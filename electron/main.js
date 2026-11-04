@@ -4,7 +4,18 @@ const path = require('path');
 const fs = require('fs');
 
 const DEV = !app.isPackaged;   // devtools only when run from source (npm start)
-if (!app.requestSingleInstanceLock()) app.quit();
+// Update log: userData/update.log (%APPDATA%\Dungeon Delve\update.log), local only. The installer appends to the same file,
+// so one file shows the whole update: download, quit, installer, relaunch. Kept small (rotated at 256 KB).
+const UPDATE_LOG = path.join(app.getPath('userData'), 'update.log');
+function ulog(level, msg) {
+  try {
+    fs.mkdirSync(path.dirname(UPDATE_LOG), { recursive: true });
+    try { if (fs.statSync(UPDATE_LOG).size > 262144) fs.renameSync(UPDATE_LOG, UPDATE_LOG + '.old'); } catch (_) {}
+    fs.appendFileSync(UPDATE_LOG, `${new Date().toISOString()} [game ${app.getVersion()} pid ${process.pid}] ${level}: ${String(msg).split('\n')[0].slice(0, 300)}\r\n`);
+  } catch (_) {}
+}
+if (!app.requestSingleInstanceLock()) { ulog('info', 'another copy holds the single-instance lock: this copy exits'); app.quit(); }
+let quittingForUpdate = false;   // set when the player chose "Restart to update": nothing may keep this process alive
 let win = null;
 
 // ---------- display settings (window mode, size, monitor, vsync), stored in userData/display.json ----------
@@ -142,7 +153,8 @@ function getUpdater() {
   updater.disableWebInstaller = true;
   updater.autoInstallOnAppQuit = false;
   updater.allowPrerelease = false;
-  updater.logger = null;
+  updater.autoRunAppAfterInstall = true;   // quitAndInstall(false, ...) passes --force-run from this: the installer restarts the game
+  updater.logger = { info: (m) => ulog('info', m), warn: (m) => ulog('warn', m), error: (m) => ulog('error', m), debug: () => {} };
   updater.on('checking-for-update', () => sendUpdate({ state: 'checking' }));
   updater.on('update-not-available', (i) => sendUpdate({ state: 'none', version: i && i.version }));
   updater.on('update-available', (i) => sendUpdate({ state: 'available', version: i.version, notes: typeof i.releaseNotes === 'string' ? i.releaseNotes.replace(/<[^>]+>/g, '').slice(0, 600) : '' }));
@@ -166,9 +178,15 @@ ipcMain.handle('dd:update-download', async () => {
 ipcMain.on('dd:update-install', () => {
   const u = getUpdater(); if (!u || updateState.state !== 'downloaded') return;
   if (process.env.DD_UPDATE_TEST) { sendUpdate({ state: 'install-requested', version: updateState.version }); return; }   // tests stop here
-  // silent install, then relaunch the game: hide the window at once so closing feels instant, then hand over to the installer
+  // Not silent: the installer shows only its progress page (it skips its other pages for --updated), so the player can see the
+  // update happening instead of a game that vanished; it closes by itself and restarts the game (--force-run, see installer.nsi).
+  // Hide the window at once so closing feels instant, then hand over to the installer.
+  quittingForUpdate = true;
+  ulog('info', `restart to update to ${updateState.version}: quitAndInstall(isSilent=false, isForceRunAfter=true)`);
   if (win && !win.isDestroyed()) win.hide();
-  setImmediate(() => u.quitAndInstall(true, true));
+  setImmediate(() => u.quitAndInstall(false, true));
+  // the installer waits for this process to be gone; if a normal quit ever stalls, leave anyway rather than be force-killed
+  setTimeout(() => { ulog('warn', 'quit for update still pending after 3 s: app.exit(0)'); app.exit(0); }, 3000);
 });
 // F11 / the old fullscreen toggle: flips between windowed and the last full-screen style, and is remembered
 let lastFull = 'fullscreen';
@@ -214,4 +232,6 @@ app.whenReady().then(() => {
   screen.on('display-removed', fix); screen.on('display-added', () => sendDisplay());
 });
 app.on('window-all-closed', () => app.quit());
+// never preventDefault here or in a window 'close' handler: the update installer waits for this process to exit
 app.on('before-quit', () => { if (pending) { disp = Object.assign({}, pending.prev); clearPending(); saveDisp(); } });
+app.on('will-quit', () => { if (quittingForUpdate) ulog('info', 'old game exiting for the update'); });
