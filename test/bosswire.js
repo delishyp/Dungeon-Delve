@@ -18,8 +18,8 @@ eq([D.MONSTERS.beholder.name, D.ENCOUNTERS.beholder.name], ['Vessa the Unsleepin
 ok(!JSON.stringify(D.STORY).includes('WATCHER'), 'no "THE WATCHER:" speaker lines left');
 ok(D.SPRITE_H.crier > 0, 'the Crier has a SPRITE_H entry');
 const src = fs.readFileSync(path.join(__dirname, '../src/content.js'), 'utf8');
-ok(src.includes('owlbear: ["The nest is woven from bones.", "A huge grey shape rises over it: a starving owlbear with milky eyes.", "The Beast of Saint Brennick stands, huge and heavy, and lowers her head."]'), 'Beast intro, word for word');
-ok(src.includes('owlbear: ["The Beast sinks down over her nest and goes still.", "Behind the nest, a crack in the rock climbs upward, toward the town."]'), 'Beast victory, word for word');
+ok(JSON.stringify(D.STORY.bossIntro.owlbear) === "[\"The nest is woven from bones, carefully, almost lovingly.\",\"A huge grey shape rises over it: a starving owlbear, its eyes gone milky. It can't see you well. It doesn't need to.\",\"The Beast of Saint Brennick stands, huge and heavy, and lowers her head. You are, unmistakably, in her home.\"]", 'Beast intro, word for word (narration_v2 batch 2)');
+ok(JSON.stringify(D.STORY.bossDefeat.owlbear) === "[\"The Beast sinks down over her nest and goes still, as if settling in for the night.\",\"Behind the nest, a crack in the rock climbs upward, toward the town. It's a long way. It always is.\"]", 'Beast defeat, word for word (narration_v2 batch 2)');
 ok(!/small skeletons|most of them are small|leads down\. Deeper/i.test(src), 'no cub lines left');
 ok(!/owlbear: \[[^\]]*(wing|half-bald|rises, huge)/i.test(src), 'no wings, half-bald or "rises, huge" in the Beast intro/victory lines');
 

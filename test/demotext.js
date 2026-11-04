@@ -6,10 +6,10 @@ let n = 0; const ok = (c, m) => { n++; if (!c) { console.error('FAIL', m); proce
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), `${m}: got ${JSON.stringify(a)}, want ${JSON.stringify(b)}`);
 const S = D.STORY, M = D.MONSTERS, X = D.ENCOUNTERS;
 // 1. Vessa
-eq(S.bossIntro.beholder, ["A street hangs on its side here, its doorways open in the ceiling. Feral drow crouch along the walls, all facing the same way.",
-  "Among them stands a drow woman, hunched and crooked under a torn veil. Eyes are open all along her arms and throat, red and unblinking.",
+eq(S.bossIntro.beholder, ["A street hangs on its side here, its doorways open in the ceiling. Feral drow crouch along the walls, all facing the same way. It's never a good sign when a crowd agrees.",
+  "Among them stands a drow woman, hunched and crooked under a torn veil. Eyes are open all along her arms and throat, red and unblinking, and every one of them is on you.",
   "VESSA: \"There you are. I watched you all the way up. Shall I tell you who you were?\""], 'Vessa intro');
-eq(S.bossDefeat.beholder, ["VESSA: \"Dark. Finally, dark.\"", "Every eye on her closes at once, and she folds down onto the stones. Along the walls, the drow begin to wander off, like animals after a light goes out."], 'Vessa victory');
+eq(S.bossDefeat.beholder, ["VESSA: \"Dark. Finally, dark.\"", "Every eye on her closes at once, and she folds down onto the stones. Along the walls, the drow drift away like moths when a lamp goes out. Nobody thanks you."], 'Vessa victory');
 eq(X.beholder.scene, "Vessa's Hall", 'Vessa scene');
 // 2. character select
 eq([D.HEROES.fighter.blurb, D.HEROES.fighter.mechanic], ["A sellsword who has held worse lines than this one. Steady attacks and Block, with maneuvers that knock foes Prone or Frighten them.",
@@ -31,14 +31,14 @@ eq(names('brood_shell'), { shelter: 'Moss Over', bump: 'Topple' }, 'Mossed Shell
 eq(D.CARDS.echo.desc, 'Play to silence it. Exhaust. If this is still in your hand at the end of your turn, lose 3 HP.', 'Echo text');
 ok(!D.CARDS.echo.art && fs.existsSync(path.join(__dirname, '../assets/placeholder/placeholder_echo.webp')), 'Echo uses its placeholder art');
 ok(fs.readFileSync(path.join(__dirname, '../assets/placeholder/PLACEHOLDERS.md'), 'utf8').includes('`placeholder_echo.webp` | `echo`'), 'Echo placeholder listed');
-eq(S.bossIntro.crier[3], "The voices stay with you. Don't hold on to them.", 'Crier hint');
-eq(S.bossIntro.toll.slice(2), ["Bones lie heaped at the threshold. Beside each body, someone scratched a few marks into the rock.",
-  "While she kneels, nothing touches the gate. Every mark it counts makes the dead stronger, so don't let it count for long."], 'Toll lines 3-4 (no survive win)');
-eq([S.bossIntro.brood[0], S.bossIntro.brood[2]], ["The walls here are grey and spongy, and lumpy pods grow out of them in loose rows.",
+eq(S.bossIntro.crier[3], "The voices stay with you. It would be wise not to hold on to them.", 'Crier hint');
+eq(S.bossIntro.toll.slice(2), ["Bones lie heaped at the threshold, from everyone who sat down to wait for it to open. They were very patient. It didn't help.",
+  "Whenever she kneels, the stone grows thicker, and she always comes back to kneel again. Stop her, or break it before it's too thick to break.", "It won't open on its own. Break it down. Every mark it counts makes its dead stronger, so the longer you take, the worse it gets. No pressure."], 'Toll lines 3-5 (no survive win; narration_v2 batch 2, 5 lines)');
+eq([S.bossIntro.brood[0], S.bossIntro.brood[2]], ["The walls here are grey and spongy, and lumpy pods grow out of them in loose, unhurried rows.",
   "A note sits under a dead delver's hand, half grown over: \"They wait a breath before they climb out. Don't give them one.\""], 'Brood lines 1 and 3');
-eq(S.bossDefeat.crier, ["The Crier opens her too-wide jaw, and for once nothing comes out.", "In the quiet you can hear water dripping, and behind her burrow a tunnel slopes upward."], 'Crier defeat');
-eq(S.bossDefeat.toll, ["The newest mark on the arch cracks straight across.", "The gate grinds open. Beyond it, the passage keeps climbing."], 'Toll defeat');
-eq(S.bossDefeat.brood, ["The pods sag and go soft, one row after another.", "The wall breathes out once more, and then it doesn't breathe in."], 'Brood defeat');
+eq(S.bossDefeat.crier, ["The Crier opens her too-wide jaw, and for once nothing comes out. It's the best thing she's ever said.", "In the quiet you can hear water dripping, and behind her burrow a tunnel slopes upward. Onward, then."], 'Crier defeat');
+eq(S.bossDefeat.toll, ["The newest mark on the arch cracks straight across. The count, at last, is wrong.", "The gate grinds open. Beyond it, the passage keeps climbing, as passages here so tirelessly do."], 'Toll defeat');
+eq(S.bossDefeat.brood, ["The pods sag and go soft, one row after another, like a held breath let go.", "The wall breathes out once more, and then it doesn't breathe in. You find you've been holding yours."], 'Brood defeat');
 // no leftovers in the sources or the built page
 const RETIRED = ['Watcher', 'follow you down', 'Hold for the count', 'Risen Bones', 'Tally-Scratcher', 'The Quiet Dark', 'The Spore Wall', 'Watching Cavern',
   'Borrowed Voice', 'The Penitent Kneels', 'Holds Them Up', 'Standing Back Up', 'Another Mark', 'Still in the Pod', 'Slow Rot', 'Lean In', '(ph)'];

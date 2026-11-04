@@ -148,7 +148,7 @@ console.log(`  Sewn deaths checked: ${sewnDeaths} (${enemyTurnDeaths} on the ene
 {
   global.window = global; require('../src/content.js');
   const L = D.STORY.enemyLines.mind_flayer;
-  ok(L.intro.length === 2 && L.turnTaunts.length === 8 && L.moveLines.stitch.length === 3 && L.exposed.length === 1 && L.defeat.length === 1 && L.unravel[0].startsWith('With no one to hold the thread'), 'Surgeon lines v2 in data');
+  ok(L.intro.length === 2 && L.turnTaunts.length === 8 && L.moveLines.stitch.length === 3 && L.exposed.length === 1 && L.defeat.length === 1 && L.unravel[0].startsWith('With no one left to hold the thread'), 'Surgeon lines v2 in data (narrator lines: narration_v2 batch 2)');
   ok(!JSON.stringify(L).includes('Both of you'), 'no two-Sewn line');
 }
 console.log(fails ? `SURGEON FAIL ${fails}/${checks}` : `surgeon ok (${checks} checks)`);
