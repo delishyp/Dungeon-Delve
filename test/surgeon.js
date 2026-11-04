@@ -33,14 +33,14 @@ function endTurn(s) { const p = P(s); p.hp = p.maxHp = 999; const r = E.dispatch
   ok(sw.hp >= 30 && sw.intent.move === 'wait' && E.describeIntent(s, sw).wait, 'a new Sewn waits (waiting intent)');
   ok(s.enemies.indexOf(sw) < s.enemies.indexOf(sg), 'the Sewn stands in front of him');
   ok(sg.statuses.held === 1, 'Held Together shown while the Sewn stands');
-  ok(D.STATUSES.held.name === 'Held Together' && D.STATUSES.held.tip === "He can't be targeted while a Sewn stands.", 'Held Together name and tooltip');
+  ok(D.STATUSES.held.name === 'Held Together' && /^Held Together: while a Sewn stands, cards aimed at him alone can't reach him\./.test(D.STATUSES.held.tip), 'Held Together name and tooltip');
   ok(sg.intent.move === 'incision', 'with a Sewn up he goes to The Incision');
 
   // --- can't be targeted while a Sewn lives
   ok(!E.isTargetable(s, sg) && E.targetableEnemies(s).length === 1 && E.targetableEnemies(s)[0] === sw, 'only the Sewn is targetable');
   const hp0 = sg.hp, strike = addCard(s, 'greataxe');
   const r = E.dispatch(s, { type: 'PLAY_CARD', player: P(s).uid, card: strike.uid, target: sg.uid });
-  ok(!r.ok && /can't be targeted/.test(r.error) && sg.hp === hp0 && P(s).hand.includes(strike), 'single-target card on him is refused, card stays in hand');
+  ok(!r.ok && /can't reach him/.test(r.error) && sg.hp === hp0 && P(s).hand.includes(strike), 'single-target card on him is refused, card stays in hand');
   const r2 = E.dispatch(s, { type: 'PLAY_CARD', player: P(s).uid, card: strike.uid });
   ok(r2.ok && sg.hp === hp0 && sw.hp < sw.maxHp, 'no target given: auto-target picks the Sewn, never him');
   E.takeEvents(s);

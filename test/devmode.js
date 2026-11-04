@@ -66,7 +66,7 @@ ok(E.weightOdds(D.MAP.unknown).reduce((a, o) => a + o.p, 0) > 0.999, '? room odd
     return { out, any: document.body.innerHTML.includes('devtip'), mode: window.Settings.get('devMode') }; });
   let r = await scan();
   ok(r.mode === false, 'browser: off by default');
-  ok(r.out.length > 30 && r.out.every(c => c.tip === null && !c.dev && !/%/.test(c.html)), 'off: no tooltip data on any event choice');
+  ok(r.out.length > 30 && r.out.every(c => c.tip === null && !c.dev && !/%/.test(c.html.replace(/<span class="under[^]*$/, ''))), 'off: no tooltip data on any event choice (chance % lives only in the undertext, Anna Nov 4)');
   await pg.evaluate(() => window.Settings.set('devMode', true)); await pg.reload(); await new Promise(r => setTimeout(r, 1200));
   r = await scan();
   ok(r.mode === true, 'browser: on survives a page reload');

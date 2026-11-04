@@ -12,9 +12,9 @@ eq(S.bossIntro.beholder, ["A street hangs on its side here, its doorways open in
 eq(S.bossDefeat.beholder, ["VESSA: \"Dark. Finally, dark.\"", "Every eye on her closes at once, and she folds down onto the stones. Along the walls, the drow drift away like moths when a lamp goes out. Nobody thanks you."], 'Vessa victory');
 eq(X.beholder.scene, "Vessa's Hall", 'Vessa scene');
 // 2. character select
-eq([D.HEROES.fighter.blurb, D.HEROES.fighter.mechanic], ["A sellsword who has held worse lines than this one. Steady attacks and Block, with maneuvers that knock foes Prone or Frighten them.",
-  "Maneuvers: Prone and Frightened weaken your foes, while Might and Armor make you stronger. Action Surge gives you 1 extra Energy when you need it most."], 'Fighter select text');
-eq([D.HEROES.barbarian.blurb, D.HEROES.barbarian.mechanic], ["A furious brute with little Block. Anger keeps the Barbarian standing, and reckless attacks hit huge but can leave you Prone.",
+eq([D.HEROES.fighter.blurb, D.HEROES.fighter.mechanic], ["A sellsword who has held worse lines than this one. Steady attacks and Block, with maneuvers that leave foes Vulnerable or Frighten them.",
+  "Maneuvers: Vulnerable and Frightened weaken your foes, while Might and Armor make you stronger. Action Surge gives you 1 extra Energy when you need it most."], 'Fighter select text');
+eq([D.HEROES.barbarian.blurb, D.HEROES.barbarian.mechanic], ["A furious brute with little Block. Anger keeps the Barbarian standing, and reckless attacks hit huge but can leave you Vulnerable.",
   "Rage: while you have any Rage, you take 25% less damage. Rage adds no damage, but some cards hit harder the more you've built. It goes down by 1 each turn."], 'Barbarian select text');
 // 4. demo.2 bosses
 eq([X.crier.scene, X.toll.scene, X.brood.scene], ['The Keepsake Burrow', 'The Counted Gate', 'The Breathing Wall'], 'boss scenes');

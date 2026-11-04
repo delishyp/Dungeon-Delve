@@ -56,4 +56,4 @@ To swap one out: add the real `assets/card_<card id>.webp` (it wins automaticall
 | `placeholder_meteor_swarm.webp` | `meteor_swarm` | Meteor Swarm: wizard legendary attack card illustration (attack frame) |
 | `placeholder_time_stop.webp` | `time_stop` | Time Stop: wizard legendary skill card illustration (utility frame) |
 
-Not placeholders: Wish (`wish`) uses the finished `assets/card_arcane_focus.webp` (`art: 'arcane_focus'`; no other card uses it since Arcane Focus was cut).
+| `placeholder_wish.webp` | `wish` | Wish: wizard legendary power card illustration (utility frame) |

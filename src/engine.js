@@ -106,7 +106,8 @@
   function syncGuards(s) {
     for (const e of s.enemies) {
       if (!D.MONSTERS[e.monsterId].guardedBy) continue;
-      if (alive(e) && guardedNow(s, e)) e.statuses.held = 1; else delete e.statuses.held;
+      const k = D.MONSTERS[e.monsterId].guardStatus || 'held';
+      if (alive(e) && guardedNow(s, e)) e.statuses[k] = 1; else delete e.statuses[k];
     }
   }
   function find(s, id) { return s.players.find(p => p.uid === id) || s.enemies.find(e => e.uid === id) || null; }
@@ -147,11 +148,11 @@
       version: 3, seed, rng: seed, uidCounter: 1, seenEvents: [], event: null, shop: null, pendingRelic: null,
       mode: opts.mode || 'solo',              // future: 'coop' | 'race'
       phase: 'map', floor: 0, floors: opts.floors || D.FLOORS.length,
-      map: null, pos: null, node: null, lastEnc: null, turn: 0, stats: { fights: 0, elites: 0, events: 0 },
+      map: null, pos: null, node: null, lastEnc: null, seenElites: [], turn: 0, stats: { fights: 0, elites: 0, events: 0 },
       players: [], enemies: [], log: [], events: [],
     };
     (opts.heroes || ['fighter']).forEach((h, i) => s.players.push(makePlayer(s, h, opts.names && opts.names[i])));
-    s.map = generateMap(s);
+    s.map = generateMap(s); capElites(s);
     log(s, D.FLOORS[0].name);
     return s;
   }
@@ -242,12 +243,41 @@
 
   function startFight(s, row, type) {
     const F = D.FLOORS[s.floor];
-    let pool = type === 'boss' ? [floorBoss(s)] : type === 'elite' ? F.elites : (row <= 3 ? F.easy : F.hard);
-    // Variant copies (sameAs) count as the same fight for the no-repeat rule.
-    const encKey = e => (D.ENCOUNTERS[e] && D.ENCOUNTERS[e].sameAs) || e;
+    let pool = type === 'boss' ? [floorBoss(s)] : type === 'elite' ? unseenElites(s) : (row <= 3 ? F.easy : F.hard);
+    // elite_once_per_run.md rule 4: no unseen elite left, so it plays as a hard-pool normal fight with normal rewards.
+    if (type === 'elite' && !pool.length) { pool = F.hard; s.node = 'fight'; }
     if (pool.length > 1 && s.lastEnc) { const f = pool.filter(e => encKey(e) !== encKey(s.lastEnc)); if (f.length) pool = f; }
     const enc = pick(s, pool); s.lastEnc = enc;
     startEncounter(s, enc);
+  }
+  // ---------- each elite at most once per run (elite_once_per_run.md) ----------
+  // Variant copies (sameAs) count as the same fight. The Chest Mimic and the Treasure Mimic are separate elites (no sameAs).
+  const encKey = e => (D.ENCOUNTERS[e] && D.ENCOUNTERS[e].sameAs) || e;
+  const eliteSeen = (s, e) => (s.seenElites || []).includes(encKey(e));
+  const unseenElites = (s) => D.FLOORS[s.floor].elites.filter(e => !eliteSeen(s, e));
+  // Cap pass: no route forward from where you stand may hold more elite nodes than this floor has unseen elites. Extra
+  // elite nodes become normal fights, furthest up the map first. The node you're on and the ones behind you are untouched.
+  function capElites(s) {
+    const M = s.map; if (!M) return;
+    const N = M.nodes, cap = unseenElites(s).length;
+    const roots = s.pos ? N[s.pos].next.slice() : M.rows[0].slice();
+    // nodes reachable from the roots, in row order
+    const seen = new Set(roots), order = [];
+    for (let i = 0; i < roots.length; i++) order.push(roots[i]);
+    for (let i = 0; i < order.length; i++) for (const x of N[order[i]].next) if (!seen.has(x)) { seen.add(x); order.push(x); }
+    order.sort((a, b) => N[a].row - N[b].row);
+    const isE = id => N[id].type === 'elite' ? 1 : 0;
+    const prev = {}; order.forEach(id => { prev[id] = []; });
+    for (const id of order) for (const x of N[id].next) if (seen.has(x)) prev[x].push(id);
+    for (let guard = 0; guard < 100; guard++) {
+      const fwd = {}, back = {};
+      for (let i = order.length - 1; i >= 0; i--) { const id = order[i]; fwd[id] = isE(id) + Math.max(0, ...N[id].next.filter(x => seen.has(x)).map(x => fwd[x])); }
+      for (const id of order) back[id] = isE(id) + Math.max(0, ...prev[id].map(x => back[x]));
+      const bad = order.filter(id => isE(id) && back[id] + fwd[id] - 1 > cap);
+      if (!bad.length) return;
+      bad.sort((a, b) => N[b].row - N[a].row || N[a].col - N[b].col);
+      N[bad[0]].type = 'fight';
+    }
   }
   function chooseNode(s, nodeId) {
     if (!reachable(s).includes(nodeId)) return err('Cannot go there');
@@ -322,7 +352,8 @@
     const e = Object.entries(weights).filter(([, w]) => w > 0), t = e.reduce((a, [, w]) => a + w, 0);
     return e.map(([key, w]) => ({ key, w, p: w / t }));
   }
-  function choiceWeights(ch) { const w = {}; ch.chance.forEach((b, i) => { w[i] = b.w; }); return w; }
+  // An outcome that would start an elite this run has already fought can't roll (Lonely Chest after the Chest Mimic).
+  function choiceWeights(ch, s) { const w = {}; ch.chance.forEach((b, i) => { w[i] = s && b.fight && b.fightType === 'elite' && eliteSeen(s, (b.fightByFloor && b.fightByFloor[s.floor]) || b.fight) ? 0 : b.w; }); return w; }
   const pctStr = (x) => { const v = Math.round(x * 1000) / 10; return v + '%'; };
   // Mirrors applyOps step by step on a shadow of the player (hp / maxHp / gold), without rolling anything.
   function previewOps(s, p, sh, o) {
@@ -365,12 +396,64 @@
     if (ch.req && ch.req.gold) req.push('Needs ' + ch.req.gold + ' gold');
     if (ch.req && ch.req.hp) req.push('Needs ' + ch.req.hp + ' HP');
     const fixed = ch.ops ? previewOps(s, p, sh, ch.ops) : [];
-    const outcomes = ch.chance ? weightOdds(choiceWeights(ch)).map(o => {
+    const outcomes = ch.chance ? weightOdds(choiceWeights(ch, s)).map(o => {
       const after = Object.assign({}, sh), effects = previewOps(s, p, after, ch.chance[+o.key]);
       return { branch: +o.key, p: o.p, effects, bad: effects.some(f => f.bad), after };
     }) : null;
     const risky = !!outcomes && outcomes.some(o => o.bad);
     return { req, fixed, cost: fixed.filter(f => f.bad), outcomes, after: sh, success: risky ? outcomes.filter(o => !o.bad).reduce((a, o) => a + o.p, 0) : null };
+  }
+  // ---------- event choice undertext (design/event_costs_display.md, B84) ----------
+  // One plain line under each choice: costs first, then gains, then neutral; chance branches after, "X%:" each, highest
+  // first (ties: the costly branch first), branches that do nothing left out. Each part is { k, lead, phrase, tail }: only
+  // the phrase gets colour and an icon in the UI. k: dmg heal maxhp gold curse card relic potion fight elite shop.
+  function underParts(s, p, o) {
+    const cost = [], gain = [], neutral = [];
+    const P = (arr, k, lead, phrase, tail) => arr.push({ k, lead: lead || '', phrase, tail: tail || '' });
+    if (o.hp < 0) P(cost, 'dmg', 'Take ', (-o.hp) + ' damage');
+    if (o.gold < 0) { if (o.gold <= -9999) P(cost, 'gold', 'Lose ', 'all your gold'); else P(cost, 'gold', 'Lose ', (-o.gold) + ' gold'); }
+    if (o.maxHp < 0) P(cost, 'maxhp', 'Lose ', (-o.maxHp) + ' Max HP');
+    if (o.curse) P(cost, 'curse', 'Add a curse: ', D.CARDS[o.curse].name);
+    if (o.fight) { const enc = (o.fightByFloor && o.fightByFloor[s.floor]) || o.fight, el = o.fightType === 'elite';
+      P(cost, el ? 'elite' : 'fight', el ? 'Elite fight: ' : 'Fight: ', D.ENCOUNTERS[enc].name); }
+    if (o.hp > 0) P(gain, 'heal', 'Heal ', String(o.hp));
+    if (o.healPct) { if (o.healPct >= 1) P(gain, 'heal', '', 'Heal to full'); else P(gain, 'heal', 'Heal ', String(Math.round(p.maxHp * o.healPct))); }
+    if (o.maxHp > 0) P(gain, 'maxhp', 'Gain ', o.maxHp + ' Max HP');
+    if (o.relic) {
+      const left = Object.keys(D.RELICS).filter(r => !hasRelic(p, r) && relicInPool(p, r)).length;
+      if (o.relic !== 'random' && !hasRelic(p, o.relic)) P(gain, 'relic', 'Gain ', D.RELICS[o.relic].name);
+      else if (left) P(gain, 'relic', 'Gain ', 'a random relic');
+      else P(gain, 'gold', 'Gain ', '40 gold');
+    }
+    if (o.gold > 0) P(gain, 'gold', 'Gain ', o.gold + ' gold');
+    if (o.potion) { const full = p.potions.length >= D.POTION_SLOTS;
+      P(gain, 'potion', 'Gain ', o.potion === 'random' ? 'a random potion' : D.POTIONS[o.potion].name, full ? ' (belt full)' : ''); }
+    if (o.upgradeRandom) P(gain, 'card', '', 'Upgrade ' + o.upgradeRandom + ' random card' + (o.upgradeRandom === 1 ? '' : 's'));
+    if (o.removeCurses) { const n = p.deck.filter(c => D.CARDS[c.id].type === 'curse' && canRemove(c)).length;
+      P(gain, 'card', '', n ? 'Remove all curses' : 'Remove a card'); }
+    if (o.then) { const n = hasRelic(p, 'luckstone') ? 4 : 3;
+      if (o.then === 'remove') P(gain, 'card', '', 'Remove a card');
+      else if (o.then === 'upgrade') P(gain, 'card', '', 'Upgrade a card');
+      else P(gain, 'card', 'Choose ', '1 of ' + n + (o.then === 'rareCards' ? ' rare cards' : ' cards')); }
+    if (o.relicAfter) P(gain, 'relic', 'Gain ', D.RELICS[o.relicAfter].name);
+    if (o.shop) { const d = o.shop.discount || 0;
+      P(neutral, 'shop', '', 'Open the shop', d ? ', prices ' + Math.round(Math.abs(d) * 100) + '% ' + (d > 0 ? 'lower' : 'higher') : ''); }
+    return cost.concat(gain, neutral);
+  }
+  function choiceUnder(s, p, evId, idx) {
+    const ch = D.EVENTS[evId].choices[idx];
+    const miss = [];
+    if (ch.req && ch.req.gold && p.gold < ch.req.gold) miss.push('Needs ' + ch.req.gold + ' gold.');
+    if (ch.req && ch.req.hp && p.hp < ch.req.hp) miss.push('Needs ' + ch.req.hp + ' HP.');
+    const parts = ch.ops ? underParts(s, p, ch.ops) : [];
+    let chance = [];
+    if (ch.chance) {
+      chance = weightOdds(choiceWeights(ch, s)).map(o => {
+        const ps = underParts(s, p, ch.chance[+o.key]);
+        return { pct: Math.round(o.p * 100), parts: ps, costly: ps.some(x => ['dmg', 'curse', 'fight', 'elite'].includes(x.k) || x.lead === 'Lose ') };
+      }).filter(b => b.parts.length).sort((a, b) => b.pct - a.pct || (b.costly - a.costly));
+    }
+    return { req: miss.length ? miss.join(' ') : null, parts, chance, endsRun: !!ch.endsRun };
   }
   function eventChoice(s, p, idx) {
     if (s.phase !== 'event' || !s.event || s.event.stage !== 'choose') return err('No event choice');
@@ -379,7 +462,7 @@
     if (!choiceAllowed(p, ch)) return err('Requirement not met');
     s.event.choice = idx;
     if (ch.ops) applyOps(s, p, ch.ops);
-    if (ch.chance) { const b = +weightedPick(s, choiceWeights(ch)); s.event.branch = b; applyOps(s, p, ch.chance[b]); }
+    if (ch.chance) { const b = +weightedPick(s, choiceWeights(ch, s)); s.event.branch = b; applyOps(s, p, ch.chance[b]); }
     s.event.stage = 'result';
     log(s, D.EVENTS[s.event.id].name + ': ' + (s.event.log.join(', ') || 'nothing happens'));
     emit(s, { kind: 'eventResult' });
@@ -489,7 +572,7 @@
   function runRelics(s, p, hook) {
     for (const r of p.relics) {
       const def = D.RELICS[r];
-      if (def.hook === hook && alive(p)) { emit(s, { kind: 'relic', target: p.uid, relic: r }); runEffects(s, p, def.effects, null, null); }
+      if (def.hook === hook && alive(p)) { emit(s, { kind: 'relic', target: p.uid, relic: r }); runEffects(s, p, (def.heroEffects && def.heroEffects[p.heroId]) || def.effects, null, null); }
     }
   }
 
@@ -497,6 +580,7 @@
   function startEncounter(s, encId) {
     const enc = D.ENCOUNTERS[encId];
     s.phase = 'combat'; s.turn = 0; s.encounter = encId;
+    if (enc.elite) { s.seenElites = s.seenElites || []; if (!s.seenElites.includes(encKey(encId))) s.seenElites.push(encKey(encId)); }
     s.enemies = enc.enemies.map(id => makeEnemy(s, id));
     for (const p of livingPlayers(s)) {
       p.draw = shuffle(s, p.deck.map(c => ({ ...c })));
@@ -527,7 +611,8 @@
     // the Worm relic; it keeps the old +1 per hit until Anna picks the Worm option (DECISIONS 10:42/11:35), so the
     // Fighter and Barbarian play exactly as on main.
     if (src) d += (src.statuses.might || 0) + (src.side === 'player' && src.heroId !== 'wizard' ? (src.statuses.arcane || 0) : 0);
-    if (src && src.statuses.frightened) d = Math.floor(d * 0.75);
+    // Chilled (combined_pass_addons_v1) is the same x0.75 step as Frightened; a unit with both takes it once.
+    if (src && (src.statuses.frightened || src.statuses.chilled)) d = Math.floor(d * 0.75);
     if (tgt && tgt.statuses.prone) d = Math.floor(d * 1.5);
     if (tgt && tgt.statuses.rage) d = Math.floor(d * RAGE_TAKEN);
     return Math.max(0, d);
@@ -866,6 +951,13 @@
   }
 
   // Read the Opening (F2): the first hit a hero lands each turn on a Prone or Frightened enemy deals double (that hit only).
+  // Surgeon (surgeon_aoe_half.md): a monster with guardedAoeMult takes that share of every all-enemies hit while it is
+  // guarded. Applied last, after every other step and before Block, rounded down. Checked per hit, so it ends the moment
+  // the last guard dies.
+  function aoeGuard(s, e, d) {
+    const m = D.MONSTERS[e.monsterId].guardedAoeMult;
+    return m != null && guardedNow(s, e) ? Math.floor(d * m) : d;
+  }
   function openingHit(s, p, tgt, d) {
     if (!p || p.side !== 'player' || !tgt || tgt.side !== 'enemy' || !(tgt.statuses.prone || tgt.statuses.frightened)) return d;
     p.turnFx = p.turnFx || {};
@@ -887,8 +979,8 @@
         } break;
         case 'loseHp': loseHp(s, p, fx.n, 'self'); break;
         case 'goad': if (tgt) goad(s, p, tgt); break;
-        case 'damageAll': for (let i = 0; i < times; i++) livingEnemies(s).forEach(e => dealDamage(s, e, openingHit(s, p, e, attackDamage(p, e, attackBase(p, fx) + sb)), p, true)); break;
-        case 'damageAllRaw': livingEnemies(s).forEach(e => dealDamage(s, e, fx.n, null, false)); break;
+        case 'damageAll': for (let i = 0; i < times; i++) livingEnemies(s).forEach(e => dealDamage(s, e, aoeGuard(s, e, openingHit(s, p, e, attackDamage(p, e, attackBase(p, fx) + sb))), p, true)); break;
+        case 'damageAllRaw': livingEnemies(s).forEach(e => dealDamage(s, e, aoeGuard(s, e, fx.n), null, false)); break;
         case 'damageFromBlock': if (alive(tgt)) dealDamage(s, tgt, openingHit(s, p, tgt, attackDamage(p, tgt, p.block + sb)), p, true); break;
         // What's Left: one hit of n for each card Exhausted this fight ("X times" is the multi-hit wording, Producer 11:35)
         case 'damagePerExhausted': if (alive(tgt)) dealDamage(s, tgt, openingHit(s, p, tgt, attackDamage(p, tgt, attackBase(p, { ...fx, n: fx.n * (p.fightExhausted || 0) }) + sb)), p, true); break;
@@ -926,7 +1018,7 @@
     let tgt = null;
     if (def.target === 'enemy') {
       tgt = find(s, targetUid);
-      if (tgt && tgt.side === 'enemy' && alive(tgt) && !isTargetable(s, tgt)) return err(D.STATUSES.held.tip);
+      if (tgt && tgt.side === 'enemy' && alive(tgt) && !isTargetable(s, tgt)) return err(D.STATUSES[D.MONSTERS[tgt.monsterId].guardStatus || 'held'].tip);
       if (!tgt || tgt.side !== 'enemy' || !alive(tgt)) {
         const l = targetableEnemies(s);
         if (l.length === 1) tgt = l[0]; else return err('Choose a target');
@@ -1074,7 +1166,7 @@
   function winEncounter(s) {
     const F = D.FLOORS[s.floor], type = s.node || 'fight';
     const finalBoss = type === 'boss' && s.floor === s.floors - 1;
-    s.stats.fights++; if (type === 'elite') s.stats.elites++;
+    s.stats.fights++; if (type === 'elite') { s.stats.elites++; capElites(s); }
     for (const p of livingPlayers(s)) {
       const g = F.gold[type] || F.gold.fight;
       const gold = randInt(s, g[0], g[1]);
@@ -1125,7 +1217,7 @@
     if (s.node === 'boss') {
       // descend to the next floor
       s.floor++; s.pos = null; s.node = null; s.lastEnc = null;
-      s.map = generateMap(s);
+      s.map = generateMap(s); capElites(s);
       for (const p of livingPlayers(s)) heal(s, p, Math.ceil((p.maxHp - p.hp) * D.FLOOR_HEAL));
       log(s, D.FLOORS[s.floor].name);
       emit(s, { kind: 'newFloor', floor: s.floor });
@@ -1193,7 +1285,23 @@
 
   // Old saves (Tester, wz9): drop card and relic ids that are no longer in the data (e.g. the removed arcane_focus card),
   // so a loaded run never looks up an undefined card or relic. Returns the dropped ids; the save version is unchanged.
+  // Map trail (G.visited, kept by the UI): node ids repeat on every floor, so the trail is tagged with its floor and
+  // cleared on a new floor. A save from before the tag keeps only the chain of visited nodes leading back from pos.
+  function trimVisited(s) {
+    const v = Array.isArray(s.visited) ? s.visited : [];
+    if (s.visitedFloor === s.floor) { s.visited = v; return v; }
+    let keep = [];
+    if (s.visitedFloor == null && s.map && s.pos && s.map.nodes[s.pos]) {
+      const N = s.map.nodes;
+      for (let cur = s.pos, g = 0; g < 50; g++) {
+        const prev = v.find(id => N[id] && N[id].row === N[cur].row - 1 && N[id].next.includes(cur));
+        if (!prev) break; keep.unshift(prev); cur = prev;
+      }
+    }
+    s.visited = keep; s.visitedFloor = s.floor; return keep;
+  }
   function sanitizeState(s) {
+    if (!Array.isArray(s.seenElites)) s.seenElites = [];   // saves from before elite_once_per_run
     const gone = [], okCard = id => !!D.CARDS[id], okRelic = id => !!D.RELICS[id];
     const keep = (arr, ok, key) => Array.isArray(arr) ? arr.filter(x => { const id = key ? x && x[key] : x; if (ok(id)) return true; gone.push(id); return false; }) : arr;
     for (const p of s.players || []) {
@@ -1209,9 +1317,9 @@
     return gone;
   }
 
-  const Engine = { sanitizeState, startEncounter, startFight, floorBoss, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
+  const Engine = { sanitizeState, trimVisited, startEncounter, startFight, floorBoss, moveOf, rollCardRewards, newGame, dispatch, takeEvents, describeIntent, canPlay, needsTarget, cardDef, cardText,
     attackDamage, livingEnemies, livingPlayers, targetableEnemies, isTargetable, find, getPlayer, reachable, choiceAllowed, canUpgrade,
-    weightOdds, choiceWeights, rewardRarityWeights, describeChoice, cardInPool, isEternal, canRemove, canTransform, removeFromDeck, transformCard, repeatOf, playsOf, fadeLeft, isBloodied, cardLines };
+    weightOdds, choiceWeights, rewardRarityWeights, describeChoice, choiceUnder, cardInPool, isEternal, canRemove, canTransform, removeFromDeck, transformCard, repeatOf, playsOf, fadeLeft, isBloodied, cardLines };
   root.Engine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
 })(typeof window !== 'undefined' ? window : globalThis);

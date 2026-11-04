@@ -13,9 +13,9 @@ for (const hero of ['fighter', 'barbarian', 'wizard']) {
   eq(c, { starter: 4, common: 12, uncommon: 9, rare: 6, legendary: 3 }, hero + ' pool is 4 starters + 12/9/6/3');
   eq(all.length, 34, hero + ' has 34 cards');
 }
-// ---- starters untouched (md5 of every starter definition at 4e6fcb1) and starting decks unchanged ----
+// ---- starters untouched (md5 of every starter definition at 4e6fcb1) and starting decks unchanged ---- (fixpass: only Reckless Attack's text, Prone shown as Vulnerable)
 const st = Object.entries(D.CARDS).filter(([, c]) => c.rarity === 'starter');
-eq(crypto.createHash('md5').update(JSON.stringify(st)).digest('hex'), 'd8108b41fc2d1b772f79247b3e59592e', 'starter card definitions are byte-for-byte the 4e6fcb1 ones');
+eq(crypto.createHash('md5').update(JSON.stringify(st)).digest('hex'), '82c6009e0629662949edfdf157021e05', 'starter card definitions are byte-for-byte the 4e6fcb1 ones');
 // ---- re-tiers ----
 const R = (id) => D.CARDS[id].rarity;
 // Producer 23:02: the Burn It Down cards stay uncommon with their 4e6fcb1 numbers; four plain uncommons drop to common, numbers unchanged
@@ -61,17 +61,17 @@ const NEW = {
   extra_attack: [1, 1, 'uncommon', '', 'Deal 5 damage.', 'Deal 7 damage.'],
   eldritch_strike: [2, 2, 'uncommon', '', 'Deal 8 damage to ALL enemies. Apply 1 Frightened to ALL.', 'Deal 11 damage to ALL enemies. Apply 1 Frightened to ALL.'],
   shield_wall: [2, 2, 'uncommon', '', 'Gain 12 Block. Gain 1 Armor.', 'Gain 15 Block. Gain 1 Armor.'],
-  feinting_attack: [0, 0, 'uncommon', '', 'Deal 4 damage. Apply 1 Prone.', 'Deal 6 damage. Apply 1 Prone.'],
-  shocking_grasp: [0, 0, 'common', 'cantrip', 'Deal 2 damage. Apply 1 Prone.', 'Deal 5 damage. Apply 2 Prone.'],
+  feinting_attack: [0, 0, 'uncommon', '', 'Deal 4 damage. Apply 1 Vulnerable.', 'Deal 6 damage. Apply 1 Vulnerable.'],
+  shocking_grasp: [0, 0, 'common', 'cantrip', 'Deal 2 damage. Apply 1 Vulnerable.', 'Deal 5 damage. Apply 2 Vulnerable.'],
   acid_splash: [0, 0, 'common', 'cantrip', 'Deal 2 damage. Apply 2 Poisoned.', 'Deal 5 damage. Apply 3 Poisoned.'],
-  grease: [1, 1, 'common', 'spell', 'Apply 1 Prone to ALL enemies.', 'Apply 2 Prone to ALL enemies.'],
+  grease: [1, 1, 'common', 'spell', 'Apply 1 Vulnerable to ALL enemies.', 'Apply 2 Vulnerable to ALL enemies.'],
   ice_knife: [1, 1, 'common', 'spell', 'Deal 5 damage. Deal 2 damage to ALL enemies.', 'Deal 7 damage. Deal 3 damage to ALL enemies.'],
   absorb_elements: [1, 1, 'common', 'spell', 'Gain 4 Block.', 'Gain 6 Block.'],
   lightning_bolt: [2, 2, 'uncommon', 'spell', 'Deal 9 damage to a random enemy twice.', 'Deal 11 damage to a random enemy twice.'],
   counterspell: [1, 1, 'uncommon', 'spell', 'Apply 2 Frightened. Gain 5 Block.', 'Apply 3 Frightened. Gain 8 Block.'],
   vampiric_touch: [2, 2, 'uncommon', 'spell', 'Deal 10 damage. Heal 4 HP.', 'Deal 13 damage. Heal 5 HP.'],
   cloudkill: [2, 2, 'uncommon', 'spell', 'Apply 5 Poisoned to ALL enemies.', 'Apply 6 Poisoned to ALL enemies.'],
-  cone_of_cold: [2, 2, 'rare', 'spell', 'Deal 12 damage to ALL enemies. Apply 2 Frightened to ALL.', 'Deal 15 damage to ALL enemies. Apply 2 Frightened to ALL.'],
+  cone_of_cold: [2, 2, 'rare', 'spell', 'Deal 12 damage to ALL enemies. Apply 2 Chilled to ALL.', 'Deal 15 damage to ALL enemies. Apply 2 Chilled to ALL.'],
   wall_of_force: [2, 2, 'rare', 'spell', 'Gain 20 Block. Exhaust.', 'Gain 23 Block. Exhaust.'],
   blight: [2, 2, 'rare', 'spell', 'Deal 8 damage. Apply 8 Poisoned.', 'Deal 11 damage. Apply 9 Poisoned.'],
   meteor_swarm: [3, 3, 'legendary', 'spell', 'Deal 10 damage to ALL enemies 3 times. Exhaust.', 'Deal 11 damage to ALL enemies 3 times. Exhaust.'],
@@ -120,9 +120,9 @@ eq([D.CARDS.time_stop.retain, E.cardDef({ id: 'time_stop', up: true }).retain, D
   E.dispatch(s, { type: 'END_TURN', player: p.uid }); E.takeEvents(s); ok(s.phase === 'combat', 'still in combat'); eq(p.energy, p.maxEnergy + 1, 'Wish: +1 Energy at the start of the next turn'); }
 // ---- boss rewards: the Wizard now has legendaries, so her boss pick is legendary-only like the other two ----
 for (let seed = 1; seed <= 100; seed++) { const s = E.newGame({ seed, heroes: ['wizard'] }); ok(E.rollCardRewards(s, s.players[0], 3, 'boss').every(id => D.CARDS[id].rarity === 'legendary'), 'Wizard boss rewards are legendary'); }
-// ---- art: every new card has art or a placeholder, listed in PLACEHOLDERS.md; Acid Splash -> placeholder_acid, Wish -> card_arcane_focus ----
+// ---- art: every new card has art or a placeholder, listed in PLACEHOLDERS.md; Acid Splash -> placeholder_acid, Wish -> its own placeholder_wish (fixpass) ----
 const PH = fs.readFileSync(path.join(ROOT, 'assets/placeholder/PLACEHOLDERS.md'), 'utf8');
-eq([D.CARDS.acid_splash.art, D.CARDS.wish.art], ['acid', 'arcane_focus'], 'Acid Splash and Wish reuse art');
+eq([D.CARDS.acid_splash.art, D.CARDS.wish.art], ['acid', undefined], 'Acid Splash reuses art, Wish has its own placeholder');
 ok(fs.existsSync(path.join(ROOT, 'assets/placeholder/placeholder_acid.webp')) && fs.existsSync(path.join(ROOT, 'assets/card_arcane_focus.webp')), 'reused art files exist');
 ok(PH.includes('`acid_splash`') && PH.includes('`wish`'), 'PLACEHOLDERS.md notes the Acid Splash and Wish reuse');
 for (const id of Object.keys(NEW).filter(id => !['acid_splash', 'wish'].includes(id))) {

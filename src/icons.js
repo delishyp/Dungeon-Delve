@@ -63,11 +63,13 @@
     lock: 'M12 2a5 5 0 015 5v3h1.5c.8 0 1.5.7 1.5 1.5v9c0 .8-.7 1.5-1.5 1.5h-13C4.7 22 4 21.3 4 20.5v-9c0-.8.7-1.5 1.5-1.5H7V7a5 5 0 015-5zm0 2.2A2.8 2.8 0 009.2 7v3h5.6V7A2.8 2.8 0 0012 4.2zm0 9.3a1.8 1.8 0 00-1 3.3V19h2v-2.2a1.8 1.8 0 00-1-3.3z',
     needle: 'M20.3 2.3a1.2 1.2 0 011.4 1.4L8.4 18.6l-3.6 1.6 1.6-3.6zM19.6 3.8l-.9.9.6.6.9-.9zM3 21.5c1.2-.2 2.2-.7 3-1.4l.8.8c-1 .9-2.3 1.5-3.6 1.7z',
     hourglass: 'M6 2h12v2.2c0 2.8-2.2 4.9-4.3 7.8 2.1 2.9 4.3 5 4.3 7.8V22H6v-2.2c0-2.8 2.2-4.9 4.3-7.8C8.2 9.1 6 7 6 4.2zm2.3 2c.3 1.9 2 3.6 3.7 5.8 1.7-2.2 3.4-3.9 3.7-5.8zM8.4 20h7.2c-.5-1.6-1.9-3.1-3.6-5.2-1.7 2.1-3.1 3.6-3.6 5.2z',
+    chilled: 'M11 2h2v20h-2zM2 11h20v2H2zM4.9 6.3l1.4-1.4 12.8 12.8-1.4 1.4zM17.7 4.9l1.4 1.4L6.3 19.1l-1.4-1.4z',   // placeholder glyph (Palette paints the real one after the reset)
     held: 'M20.3 2.3a1.2 1.2 0 011.4 1.4L8.4 18.6l-3.6 1.6 1.6-3.6zM19.6 3.8l-.9.9.6.6.9-.9zM3 21.5c1.2-.2 2.2-.7 3-1.4l.8.8c-1 .9-2.3 1.5-3.6 1.7z',
+    held_up: 'M20.3 2.3a1.2 1.2 0 011.4 1.4L8.4 18.6l-3.6 1.6 1.6-3.6zM19.6 3.8l-.9.9.6.6.9-.9zM3 21.5c1.2-.2 2.2-.7 3-1.4l.8.8c-1 .9-2.3 1.5-3.6 1.7z',
     book: 'M4 3h7c.6 0 1 .4 1 1v16c-.6-.6-1.5-1-2.5-1H4zm16 0h-7c-.6 0-1 .4-1 1v16c.6-.6 1.5-1 2.5-1H20z',
   };
   const EVENODD = { gear: 1, lock: 1, tymora_coin: 1 };
-  const STATUS_COLOR = { prone: '#c8b9ff', frightened: '#d2a6ff', poisoned: '#8fe36a', might: '#ff9a6a', rage: '#ff6a3a', arcane: '#b48cff', armor: '#9fc6ff', thorns: '#9be08a', regen: '#7dff9a', held: '#e8d9b0' };
+  const STATUS_COLOR = { prone: '#c8b9ff', frightened: '#d2a6ff', chilled: '#9fe0ff', poisoned: '#8fe36a', might: '#ff9a6a', rage: '#ff6a3a', arcane: '#b48cff', armor: '#9fc6ff', thorns: '#9be08a', regen: '#7dff9a', held: '#e8d9b0' };
   function svg(name, cls = '', color) {
     const d = P[name] || P.sparkle;
     return `<svg class="vi ${cls}" viewBox="0 0 24 24" aria-hidden="true"${color ? ` style="color:${color}"` : ''}><path d="${d}"${EVENODD[name] ? ' fill-rule="evenodd"' : ''}/></svg>`;

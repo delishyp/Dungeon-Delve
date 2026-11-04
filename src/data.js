@@ -30,10 +30,12 @@
  * ============================================================ */
 (function (root) {
   const STATUSES = {
-    prone:      { name: 'Prone', debuff: true,  decays: true,
-                  tip: 'Prone: takes 50% more damage from attacks. Goes down by 1 at the end of its turn.' },
+    prone:      { name: 'Vulnerable', debuff: true,  decays: true,
+                  tip: 'Vulnerable: takes 50% more damage from attacks. Goes down by 1 at the end of its turn.' },
     frightened: { name: 'Frightened', debuff: true,  decays: true,
                   tip: 'Frightened: deals 25% less attack damage. Goes down by 1 at the end of its turn.' },
+    chilled:    { name: 'Chilled', debuff: true,  decays: true,
+                  tip: 'Chilled: deals 25% less attack damage. Goes down by 1 at the end of its turn.' },
     poisoned:   { name: 'Poisoned', debuff: true,  decays: false,
                   tip: 'Poisoned: loses HP equal to its Poison at the start of its turn (ignores Block), then Poison goes down by 1.' },
     might:      { name: 'Might', debuff: false, decays: false,
@@ -48,8 +50,13 @@
                   tip: 'Retaliate: whenever an enemy hits you with an attack, it takes this much damage.' },
     regen:      { name: 'Regenerate', debuff: false, decays: false,
                   tip: 'Regenerate: heals this much HP at the end of its turn.' },
+    // Guard chips (status_lines_v1.md v1.3): one per guarded boss, set by syncGuards from the monster's guardStatus.
     held:       { name: 'Held Together', debuff: false, decays: false, noCount: true,
-                  tip: "He can't be targeted while a Sewn stands." },
+                  tip: "Held Together: while a Sewn stands, cards aimed at him alone can't reach him. Cards that hit ALL enemies still do, but he takes only half.",
+                  live: 'Kill the Sewn, or hit them all for half.' },
+    held_up:    { name: 'Held Up', debuff: false, decays: false, noCount: true,
+                  tip: "Held Up: while the Penitent kneels, cards aimed at the gate alone can't reach it. Cards that hit ALL enemies still do.",
+                  live: 'Kill the Penitent, or hit them all.' },
   };
 
   const KEYWORDS = {
@@ -58,7 +65,7 @@
     Energy:     'Energy: you get 3 each turn. Each card costs the number in its corner.',
     Upgrade:    'Upgraded cards (marked +) have better numbers. Upgrade cards at rest sites.',
     // Keyword lines (Anna 11:17), wording from lore/text/how_to_play_v1.md section 3 (Lorekeeper).
-    Spell:      "Spell: Arcane Focus makes this card stronger. Cards without Spell are cantrips: cheap and quick, and Arcane Focus doesn't affect them.",
+    Spell:      "Spell: Arcane Focus makes this card stronger. Cards without Spell are cantrips, and Arcane Focus doesn't change them.",
     Retain:     "Retain: the card stays in your hand until you play it. It isn't discarded at the end of your turn.",
     Vanish:     "Vanish: if you don't play the card this turn and it would be discarded at the end of your turn, it's removed for the rest of the fight instead.",
     Repeat:     'Repeat X: the card\'s effect happens X times. "Deal 4 damage. Repeat 3." deals 12 in total.',
@@ -85,7 +92,7 @@
     shield_bash: { cls: 'fighter', name: 'Shield Bash', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Gain {0} Block, then deal damage equal to your Block ({1}).', effects: [{ t: 'block', n: 6 }, { t: 'damageFromBlock' }] },
     trip_attack: { cls: 'fighter', name: 'Trip Attack', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage. Apply {1} Prone.', effects: [{ t: 'damage', n: 7 }, { t: 'status', status: 'prone', n: 1, to: 'target' }] },
+      desc: 'Deal {0} damage. Apply {1} Vulnerable.', effects: [{ t: 'damage', n: 7 }, { t: 'status', status: 'prone', n: 1, to: 'target' }] },
     menacing_attack: { cls: 'fighter', name: 'Menacing Attack', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Apply {1} Frightened.', effects: [{ t: 'damage', n: 8 }, { t: 'status', status: 'frightened', n: 2, to: 'target' }] },
     precision_attack: { cls: 'fighter', name: 'Precision Attack', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
@@ -101,7 +108,7 @@
     whirlwind: { cls: 'fighter', name: 'Whirlwind Attack', cost: 2, type: 'attack', rarity: 'uncommon', target: 'none',
       desc: 'Deal {0} damage to ALL enemies twice.', effects: [{ t: 'damageAll', n: 8, times: 2 }],
       upgrade: { effects: [{ t: 'damageAll', n: 10, times: 2 }] } },   // 5x2 -> 8x2 (Designer 23:31)
-    defense_style: { cls: 'fighter', name: 'Fighting Style: Defense', cost: 1, type: 'power', rarity: 'uncommon', target: 'none',
+    defense_style: { cls: 'fighter', name: 'Defensive Style', cost: 1, type: 'power', rarity: 'uncommon', target: 'none',
       desc: 'Gain {0} Armor.', effects: [{ t: 'status', status: 'armor', n: 2, to: 'self' }] },
     healing_potion: { cls: 'fighter', name: 'Potion of Healing', cost: 0, type: 'skill', rarity: 'uncommon', target: 'none', exhaust: true,
       desc: 'Heal {0} HP. Exhaust.', effects: [{ t: 'heal', n: 10 }] },
@@ -113,7 +120,7 @@
     indomitable: { cls: 'fighter', name: 'Indomitable', cost: 2, type: 'skill', rarity: 'rare', target: 'none',
       desc: 'Gain {0} Block. Remove all your debuffs.', effects: [{ t: 'block', n: 15 }, { t: 'cleanse' }] },
     sundering_blow: { cls: 'fighter', name: 'Sundering Blow', cost: 2, type: 'attack', rarity: 'rare', target: 'enemy',
-      desc: 'Deal {0} damage. Apply {1} Prone and {2} Frightened.',
+      desc: 'Deal {0} damage. Apply {1} Vulnerable and {2} Frightened.',
       effects: [{ t: 'damage', n: 11 }, { t: 'status', status: 'prone', n: 2, to: 'target' }, { t: 'status', status: 'frightened', n: 2, to: 'target' }] },
     // ---- Fighter deck styles F1-F5 (lore/text/deck_styles_v1.md, approved by Anna Nov 3 10:41). Retain is a shared keyword (10:42),
     // a `retain: true` flag that the card face writes as its own 'Retain.' line after the effect (Anna 11:17, no tag pills); the
@@ -125,7 +132,7 @@
     // F2 Maneuvers
     // Cost 3 (upgraded 2), not the planned 2/1: it simmed about 8 points above the other styles at cost 2 (Gamedev, Nov 3).
     read_the_opening: { cls: 'fighter', name: 'Read the Opening', cost: 3, type: 'power', rarity: 'rare', target: 'none',
-      desc: 'The first hit you land each turn on a Prone or Frightened enemy deals double damage.',
+      desc: 'The first hit you land each turn on a Vulnerable or Frightened enemy deals double damage.',
       effects: [], power: { openingDouble: true }, upgrade: { cost: 2 } },
     // F3 Drill
     form_and_repeat: { cls: 'fighter', name: 'Form and Repeat', cost: 0, type: 'skill', rarity: 'rare', target: 'none',
@@ -172,7 +179,7 @@
       desc: 'Gain {0} Block. Gain {1} Armor.', effects: [{ t: 'block', n: 12 }, { t: 'status', status: 'armor', n: 1, to: 'self' }],
       upgrade: { effects: [{ t: 'block', n: 15 }, { t: 'status', status: 'armor', n: 1, to: 'self' }] } },
     feinting_attack: { cls: 'fighter', name: 'Feinting Attack', cost: 0, type: 'attack', rarity: 'uncommon', target: 'enemy',
-      desc: 'Deal {0} damage. Apply {1} Prone.', effects: [{ t: 'damage', n: 4 }, { t: 'status', status: 'prone', n: 1, to: 'target' }],
+      desc: 'Deal {0} damage. Apply {1} Vulnerable.', effects: [{ t: 'damage', n: 4 }, { t: 'status', status: 'prone', n: 1, to: 'target' }],
       upgrade: { effects: [{ t: 'damage', n: 6 }, { t: 'status', status: 'prone', n: 1, to: 'target' }] } },
 
     // ================= BARBARIAN =================
@@ -185,19 +192,19 @@
     rage: { cls: 'barbarian', name: 'Rage', cost: 1, type: 'skill', rarity: 'starter', target: 'none',
       desc: 'Gain {0} Rage.', effects: [{ t: 'status', status: 'rage', n: 3, to: 'self' }] },
     reckless_attack: { cls: 'barbarian', name: 'Reckless Attack', cost: 1, type: 'attack', rarity: 'starter', target: 'enemy',
-      desc: 'Deal {0} damage. You become {1} Prone.', effects: [{ t: 'damage', n: 8 }, { t: 'status', status: 'prone', n: 1, to: 'self' }] },
+      desc: 'Deal {0} damage. You become {1} Vulnerable.', effects: [{ t: 'damage', n: 8 }, { t: 'status', status: 'prone', n: 1, to: 'self' }] },
     frenzied_strike: { cls: 'barbarian', name: 'Frenzied Strike', cost: 0, type: 'attack', rarity: 'common', target: 'enemy', rageAttack: true,
       desc: 'Deal {0} damage. Gain {1} Rage.', effects: [{ t: 'damage', n: 6 }, { t: 'status', status: 'rage', n: 1, to: 'self' }] },
     intimidating_presence: { cls: 'barbarian', name: 'Intimidating Presence', cost: 1, type: 'skill', rarity: 'common', target: 'none',
       desc: 'Apply {0} Frightened to ALL enemies.', effects: [{ t: 'status', status: 'frightened', n: 2, to: 'all' }] },
     reckless_flurry: { cls: 'barbarian', name: 'Reckless Flurry', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage 3 times. You become {1} Prone.', effects: [{ t: 'damage', n: 10, times: 3 }, { t: 'status', status: 'prone', n: 1, to: 'self' }] },
+      desc: 'Deal {0} damage 3 times. You become {1} Vulnerable.', effects: [{ t: 'damage', n: 10, times: 3 }, { t: 'status', status: 'prone', n: 1, to: 'self' }] },
     primal_roar: { cls: 'barbarian', name: 'Primal Roar', cost: 1, type: 'skill', rarity: 'common', target: 'none',
       desc: 'Gain {0} Rage. Apply {1} Frightened to ALL enemies.', effects: [{ t: 'status', status: 'rage', n: 2, to: 'self' }, { t: 'status', status: 'frightened', n: 1, to: 'all' }] },
     thick_hide: { cls: 'barbarian', name: 'Thick Hide', cost: 1, type: 'skill', rarity: 'common', target: 'none',
       desc: 'Gain {0} Block.', effects: [{ t: 'block', n: 7 }] },   // 12 -> 7 (upgraded 10 by the +3 step), Designer round 2 (23:52)
     shove: { cls: 'barbarian', name: 'Shove', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage. Apply {1} Prone.', effects: [{ t: 'damage', n: 9 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },   // 7 -> 9 (upgraded 12, 3 Prone), Designer round 3
+      desc: 'Deal {0} damage. Apply {1} Vulnerable.', effects: [{ t: 'damage', n: 9 }, { t: 'status', status: 'prone', n: 2, to: 'target' }] },   // 7 -> 9 (upgraded 12, 3 Vulnerable), Designer round 3
     brutal_critical: { cls: 'barbarian', name: 'Brutal Critical', cost: 2, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Deals 10 more while you have Rage.', effects: [{ t: 'damage', n: 17, rageBonus: 10 }] },   // 15 -> 17, Designer round 2; Rage bonus 8 -> 10, Designer round 3 (upgraded 22, bonus stays 10)
     whirling_axe: { cls: 'barbarian', name: 'Whirling Axe', cost: 2, type: 'attack', rarity: 'common', target: 'none',
@@ -307,9 +314,9 @@
       desc: 'Deal {0} damage to ALL enemies.', effects: [{ t: 'damageAll', n: 12 }],
       upgrade: { desc: 'Deal {0} damage to ALL enemies. Apply {1} Poisoned to ALL.', effects: [{ t: 'damageAll', n: 12 }, { t: 'status', status: 'poisoned', n: 2, to: 'all' }] } },   // Designer round 7 C: 12; pass 3 upgrade: plus 2 Poisoned to ALL
     ray_of_frost: { cls: 'wizard', kind: 'cantrip', name: 'Ray of Frost', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage. Apply {1} Frightened.', effects: [{ t: 'damage', n: 2 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
+      desc: 'Deal {0} damage. Apply {1} Chilled.', effects: [{ t: 'damage', n: 2 }, { t: 'status', status: 'chilled', n: 1, to: 'target' }] },
     thunderwave: { cls: 'wizard', kind: 'spell', name: 'Thunderwave', cost: 2, type: 'attack', rarity: 'common', target: 'none',
-      desc: 'Deal {0} damage to ALL enemies. Apply {1} Prone to ALL.', effects: [{ t: 'damageAll', n: 8 }, { t: 'status', status: 'prone', n: 1, to: 'all' }] },
+      desc: 'Deal {0} damage to ALL enemies. Apply {1} Vulnerable to ALL.', effects: [{ t: 'damageAll', n: 8 }, { t: 'status', status: 'prone', n: 1, to: 'all' }] },
     mage_armor: { cls: 'wizard', kind: 'spell', name: 'Mage Armor', cost: 1, type: 'power', rarity: 'common', target: 'none',
       desc: 'Gain {0} Armor.', effects: [{ t: 'status', status: 'armor', n: 1, to: 'self' }] },
     misty_step: { cls: 'wizard', kind: 'cantrip', name: 'Misty Step', cost: 0, type: 'skill', rarity: 'common', target: 'none',
@@ -338,11 +345,11 @@
       desc: 'Deal {0} damage. Arcane Focus counts three times on this card.', effects: [{ t: 'damage', n: 6, scale: { status: 'arcane', per: 4 } }] },
     // ---- Pool 34: fifteen new Wizard cards (5e wizard spells). Spells get Arcane Focus per hit / Block instance. ----
     shocking_grasp: { cls: 'wizard', kind: 'cantrip', name: 'Shocking Grasp', cost: 0, type: 'attack', rarity: 'common', target: 'enemy',
-      desc: 'Deal {0} damage. Apply {1} Prone.', effects: [{ t: 'damage', n: 2 }, { t: 'status', status: 'prone', n: 1, to: 'target' }] },
-    acid_splash: { cls: 'wizard', kind: 'cantrip', name: 'Acid Splash', cost: 0, type: 'attack', rarity: 'common', target: 'enemy', art: 'acid',
+      desc: 'Deal {0} damage. Apply {1} Vulnerable.', effects: [{ t: 'damage', n: 2 }, { t: 'status', status: 'prone', n: 1, to: 'target' }] },
+    acid_splash: { cls: 'wizard', kind: 'cantrip', name: 'Rot Spatter', cost: 0, type: 'attack', rarity: 'common', target: 'enemy', art: 'acid',
       desc: 'Deal {0} damage. Apply {1} Poisoned.', effects: [{ t: 'damage', n: 2 }, { t: 'status', status: 'poisoned', n: 2, to: 'target' }] },
     grease: { cls: 'wizard', kind: 'spell', name: 'Grease', cost: 1, type: 'skill', rarity: 'common', target: 'none',
-      desc: 'Apply {0} Prone to ALL enemies.', effects: [{ t: 'status', status: 'prone', n: 1, to: 'all' }] },
+      desc: 'Apply {0} Vulnerable to ALL enemies.', effects: [{ t: 'status', status: 'prone', n: 1, to: 'all' }] },
     ice_knife: { cls: 'wizard', kind: 'spell', name: 'Ice Knife', cost: 1, type: 'attack', rarity: 'common', target: 'enemy',
       desc: 'Deal {0} damage. Deal {1} damage to ALL enemies.', effects: [{ t: 'damage', n: 5 }, { t: 'damageAll', n: 2 }],
       upgrade: { effects: [{ t: 'damage', n: 7 }, { t: 'damageAll', n: 3 }] } },
@@ -360,9 +367,9 @@
     cloudkill: { cls: 'wizard', kind: 'spell', name: 'Cloudkill', cost: 2, type: 'skill', rarity: 'uncommon', target: 'none',
       desc: 'Apply {0} Poisoned to ALL enemies.', effects: [{ t: 'status', status: 'poisoned', n: 5, to: 'all' }] },
     cone_of_cold: { cls: 'wizard', kind: 'spell', name: 'Cone of Cold', cost: 2, type: 'attack', rarity: 'rare', target: 'none',
-      desc: 'Deal {0} damage to ALL enemies. Apply {1} Frightened to ALL.',
-      effects: [{ t: 'damageAll', n: 12 }, { t: 'status', status: 'frightened', n: 2, to: 'all' }],
-      upgrade: { effects: [{ t: 'damageAll', n: 15 }, { t: 'status', status: 'frightened', n: 2, to: 'all' }] } },
+      desc: 'Deal {0} damage to ALL enemies. Apply {1} Chilled to ALL.',
+      effects: [{ t: 'damageAll', n: 12 }, { t: 'status', status: 'chilled', n: 2, to: 'all' }],
+      upgrade: { effects: [{ t: 'damageAll', n: 15 }, { t: 'status', status: 'chilled', n: 2, to: 'all' }] } },
     wall_of_force: { cls: 'wizard', kind: 'spell', name: 'Wall of Force', cost: 2, type: 'skill', rarity: 'rare', target: 'none', exhaust: true,
       desc: 'Gain {0} Block. Exhaust.', effects: [{ t: 'block', n: 20 }] },
     blight: { cls: 'wizard', kind: 'spell', name: 'Blight', cost: 2, type: 'attack', rarity: 'rare', target: 'enemy',
@@ -372,7 +379,7 @@
     time_stop: { cls: 'wizard', kind: 'spell', name: 'Time Stop', cost: 1, type: 'skill', rarity: 'legendary', target: 'none', retain: true, exhaust: true,
       desc: 'Gain {0} Energy. Draw {1} cards. Exhaust.', effects: [{ t: 'energy', n: 2 }, { t: 'draw', n: 2 }],
       upgrade: { effects: [{ t: 'energy', n: 2 }, { t: 'draw', n: 3 }] } },   // upgrade draws 3, cost stays 1 (Designer 23:31)
-    wish: { cls: 'wizard', kind: 'spell', name: 'Wish', cost: 3, type: 'power', rarity: 'legendary', target: 'none', art: 'arcane_focus',
+    wish: { cls: 'wizard', kind: 'spell', name: 'Wish', cost: 3, type: 'power', rarity: 'legendary', target: 'none',
       desc: 'At the start of each of your turns, gain 1 Energy.',
       effects: [], power: { turnStart: [{ t: 'energy', n: 1 }] }, upgrade: { cost: 3 } },
   };
@@ -382,13 +389,13 @@
   const HEROES = {
     fighter: {
       name: 'Fighter', maxHp: 66, energy: 3, handSize: 5,
-      blurb: 'A sellsword who has held worse lines than this one. Steady attacks and Block, with maneuvers that knock foes Prone or Frighten them.',
-      mechanic: 'Maneuvers: Prone and Frightened weaken your foes, while Might and Armor make you stronger. Action Surge gives you 1 extra Energy when you need it most.',
+      blurb: 'A sellsword who has held worse lines than this one. Steady attacks and Block, with maneuvers that leave foes Vulnerable or Frighten them.',
+      mechanic: 'Maneuvers: Vulnerable and Frightened weaken your foes, while Might and Armor make you stronger. Action Surge gives you 1 extra Energy when you need it most.',
       deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'second_wind', 'action_surge'],   // Anna 15:19: 8 basics + 2 unique
     },
     barbarian: {
       name: 'Barbarian', maxHp: 85, energy: 3, handSize: 5,
-      blurb: 'A furious brute with little Block. Anger keeps the Barbarian standing, and reckless attacks hit huge but can leave you Prone.',
+      blurb: 'A furious brute with little Block. Anger keeps the Barbarian standing, and reckless attacks hit huge but can leave you Vulnerable.',
       mechanic: "Rage: while you have any Rage, you take 25% less damage. Rage adds no damage, but some cards hit harder the more you've built. It goes down by 1 each turn.",
       deck: ['greataxe', 'greataxe', 'greataxe', 'greataxe', 'parry', 'parry', 'parry', 'parry', 'rage', 'reckless_attack'],
     },
@@ -526,7 +533,7 @@
     // The Toll of the Narrows (Floor 2 trial boss, 50/50 with the Brood). The gate itself; it sends what it owns: the Kneeling
     // Penitent holds it up (while she kneels the gate can't be hit), Those Who Stopped come through on its Breath (they fall when the
     // gate opens), and the Count cuts a tally (all its things grow stronger) and lets the Tallyman through.
-    toll: { name: 'The Toll of the Narrows', hp: [185, 185], boss: true, sprite: 'enemy_toll_idle', minion: 'toll_bones', guardedBy: 'toll_penitent',
+    toll: { name: 'The Toll of the Narrows', hp: [185, 185], boss: true, sprite: 'enemy_toll_idle', minion: 'toll_bones', guardedBy: 'toll_penitent', guardStatus: 'held_up',
       moves: {
         kneel:  { name: 'Kneel at the Gate', intent: 'summon', effects: [{ t: 'summon', monster: 'toll_penitent', max: 1 }, { t: 'block', n: 10 }] },
         breath: { name: 'The Gate Breathes', intent: 'summon', effects: [{ t: 'summon', monster: 'toll_bones', max: 2 }] },                                      // pose `breath`: dust
@@ -623,14 +630,14 @@
         quiver: { name: 'Quiver', intent: 'defend', effects: [{ t: 'block', n: 15 }, { t: 'status', status: 'might', n: 2, to: 'self' }] },
       }, ai: { pattern: ['pseudo', 'engulf', 'quiver'] } },
     // The Surgeon (Floor 2 elite; key kept as mind_flayer so saves and encounter tables still work). Lines: content.js STORY.enemyLines.
-    mind_flayer: { name: 'The Surgeon', hp: [66, 66], elite: true, sprite: 'mind_flayer', minion: 'sewn', guardedBy: 'sewn',
+    mind_flayer: { name: 'The Surgeon', hp: [66, 66], elite: true, sprite: 'mind_flayer', spriteKey: 'enemy_surgeon_idle', minion: 'sewn', guardedBy: 'sewn', guardedAoeMult: 0.5,
       moves: {
         stitch:   { name: 'Fresh Stitches', intent: 'summon', effects: [{ t: 'summon', monster: 'sewn', max: 1 }] },
         incision: { name: 'The Incision', intent: 'attack_debuff', effects: [{ t: 'attack', n: 15 }, { t: 'status', status: 'frightened', n: 1, to: 'target' }] },
         steady:   { name: 'Steady Hands', intent: 'defend', effects: [{ t: 'block', n: 10 }, { t: 'healMinions', monster: 'sewn', n: 6 }] },
       }, ai: { summoner: true, opener: 'stitch', whileUp: ['incision', 'steady'], exposedMove: 'incision', summonMove: 'stitch' },
       phase: { at: 0.5, moves: { incision: { attack: { times: 2 } } } } },
-    sewn: { name: 'The Sewn', hp: [30, 30], sprite: 'ogre',
+    sewn: { name: 'The Sewn', hp: [30, 30], sprite: 'ogre', spriteKey: 'enemy_sewn_idle',
       moves: {
         wait:  { name: 'Still Knitting', intent: 'wait', effects: [{ t: 'wait' }] },
         heavy: { name: 'Heavy Hands', intent: 'attack', effects: [{ t: 'attack', n: 15 }] },

@@ -23,7 +23,7 @@
       desc: 'Unplayable. If this is in your hand at the end of your turn, lose 2 HP.', effects: [] },
     curse_hex:      { cls: 'curse', name: 'Hex of Misfortune', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. Clogs your hand.', effects: [] },
-    curse_whispers: { cls: 'curse', name: 'Whispers Behind the Eye', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true, endTurnHpLoss: 1,
+    curse_whispers: { cls: 'curse', name: 'The Whispers', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true, endTurnHpLoss: 1,
       desc: 'Unplayable. If this is in your hand at the end of your turn, lose 1 HP.', effects: [] },
     curse_guilt:    { cls: 'curse', name: 'Guilty Conscience', cost: 0, type: 'curse', rarity: 'curse', target: 'none', unplayable: true,
       desc: 'Unplayable. You know what you did.', effects: [] },
@@ -58,7 +58,10 @@
   // ---------- new relics (special ones never appear randomly) ----------
   Object.assign(D.RELICS, {
     smiling_mask:     { name: 'Mask of the Smiling Merchant', hook: 'passive', effects: [], desc: 'Shop prices are 20% lower.' },
-    illithid_tadpole: { name: 'The Worm Behind the Eye', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }], desc: 'Start each fight with 2 Arcane Focus. It whispers to you...' },
+    illithid_tadpole: { name: 'The Worm Behind the Eye', hook: 'combatStart', special: true, effects: [{ t: 'status', status: 'arcane', n: 2, to: 'self' }],
+      // combined_pass_addons_v1: the Fighter and Barbarian get 2 Might instead; the Wizard keeps 2 Arcane Focus.
+      heroEffects: { fighter: [{ t: 'status', status: 'might', n: 2, to: 'self' }], barbarian: [{ t: 'status', status: 'might', n: 2, to: 'self' }] },
+      desc: 'Start each fight with 2 Arcane Focus (Wizard) or 2 Might (Fighter, Barbarian). Something behind your eye knows your name.' },
     tymora_coin:      { name: "Brennick's Penny", hook: 'combatStart', special: true, effects: [{ t: 'draw', n: 1 }, { t: 'block', n: 4 }], desc: 'At the start of each fight, draw 1 card and gain 4 Block.' },
     // Burn It Down relic (keyword_use_v2 part 2), Barbarian only (Producer 11:41): never offered to another hero (relicInPool).
     ash_bracer:       { name: 'Ash-Caked Bracer', cls: 'barbarian', hook: 'firstExhaustEachTurn', effects: [{ t: 'draw', n: 1 }], desc: 'The first time a card Exhausts each turn, draw 1 card.' },

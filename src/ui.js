@@ -111,7 +111,7 @@
     return `<div class="${cls}${foil ? ' foil' : ''}" data-id="${esc(c.id)}" data-cls="${base.cls}" data-rar="${def.rarity}" data-frame="${fr}" data-tpl="${tpl}" ${opts.attrs || ''}>
       <div class="cface"><img class="cart" src="${img('card_' + (base.art || c.id)) || img('placeholder_' + c.id) || (base.art ? img('placeholder_' + base.art) : '')}" alt="" draggable="false"><img class="cframe" src="${img('frame_' + tpl)}" alt="" draggable="false">
       ${layer('banner_' + tpl, 'cbanner')}${layer('tag_' + tpl, 'ctagbg')}${single ? '' : layer('gem_' + tr, 'cgem')}
-      ${foil ? FOIL_LAYERS : ''}${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname${def.name.length > 15 ? ' long' : ''}"><span>${esc(def.name)}</span></div>
+      ${foil ? FOIL_LAYERS : ''}${c.up ? '<div class="uptrim"></div>' : ''}<div class="cname"><span>${esc(def.name)}</span></div>
       <div class="cclass" title="${esc(base.cls)}">${I(emblem)}</div>
       <div class="ctype">${tword}</div>
       <div class="cdesc"><span>${rulesHTML(text, def, base, E.cardLines(opts.live ? G : null, opts.live ? P() : null, c, opts.live ? liveTarget() : null))}</span></div></div>
@@ -129,11 +129,32 @@
   // box switches to the smaller rules font (.cdesc.small: 10.2 px instead of 12.6 px on a 160 px hand card, scaled with --cw
   // everywhere else). Measured at runtime on the real layout, never a hand-kept list of card ids. Every card added to the
   // page (render, live hand text, inspect clone, animations) is checked by the observer below; hidden cards (no layout) are skipped.
+  // Card name fit, option A (Palette's art/ui/card_text_fit, passed by Tester Nov 4): one line, never wrapped or cut. Start
+  // at 7.3% of card width, step down 0.3% to 5.8%, then squeeze the letter spacing to -0.01em and -0.03em. The safety net
+  // (5.5/5.2/4.9%) means a name never spills, but a name that needs it is too long (Lorekeeper). Sub-pixel widths, no
+  // tolerance. Runs wherever fitRules does (fitRules calls it).
+  const NAME_STEPS = [[.073, ''], [.070, ''], [.067, ''], [.064, ''], [.061, ''], [.058, ''], [.058, '-.01em'], [.058, '-.03em'],
+    [.055, '-.03em'], [.052, '-.03em'], [.049, '-.03em']];
+  function fitName(card) {
+    const box = card.querySelector('.cname'), span = box && box.firstElementChild;
+    if (!span || !box.clientWidth) return;
+    for (let i = 0; i < NAME_STEPS.length; i++) {
+      const [sz, ls] = NAME_STEPS[i];
+      if (i) { box.style.setProperty('--nf', sz); box.style.setProperty('--nls', ls || '.01em'); box.dataset.nfit = i; }
+      else { box.style.removeProperty('--nf'); box.style.removeProperty('--nls'); delete box.dataset.nfit; }
+      if (span.getBoundingClientRect().width <= box.getBoundingClientRect().width) return;
+    }
+  }
+  // The rules text must also end above the gem socket (the panel's notch rises to 91.2% of the card height), so it may use
+  // the box height minus 2 x 2.9% of the card height (only the shop rug's bigger font ever needed it).
+  const GEM_GAP = 0.029;
   function fitRules(card) {
+    fitName(card);
     const box = card.querySelector('.cdesc'), span = box && box.firstElementChild;
     if (!span || !box.clientHeight) return;
     box.classList.remove('small');
-    if (span.offsetHeight > box.clientHeight + 0.5 || span.scrollWidth > box.clientWidth + 0.5) box.classList.add('small');
+    const room = box.clientHeight - 2 * GEM_GAP * card.offsetHeight;
+    if (span.offsetHeight > room + 0.5 || span.scrollWidth > box.clientWidth + 0.5) box.classList.add('small');
   }
   const fitAll = (root) => { if (root.matches && root.matches('.card')) fitRules(root); if (root.querySelectorAll) root.querySelectorAll('.card').forEach(fitRules); };
   new MutationObserver((muts) => {
@@ -315,7 +336,7 @@
   function statusesHTML(u) {
     return Object.entries(u.statuses).map(([k, n]) => {
       const st = D.STATUSES[k];
-      return `<span class="status ${st.debuff ? 'debuff' : 'buff'} st-${k}" data-tip="<b>${esc(st.name)}</b>: ${esc(st.tip)}">${statusIcon(k)}${st.noCount ? `<b class="stname">${esc(st.name)}</b>` : `<b>${n}</b>`}</span>`;
+      return `<span class="status ${st.debuff ? 'debuff' : 'buff'} st-${k}" data-tip="<b>${esc(st.name)}</b>: ${esc(st.tip)}${st.live ? '<br><b>' + esc(st.live) + '</b>' : ''}">${statusIcon(k)}${st.noCount ? `<b class="stname">${esc(st.name)}</b>` : `<b>${n}</b>`}</span>`;
     }).join('');
   }
   const relicTip = (id) => { const r = D.RELICS[id]; return `<b>${esc(r.name)}</b><br>${esc(r.desc)}`; };
@@ -362,10 +383,11 @@
   const enemyPoseBase = (id) => { const m = D.MONSTERS[id] || {}; return 'enemy_' + (m.sprite || id); };
   // A monster's still picture: its sprite, else (a sprite file not in assets/ yet) the art under its id (beholder.webp and
   // owlbear.webp are kept for rollback), else enemy_<id>_idle (the Crier).
-  const monsterPic = (id) => img((D.MONSTERS[id] || {}).sprite || id) || img(id) || img('enemy_' + id + '_idle');
+  // spriteKey (the Surgeon and the Sewn) names the painted idle file; until it lands in assets/ the old sprite is used.
+  const monsterPic = (id) => { const m = D.MONSTERS[id] || {}; return (m.spriteKey && img(m.spriteKey)) || img(m.sprite || id) || img(id) || img('enemy_' + id + '_idle'); };
   // Boss-canvas sprite (D.SPRITE_CANVAS): drawn at the hero pose scale (HERO_POSE_H per 900 hero-canvas px), layout box from
   // the first opaque row down. Null for any other sprite, or when the file is missing and the legacy art is drawn.
-  const canvasKey = (id) => { const m = D.MONSTERS[id] || {}; return [m.sprite, 'enemy_' + id + '_idle'].find(k => k && A[k] && D.SPRITE_CANVAS && D.SPRITE_CANVAS[k]); };
+  const canvasKey = (id) => { const m = D.MONSTERS[id] || {}; return [m.spriteKey, m.sprite, 'enemy_' + id + '_idle'].find(k => k && A[k] && D.SPRITE_CANVAS && D.SPRITE_CANVAS[k]); };
   const canvasOf = (id) => { const k = canvasKey(id); return k ? D.SPRITE_CANVAS[k] : null; };
   function poseSet(u) {
     const base = u.side === 'enemy' ? enemyPoseBase(u.monsterId) : 'hero_' + u.heroId;
@@ -474,9 +496,12 @@
     if (ui.potionMenu != null && p.potions[ui.potionMenu]) {
       const id = p.potions[ui.potionMenu], def = D.POTIONS[id];
       const can = G.phase === 'combat' ? !ui.busy && !p.endedTurn : def.anywhere;
-      menu = `<div class="potmenu"><b>${esc(def.name)}</b><div>${esc(def.desc)}</div>
+      // Potion menu fix (design/potion_menu_fix.md): visible close x, Drink stays the main button, "Pour out" sits on its own
+      // row and takes two clicks (the first arms it for 3 seconds).
+      const armed = ui.potionArm && ui.potionArm.slot === ui.potionMenu && Date.now() - ui.potionArm.at < 3000;
+      menu = `<div class="potmenu"><button class="potclose" data-act="potclose" aria-label="Close">&times;</button><b>${esc(def.name)}</b><div>${esc(def.desc)}</div>
         <button class="btn small" data-act="drink" data-slot="${ui.potionMenu}" ${can ? '' : 'disabled'}>${can ? 'Drink' : (G.phase === 'combat' ? 'Wait' : 'Only in fights')}</button>
-        <button class="btn small ghost" data-act="tosspotion" data-slot="${ui.potionMenu}">Discard</button></div>`;
+        <div class="potpour"><button class="pourout${armed ? ' armed' : ''}" data-act="tosspotion" data-slot="${ui.potionMenu}">${armed ? 'Pour out? Click again' : 'Pour out'}</button></div></div>`;
     }
     return `<span class="potions">${h}${menu}</span>`;
   }
@@ -535,7 +560,7 @@
   }
   function mapHTML() {
     const reach = E.reachable(G), nodes = Object.values(G.map.nodes);
-    const visited = G.visited || [];
+    const visited = E.trimVisited(G);
     const RH = mapRowH(), H = 60 + G.map.rows.length * RH + 20;
     let lines = '';
     for (const n of nodes) for (const t of n.next) {
@@ -664,12 +689,30 @@
     const body = ev.stage === 'choose'
       ? `<p class="dm">${esc(fill(def.text))}</p><div class="evchoices">${def.choices.map((c, i) => {
           const ok = E.choiceAllowed(p, c);
-          return `<button class="evchoice ${ok ? '' : 'disabled'}" ${ok ? `data-act="evchoice" data-choice="${i}"` : 'disabled'}${ST.get('devMode') ? ` data-devtip="1" data-tip="${esc(devChoiceTip(p, ev.id, i))}"` : ''}><b>[${esc(fill(c.label))}]</b> <span>${esc(fill(c.hint || ''))}${ok ? '' : ' (you can\'t afford this)'}</span></button>`;
+          return `<button class="evchoice ${ok ? '' : 'disabled'}" ${ok ? `data-act="evchoice" data-choice="${i}"` : 'disabled'}${ST.get('devMode') ? ` data-devtip="1" data-tip="${esc(devChoiceTip(p, ev.id, i))}"` : ''}><b class="evline">${esc(fill(c.label))}</b>${underHTML(p, ev.id, i)}</button>`;
         }).join('')}</div>`
       : `<p class="dm chosen">» ${esc(fill(def.choices[ev.choice].label))}</p><p class="dm">${esc(fill(ev.result || ''))}</p>
          <div class="evlog">${ev.log.map(l => `<span class="chip ${/^-|Curse/.test(l) ? 'bad' : 'good'}">${esc(l)}</span>`).join('')}</div>
          <button class="btn" data-act="evcontinue">${ev.next && ev.next.fight ? I('swords') + ' Fight!' : ev.next && ev.next.shop ? 'Browse the wares' : 'Continue'}</button>`;
     return `<div class="overlay"><div class="panel event"><img class="scene-art" src="${img(def.art)}" alt=""><div class="evtext"><h1>${esc(def.name)}</h1>${body}</div></div></div>`;
+  }
+  // ----- event choice undertext (design/event_costs_display.md, B84): grey line, only the consequence phrase coloured -----
+  const UNDER = { dmg: ['heart', '#F06266'], heal: ['heart', '#46A758'], maxhp: ['heart', '#F06FAA'], gold: ['coin', '#E8B931'],
+    curse: ['curse', '#A87BE8'], card: ['deck', '#5B9CF5'], relic: ['sparkle', '#2FBFAE'], potion: ['potion_belt', '#C9E265'],
+    fight: ['swords', '#F2883A'], elite: ['skull', '#F2883A'], shop: ['coin', '#D6CEC2'] };
+  function underPart(x, first) {
+    const [ic, col] = UNDER[x.k] || ['unknown', '#D6CEC2'];
+    let lead = x.lead, phrase = x.phrase;
+    if (!first) { if (lead) lead = lead[0].toLowerCase() + lead.slice(1); else phrase = phrase[0].toLowerCase() + phrase.slice(1); }
+    return `${esc(lead)}<span class="uph" style="color:${col}">${I(ic, 'uico', col)}${esc(phrase)}</span>${esc(x.tail)}`;
+  }
+  function underHTML(p, evId, i) {
+    const u = E.choiceUnder(G, p, evId, i);
+    if (u.req) return `<span class="under req">${I('lock', 'uico', '#9A9188')}${esc(u.req)}</span>`;
+    const bits = u.parts.map(x => underPart(x, true) + '.');
+    u.chance.forEach(b => bits.push(`<span class="uch">${I('unknown', 'uico', '#D6CEC2')}${b.pct}%:</span> ` + b.parts.map((x, j) => underPart(x, j === 0)).join(', ') + '.'));
+    if (!bits.length && !u.endsRun) return '';
+    return `<span class="under${u.endsRun ? ' endsrun' : ''}">${u.endsRun ? I('scissors', 'uico ubroken', '#7A1018') : ''}${bits.join(' ')}</span>`;
   }
   // ----- the merchant's rug: wares laid out on a blanket, merchant sitting beside it -----
   const MERCHANT_LINES = {
@@ -1379,7 +1422,7 @@
   // A click or drop on an enemy that can't be targeted right now (the Surgeon while a Sewn stands)
   function refuseTarget(uid) {
     const u = E.find(G, uid), st = u && Object.keys(u.statuses).map(k => D.STATUSES[k]).find(x => x && x.noCount);
-    flashHint(st ? st.tip : 'That one cannot be targeted right now.');
+    flashHint(st ? st.tip : "Cards aimed at that one alone can't reach it right now.");
     anim(wrapOf(uid), 'refuse'); sfx('error');
   }
   function flashHint(t) {
@@ -1400,7 +1443,7 @@
 
   async function startGame(heroId, seed) {
     G = E.newGame({ seed: seed != null ? seed : Math.floor(Math.random() * 1e9), heroes: [heroId] });
-    G.visited = [];
+    G.visited = []; G.visitedFloor = G.floor;
     E.takeEvents(G);
     me = G.players[0].uid;
     ui.screen = 'game'; ui.selected = null; ui.pile = null; ui.busy = false; ui.upgrading = false; ui.flavor = {}; ui.deadShown = {};
@@ -1413,13 +1456,13 @@
   }
   function continueGame() {
     const sv = loadSave(); if (!sv) return;
-    G = sv.G; me = sv.me; G.events = []; G.visited = G.visited || [];
+    G = sv.G; me = sv.me; G.events = []; E.trimVisited(G);
     ui.screen = 'game'; ui.selected = null; ui.pile = null; ui.busy = false; ui.upgrading = false; ui.holdCombat = false; ui.deadShown = {};
     for (const e of G.enemies || []) if (e.hp <= 0) ui.deadShown[e.uid] = true;
     render(); banner('Welcome back');
   }
   function goNode(id) {
-    G.visited = G.visited || [];
+    E.trimVisited(G);
     if (G.pos && !G.visited.includes(G.pos)) G.visited.push(G.pos);
     act({ type: 'CHOOSE_NODE', player: me, node: id });
   }
@@ -1531,7 +1574,7 @@
     if (ui.suppressClick) { ui.suppressClick = false; e.preventDefault(); e.stopPropagation(); return; }
     const t = e.target.closest('[data-act]');
     if (TOUCH) hideTip();
-    if (ui.potionMenu != null && !(t && ['drink', 'tosspotion', 'potion'].includes(t.dataset.act))) { ui.potionMenu = null; render(); if (!t) return; }
+    if (ui.potionMenu != null && !(t && ['drink', 'tosspotion', 'potion'].includes(t.dataset.act))) { ui.potionMenu = null; ui.potionArm = null; render(); if (!t) return; }
     if (!t) {
       const info = e.target.closest('[data-tip]');
       const unitTarget = e.target.closest('.unit.enemy.targetable');
@@ -1617,9 +1660,13 @@
     else if (a === 'removesvc') { ui.shopRemoving = true; render(); }
     else if (a === 'shopback') { ui.shopRemoving = false; render(); }
     else if (a === 'shopremove') { ui.shopRemoving = false; ui.shopLine = MERCHANT_LINES.removed[0]; go({ type: 'SHOP_REMOVE', card: d.card }).then(() => render()); }
-    else if (a === 'potion') { ui.potionMenu = ui.potionMenu === +d.slot ? null : +d.slot; render(); }
+    else if (a === 'potion') { ui.potionMenu = ui.potionMenu === +d.slot ? null : +d.slot; ui.potionArm = null; render(); }
     else if (a === 'drink') { ui.potionMenu = null; go({ type: 'USE_POTION', slot: +d.slot }).then(r => { if (!r.ok) { flashHint(r.error); render(); } }); }
-    else if (a === 'tosspotion') { ui.potionMenu = null; go({ type: 'DISCARD_POTION', slot: +d.slot }); }
+    else if (a === 'tosspotion') {
+      const armed = ui.potionArm && ui.potionArm.slot === +d.slot && Date.now() - ui.potionArm.at < 3000;
+      if (!armed) { ui.potionArm = { slot: +d.slot, at: Date.now() }; render(); setTimeout(() => { if (ui.potionArm && Date.now() - ui.potionArm.at >= 3000) { ui.potionArm = null; render(); } }, 3050); }
+      else { ui.potionArm = null; ui.potionMenu = null; go({ type: 'DISCARD_POTION', slot: +d.slot }); }
+    }
     else if (a === 'pile') { ui.pile = d.pile; render(); }
     else if (a === 'closepile') { ui.pile = null; render(); }
   });
@@ -1779,7 +1826,7 @@
       const step = (pref) => {
         const r = E.reachable(s).map(id => s.map.nodes[id]);
         const n = r.find(x => pref.includes(x.type)) || r[0];
-        if (s.pos) G.visited.push(s.pos);
+        E.trimVisited(G); if (s.pos) G.visited.push(s.pos);
         E.dispatch(s, { type: 'CHOOSE_NODE', player: me, node: n.id });
       };
       p.maxHp = p.hp = 400;   // the demo walk must not die
