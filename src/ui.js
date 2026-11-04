@@ -131,10 +131,10 @@
   // page (render, live hand text, inspect clone, animations) is checked by the observer below; hidden cards (no layout) are skipped.
   // Card name fit, option A (Palette's art/ui/card_text_fit, passed by Tester Nov 4): one line, never wrapped or cut. Start
   // at 7.3% of card width, step down 0.3% to 5.8%, then squeeze the letter spacing to -0.01em and -0.03em. The safety net
-  // (5.5/5.2/4.9%) means a name never spills, but a name that needs it is too long (Lorekeeper). Sub-pixel widths, no
-  // tolerance. Runs wherever fitRules does (fitRules calls it).
+  // (5.5/5.2/4.9%) means a name never spills, but a name that needs it is too long (Lorekeeper). Layout widths (offsetWidth, untouched by tilt
+  // or zoom transforms) with 1 px spare. Runs wherever fitRules does (fitRules calls it).
   const NAME_STEPS = [[.073, ''], [.070, ''], [.067, ''], [.064, ''], [.061, ''], [.058, ''], [.058, '-.01em'], [.058, '-.03em'],
-    [.055, '-.03em'], [.052, '-.03em'], [.049, '-.03em']];
+    [.055, '-.03em'], [.052, '-.03em'], [.049, '-.03em'], [.046, '-.03em'], [.043, '-.03em']];
   function fitName(card) {
     const box = card.querySelector('.cname'), span = box && box.firstElementChild;
     if (!span || !box.clientWidth) return;
@@ -142,7 +142,7 @@
       const [sz, ls] = NAME_STEPS[i];
       if (i) { box.style.setProperty('--nf', sz); box.style.setProperty('--nls', ls || '.01em'); box.dataset.nfit = i; }
       else { box.style.removeProperty('--nf'); box.style.removeProperty('--nls'); delete box.dataset.nfit; }
-      if (span.getBoundingClientRect().width <= box.getBoundingClientRect().width) return;
+      if (span.offsetWidth + 1 <= box.clientWidth) return;   // layout px, so a tilted hand card measures the same as a flat one; 1 px spare for rounding
     }
   }
   // The rules text must also end above the gem socket (the panel's notch rises to 91.2% of the card height), so it may use
@@ -156,6 +156,8 @@
     const room = box.clientHeight - 2 * GEM_GAP * card.offsetHeight;
     if (span.offsetHeight > room + 0.5 || span.scrollWidth > box.clientWidth + 0.5) box.classList.add('small');
   }
+  // Names are measured again once the web fonts finish loading (an early pass can measure the fallback font and come out narrow).
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitAll(document.body));
   const fitAll = (root) => { if (root.matches && root.matches('.card')) fitRules(root); if (root.querySelectorAll) root.querySelectorAll('.card').forEach(fitRules); };
   new MutationObserver((muts) => {
     const todo = new Set();
@@ -373,8 +375,12 @@
   // <img> src keeps the figure on the same foot line. Heroes: hero_<class>_<pose> (idle, attack, defend, cast, hit, debuff; debuff falls back to cast).
   // Enemies: enemy_<id>_<pose> (idle, attack, hit), used only when enemy_<id>_idle exists (same canvas);
   // a missing attack/hit falls back to that idle. Without pose files the legacy single sprite is drawn.
-  const POSES = ['idle', 'attack', 'defend', 'cast', 'hit', 'debuff'];
-  const POSE_FALLBACK = { debuff: 'cast' };   // a hero without a debuff pose (the Fighter until his repaint) uses cast
+  const POSES = ['idle', 'attack', 'defend', 'cast', 'hit', 'debuff', 'power', 'windup', 'down', 'victory'];
+  // A missing pose borrows a painted one: the Fighter has no debuff pose until his repaint, and power/windup/down/victory
+  // (Palette's art-week files, hero_<class>_<pose>.webp, same 887x900 canvas) fall back until they land in assets/.
+  const POSE_FALLBACK = { debuff: 'cast', power: 'cast', windup: 'attack', down: 'hit', victory: 'idle' };
+  const HOLD_BIG = 1.6;     // big moves (cost 2+ cards, enemy hits of 12+ total) hold their pose and zoom this much longer
+  const WINDUP_MS = 160;    // with a painted windup pose, a big attack shows it this long before the attack pose
   const POSE_MS = 520;
   const BFX_MS = 3200;                 // how long a boss state effect (D.BOSS_FX) plays after its move                 // how long a pose holds before returning to idle (normal speed)
   const BEAT_ZOOM = 1.05, SHAKE_PX = 3, SHAKE_MS = 220;
@@ -400,16 +406,27 @@
   const curPose = (uid) => { const p = ui.poses[uid]; return p && performance.now() < p.until ? p.pose : 'idle'; };
   const preloaded = [];
   function preloadPoses() {   // decode every pose up front so the first swap never flashes
-    for (const k of Object.keys(A)) if (/^(hero|enemy)_.+_(idle|attack|defend|cast|hit)$/.test(k)) {
+    for (const k of Object.keys(A)) if (new RegExp('^(hero|enemy)_.+_(' + POSES.join('|') + ')$').test(k)) {
       const im = new Image(); im.decoding = 'async'; im.src = A[k]; if (im.decode) im.decode().catch(() => {}); preloaded.push(im);
     }
   }
-  function setPose(uid, pose) {
+  const speedMul = () => { const sp = ST.get('speed'); return sp === 'fast' ? 0.8 : sp === 'instant' ? 0.6 : 1; };
+  const hasOwnPose = (u, pose) => { const base = u.side === 'enemy' ? enemyPoseBase(u.monsterId) : 'hero_' + u.heroId; return !!A[base + '_' + pose]; };
+  // A big move: optional windup frame, then the pose held HOLD_BIG times as long. Returns the hold multiplier used.
+  function bigPose(uid, pose) {
+    const u = G && E.find(G, uid);
+    if (u && pose === 'attack' && hasOwnPose(u, 'windup') && !ui.fast) {
+      setPose(uid, 'windup', WINDUP_MS / POSE_MS);
+      const t = setTimeout(() => setPose(uid, 'attack', HOLD_BIG), WINDUP_MS * speedMul()); if (ui.poses[uid]) ui.poses[uid].timer2 = t;
+    } else setPose(uid, pose, HOLD_BIG);
+    return HOLD_BIG;
+  }
+  function setPose(uid, pose, mul) {
     if (ui.fast || !G) return false;
     const u = E.find(G, uid), set = u && poseSet(u);
     if (!set || (u.side === 'enemy' && pose !== 'idle' && set[pose] === set.idle)) return false;
-    const sp = ST.get('speed'), hold = POSE_MS * (sp === 'fast' ? 0.8 : sp === 'instant' ? 0.6 : 1);
-    const prev = ui.poses[uid]; if (prev) clearTimeout(prev.timer);
+    const hold = POSE_MS * speedMul() * (mul || 1);
+    const prev = ui.poses[uid]; if (prev) { clearTimeout(prev.timer); if (prev.timer2 && pose === 'windup') clearTimeout(prev.timer2); }
     const el = spriteOf(uid); if (el && el.getAttribute('src') !== set[pose]) el.src = set[pose];
     ui.poses[uid] = { pose, until: performance.now() + hold, timer: setTimeout(() => {
       delete ui.poses[uid]; const e2 = spriteOf(uid); if (e2 && e2.getAttribute('src') !== set.idle) e2.src = set.idle; }, hold) };
@@ -417,11 +434,11 @@
   }
   const cardPose = (id) => { const def = D.CARDS[id]; if (!def) return null;
     if (def.type === 'attack') return 'attack';
-    if (def.type === 'power') return 'cast';
+    if (def.type === 'power') return 'power';
     const fr = D.frameOf(def, id);
     return fr === 'defense' ? 'defend' : fr === 'debuff' ? 'debuff' : 'cast'; };
   // Action beat: the battlefield zooms slightly toward whoever acts, then eases back. Re-applied after a re-render.
-  function beat(uids) {
+  function beat(uids, mul) {
     if (ui.fast || reduced()) return;
     const f = $app.querySelector('.field'); if (!f) return;
     const fr = f.getBoundingClientRect(), s = (parseFloat(getComputedStyle(f).scale) || 1) * Z();
@@ -429,7 +446,7 @@
     for (const id of uids) { const sp = spriteOf(id); if (!sp) continue; const r = bodyRect(sp); x += r.left + r.width / 2; y += r.top + r.height * 0.6; n++; }
     if (!n) return;
     const sp = ST.get('speed');
-    ui.beat = { ox: (x / n - fr.left) / s, oy: (y / n - fr.top) / s, t0: performance.now(), dur: POSE_MS * (sp === 'fast' ? 0.8 : sp === 'instant' ? 0.6 : 1) };
+    ui.beat = { ox: (x / n - fr.left) / s, oy: (y / n - fr.top) / s, t0: performance.now(), dur: POSE_MS * (sp === 'fast' ? 0.8 : sp === 'instant' ? 0.6 : 1) * (mul || 1) };
     applyBeat();
   }
   function applyBeat() {
@@ -1272,6 +1289,9 @@
     sfx(sound || (text === 'Enemy Turn' ? 'enemyTurn' : 'turn'));
     $app.appendChild(b); setTimeout(() => b.remove(), 1000);
   }
+  // Big moves hold longer: a card costing 2 or more, or an enemy attack worth 12+ damage in total.
+  const isBigCard = (id) => { const d = D.CARDS[id]; return !!d && typeof d.cost === 'number' && d.cost >= 2; };
+  const isBigMove = (m) => !!m && m.effects.filter(f => f.t === 'attack').reduce((a, f) => a + (f.n || f.damage || 0) * (f.times || 1), 0) >= 12;
   function lunge(uid) { const u = E.find(G, uid); if (u) anim(wrapOf(uid), u.side === 'enemy' ? 'lunge-left' : 'lunge-right'); }
   function showEvent(ev, live, quiet) {
     if (ev.kind === 'hit') {
@@ -1281,7 +1301,8 @@
       if (live) updateBar(ev.target, ev.hp, ev.block);
     } else if (ev.kind === 'cardPlayed') { const cs = CARD_SOUNDS[ev.card]; sfx(cs && S.has && S.has(cs.sound) ? cs.sound : 'card'); if (D.CARDS[ev.card].type === 'attack') lunge(ev.source);
       const pose = cardPose(ev.card);
-      if (pose) { setPose(ev.source, pose); beat(pose === 'attack' ? [ev.source].concat(ev.target ? [ev.target] : E.livingEnemies(G).map(e => e.uid)) : [ev.source]); } }
+      if (pose) { const big = isBigCard(ev.card), m = big ? bigPose(ev.source, pose) : (setPose(ev.source, pose), 1);
+        beat(pose === 'attack' ? [ev.source].concat(ev.target ? [ev.target] : E.livingEnemies(G).map(e => e.uid)) : [ev.source], m); } }
     else if (ev.kind === 'block') { sfx('block'); floatAt(ev.target, '+' + ev.amount + ' Block', 'blk'); anim(spriteOf(ev.target), 'glow-block'); if (live) updateBar(ev.target, ev.hp, ev.block); }
     else if (ev.kind === 'heal' && ev.amount > 0) { sfx('heal'); floatAt(ev.target, '+' + ev.amount, 'heal'); anim(spriteOf(ev.target), 'glow-heal'); if (live) updateBar(ev.target, ev.hp, ev.block); }
     else if (ev.kind === 'status') {
@@ -1304,7 +1325,8 @@
         if (w) { const o = w.querySelector('.bossfx'); if (o) o.remove(); w.insertAdjacentHTML('beforeend', `<div class="bossfx fx-${bfx}" style="--bage:0ms" aria-hidden="true"><i></i><i></i><i></i></div>`); } }
       const el = unitEl(ev.source); if (!el) return;
       const mv = D.MONSTERS[E.find(G, ev.source).monsterId].moves;
-      if (Object.values(mv).some(m => m.name === ev.name && m.effects.some(f => f.t === 'attack'))) { lunge(ev.source); setPose(ev.source, 'attack'); beat([ev.source].concat(G.players.filter(p => p.hp > 0).map(p => p.uid))); }
+      if (Object.values(mv).some(m => m.name === ev.name && m.effects.some(f => f.t === 'attack'))) { lunge(ev.source); const mvd = Object.values(mv).find(m => m.name === ev.name), m = isBigMove(mvd) ? bigPose(ev.source, 'attack') : (setPose(ev.source, 'attack'), 1);
+        beat([ev.source].concat(G.players.filter(p => p.hp > 0).map(p => p.uid)), m); }
       const m = document.createElement('div'); m.className = 'movename'; m.textContent = ev.name; el.appendChild(m);
       enemyTurnLine(ev);
     }
@@ -1786,7 +1808,7 @@
   });
   document.addEventListener('change', (e) => { if (e.target.matches && e.target.matches('[data-vol]')) sfx('click'); });
   applyScale();
-  window.__game = { get scale() { return zCache; }, get state() { return G; }, act, clickCard, startGame, ui, render, tell, playLine, setPose, beat,
+  window.__game = { get scale() { return zCache; }, get state() { return G; }, act, clickCard, startGame, ui, render, tell, playLine, setPose, beat, bigPose, isBigCard, isBigMove, get preloadedPoses() { return preloaded.map(im => im.src); }, POSES,
     inspect: { open: (el) => openInspect(el), close: closeInspect, get src() { return INSP.src; }, get clone() { return INSP.clone; }, get busy() { return INSP.busy; } } };
   render();
   // the desktop app swapped in a new window (switching to / from borderless): pick up right where the player was

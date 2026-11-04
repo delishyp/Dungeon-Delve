@@ -21,7 +21,7 @@ ok(!fs.existsSync(path.join(ROOT, 'assets/hero_fighter_debuff.webp')), 'fighter 
   }
   const ui = fs.readFileSync(path.join(ROOT, 'src/ui.js'), 'utf8');
   ok(/POSES = \[[^\]]*'debuff'/.test(ui), 'pose list has debuff');
-  ok(/POSE_FALLBACK = \{ debuff: 'cast' \}/.test(ui), 'debuff falls back to cast');
+  ok(/POSE_FALLBACK = \{ debuff: 'cast'[,} ]/.test(ui), 'debuff falls back to cast');
   ok(/fr === 'debuff' \? 'debuff'/.test(ui), 'debuff-frame cards pick the debuff pose');
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   ok(html.includes('hero_barbarian_debuff') && html.includes('hero_wizard_debuff') && !html.includes('hero_fighter_debuff'), 'build bundles the two debuff poses only');
