@@ -370,10 +370,11 @@
 
   // ---------- action poses (Darkest Dungeon-style swap) ----------
   // Pose files share one canvas and feet anchor per character (heroes 887x900, feet at 443,891), so swapping the
-  // <img> src keeps the figure on the same foot line. Heroes: hero_<class>_<pose> (idle, attack, defend, cast, hit).
+  // <img> src keeps the figure on the same foot line. Heroes: hero_<class>_<pose> (idle, attack, defend, cast, hit, debuff; debuff falls back to cast).
   // Enemies: enemy_<id>_<pose> (idle, attack, hit), used only when enemy_<id>_idle exists (same canvas);
   // a missing attack/hit falls back to that idle. Without pose files the legacy single sprite is drawn.
-  const POSES = ['idle', 'attack', 'defend', 'cast', 'hit'];
+  const POSES = ['idle', 'attack', 'defend', 'cast', 'hit', 'debuff'];
+  const POSE_FALLBACK = { debuff: 'cast' };   // a hero without a debuff pose (the Fighter until his repaint) uses cast
   const POSE_MS = 520;
   const BFX_MS = 3200;                 // how long a boss state effect (D.BOSS_FX) plays after its move                 // how long a pose holds before returning to idle (normal speed)
   const BEAT_ZOOM = 1.05, SHAKE_PX = 3, SHAKE_MS = 220;
@@ -393,7 +394,7 @@
     const base = u.side === 'enemy' ? enemyPoseBase(u.monsterId) : 'hero_' + u.heroId;
     if (base in poseSetCache) return poseSetCache[base];
     const idle = A[base + '_idle'];
-    return (poseSetCache[base] = idle ? Object.fromEntries(POSES.map(p => [p, A[base + '_' + p] || idle])) : null);
+    return (poseSetCache[base] = idle ? Object.fromEntries(POSES.map(p => [p, A[base + '_' + p] || (POSE_FALLBACK[p] && A[base + '_' + POSE_FALLBACK[p]]) || idle])) : null);
   }
   ui.poses = {};
   const curPose = (uid) => { const p = ui.poses[uid]; return p && performance.now() < p.until ? p.pose : 'idle'; };
@@ -417,7 +418,8 @@
   const cardPose = (id) => { const def = D.CARDS[id]; if (!def) return null;
     if (def.type === 'attack') return 'attack';
     if (def.type === 'power') return 'cast';
-    return D.frameOf(def, id) === 'defense' ? 'defend' : 'cast'; };
+    const fr = D.frameOf(def, id);
+    return fr === 'defense' ? 'defend' : fr === 'debuff' ? 'debuff' : 'cast'; };
   // Action beat: the battlefield zooms slightly toward whoever acts, then eases back. Re-applied after a re-render.
   function beat(uids) {
     if (ui.fast || reduced()) return;
