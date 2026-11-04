@@ -210,7 +210,7 @@ body.is-dragging .playzone{border-color:#f3d27a44}
 .evchoice .under.req{color:#9A9188}
 .evchoice .under.endsrun{border:2px solid #7A1018;border-style:dashed;padding:2px 6px;border-radius:3px}
 .evchoice:hover:not(.disabled){border-color:var(--gold2);transform:translateX(4px);box-shadow:0 0 12px #d9a44166}
-.evchoice.disabled{opacity:.45;cursor:not-allowed}
+.evchoice.disabled{cursor:not-allowed}.evchoice.disabled b.evline{opacity:.45}
 .chosen{color:var(--gold2)!important;font-style:normal!important}
 .evlog{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .chip{display:inline-block;padding:3px 10px;border-radius:12px;font-size:14px;font-family:Arial;font-weight:bold}

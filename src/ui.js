@@ -709,8 +709,9 @@
   function underHTML(p, evId, i) {
     const u = E.choiceUnder(G, p, evId, i);
     if (u.req) return `<span class="under req">${I('lock', 'uico', '#9A9188')}${esc(u.req)}</span>`;
-    const bits = u.parts.map(x => underPart(x, true) + '.');
-    u.chance.forEach(b => bits.push(`<span class="uch">${I('unknown', 'uico', '#D6CEC2')}${b.pct}%:</span> ` + b.parts.map((x, j) => underPart(x, j === 0)).join(', ') + '.'));
+    const stop = h => /[.!?](<\/[^>]+>)*$/.test(h) ? h : h + '.';
+    const bits = u.parts.map(x => stop(underPart(x, true)));
+    u.chance.forEach(b => bits.push(`<span class="uch">${I('unknown', 'uico', '#D6CEC2')}${b.pct}%:</span> ` + stop(b.parts.map((x, j) => underPart(x, j === 0)).join(', '))));
     if (!bits.length && !u.endsRun) return '';
     return `<span class="under${u.endsRun ? ' endsrun' : ''}">${u.endsRun ? I('scissors', 'uico ubroken', '#7A1018') : ''}${bits.join(' ')}</span>`;
   }
